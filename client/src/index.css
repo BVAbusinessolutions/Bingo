@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* El modo oscuro se activa con la clase .dark en <html> (la pone ThemeContext). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Identidad Asociación Infantil Hogar Sol */
+  --color-sol-blue: #0e4a8e;
+  --color-sol-blue-light: #1d63b8;
+  --color-sol-gold: #ffc700;
+  --color-sol-gold-dark: #ffb800;
+  --color-sol-gold-light: #ffe680;
+  --color-sol-red: #d32f2f;
+  --color-sol-red-dark: #c62828;
+
+  /* Tokens semánticos: cambian solos entre Día y Noche */
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-brand: var(--brand);
+}
+
+:root {
+  --page: #f8fafc;
+  --card: #ffffff;
+  --muted: #eef2f7;
+  --line: #cbd5e1;
+  --fg: #0f172a;
+  --fg-muted: #475569;
+  --fg-subtle: #94a3b8;
+  --brand: #0e4a8e;
+  --card-glow: 0 1px 3px rgb(15 23 42 / 0.08), 0 4px 12px rgb(15 23 42 / 0.05);
+  color-scheme: light;
+}
+
+.dark {
+  --page: #0b192c;
+  --card: #13294a;
+  --muted: #1e293b;
+  --line: #334a6b;
+  --fg: #f1f5f9;
+  --fg-muted: #b6c3d6;
+  --fg-subtle: #7b8ba3;
+  --brand: #8cbcf5;
+  --card-glow: 0 0 0 1px rgb(255 199 0 / 0.28), 0 6px 20px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+/* Tarjeta base: sombra suave de día, borde amarillo cálido iluminado de noche. */
+@utility surface {
+  background-color: var(--card);
+  border-radius: 1rem;
+  box-shadow: var(--card-glow);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--page);
+  color: var(--fg);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sol-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
