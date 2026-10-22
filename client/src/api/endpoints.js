@@ -7,12 +7,25 @@ export const authApi = {
   register: (payload) => http.post('/auth/register', payload).then(data),
   logout: () => http.post('/auth/logout'),
   me: () => http.get('/auth/me').then(data),
+  updateProfile: (body) => http.patch('/auth/me', body).then(data),
+  changePassword: (body) => http.post('/auth/change-password', body).then(data),
+  logoutAll: () => http.post('/auth/logout-all'),
+  forgotPassword: (email) => http.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => http.post('/auth/reset-password', { token, password }),
+  verifyEmail: (token) => http.post('/auth/verify-email', { token }).then(data),
+  resendVerification: () => http.post('/auth/resend-verification'),
 };
 
 export const eventsApi = {
   current: () => http.get('/events/current').then(data),
   list: () => http.get('/events').then(data),
   catalog: (eventId) => http.get(`/events/${eventId}/cards/catalog`).then(data),
+  results: () => http.get('/events/results').then(data),
+};
+
+export const claimsApi = {
+  create: (eventId, cardId) => http.post(`/events/${eventId}/claims`, { cardId }).then(data),
+  mine: (eventId) => http.get(`/events/${eventId}/claims/mine`).then(data),
 };
 
 export const cardsApi = {
@@ -24,6 +37,7 @@ export const reservationsApi = {
   mine: () => http.get('/reservations/mine').then(data),
   get: (id) => http.get(`/reservations/${id}`).then(data),
   cancel: (id) => http.delete(`/reservations/${id}`).then(data),
+  proofBlob: (id) => http.get(`/reservations/${id}/proof`, { responseType: 'blob' }).then(data),
   /** Confirmación de pago: datos del comprador + referencia y/o comprobante (multipart). */
   confirmPayment: (id, { file, ...fields }) => {
     const form = new FormData();

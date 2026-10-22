@@ -6,7 +6,15 @@ import { z } from 'zod';
 import { db, createUser } from '../../db.js';
 import { env } from '../../config/env.js';
 import { authenticate } from '../../middleware/auth.js';
-import { loginLimiter, registerLimiter, requireXhrHeader, validateBody } from '../../middleware/security.js';
+import {
+  emailActionLimiter,
+  loginLimiter,
+  registerLimiter,
+  requireXhrHeader,
+  validateBody,
+} from '../../middleware/security.js';
+import { sendMail } from '../../utils/mailer.js';
+import { consumeToken, issueToken } from '../../utils/oneTimeTokens.js';
 
 const router = Router();
 const REFRESH_COOKIE = 'hs_rt';
@@ -19,7 +27,31 @@ const cookieOptions = {
   path: '/api/auth', // solo viaja a las rutas de auth
 };
 
-const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role });
+const RESET_TTL_MS = 30 * 60_000;
+const VERIFY_TTL_MS = 24 * 60 * 60_000;
+
+const publicUser = (u) => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  phone: u.phone,
+  role: u.role,
+  emailVerified: u.emailVerified,
+});
+
+const findByEmail = (email) => [...db.users.values()].find((u) => u.email === email);
+const clientLink = (path, token) => `${env.clientOrigin}${path}?token=${token}`;
+
+function sendVerificationEmail(user) {
+  const token = issueToken(db.emailVerifications, user.id, VERIFY_TTL_MS);
+  sendMail({
+    to: user.email,
+    subject: 'Confirma tu correo · Bingo Hogar Sol',
+    text: `Hola ${user.name}, confirma tu correo para poder comprar cartones:
+${clientLink('/verificar-correo', token)}
+El enlace vence en 24 horas.`,
+  });
+}
 
 function issueTokens(res, user) {
   const accessToken = jwt.sign({ role: user.role }, env.accessSecret, {
@@ -45,8 +77,17 @@ const revokeAllFor = (userId) => {
   for (const [jti, t] of db.refreshTokens) if (t.userId === userId) db.refreshTokens.delete(jti);
 };
 
+const emailField = z.string().trim().toLowerCase().email().max(120);
+const nameField = z.string().trim().min(3).max(80).regex(/^[\p{L}\p{M}\s'.-]+$/u);
+const newPasswordField = z
+  .string()
+  .min(8)
+  .max(128)
+  .regex(/[A-Za-z]/)
+  .regex(/\d/);
+
 const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(120),
+  email: emailField,
   password: z.string().min(8).max(128),
 });
 
@@ -55,28 +96,25 @@ const DUMMY_HASH = bcrypt.hashSync('dummy-password', 12);
 
 router.post('/login', loginLimiter, validateBody(loginSchema), async (req, res) => {
   const { email, password } = req.body;
-  const user = [...db.users.values()].find((u) => u.email === email);
+  const user = findByEmail(email);
   const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !ok) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
   res.json(issueTokens(res, user));
 });
 
 const registerSchema = z.object({
-  name: z.string().trim().min(3).max(80).regex(/^[\p{L}\p{M}\s'.-]+$/u),
-  email: z.string().trim().toLowerCase().email().max(120),
-  password: z
-    .string()
-    .min(8)
-    .max(128)
-    .regex(/[A-Za-z]/)
-    .regex(/\d/),
+  name: nameField,
+  email: emailField,
+  password: newPasswordField,
+  acceptTerms: z.literal(true),
 });
 
 router.post('/register', registerLimiter, validateBody(registerSchema), async (req, res) => {
-  if ([...db.users.values()].some((u) => u.email === req.body.email)) {
-    return res.status(409).json({ error: 'EMAIL_TAKEN' });
-  }
-  const user = await createUser(req.body); // rol siempre USER: nunca se acepta del cliente
+  if (findByEmail(req.body.email)) return res.status(409).json({ error: 'EMAIL_TAKEN' });
+  const { name, email, password } = req.body;
+  const user = await createUser({ name, email, password }); // rol siempre CLIENTE: nunca se acepta del cliente
+  user.termsAcceptedAt = new Date().toISOString();
+  sendVerificationEmail(user);
   res.status(201).json(issueTokens(res, user));
 });
 
@@ -112,10 +150,98 @@ router.post('/logout', requireXhrHeader, (req, res) => {
   res.status(204).end();
 });
 
-router.get('/me', authenticate, (req, res) => {
-  const user = db.users.get(req.user.id);
-  if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
+const currentUser = (req, res, next) => {
+  req.account = db.users.get(req.user.id);
+  return req.account ? next() : res.status(404).json({ error: 'NOT_FOUND' });
+};
+
+router.get('/me', authenticate, currentUser, (req, res) => res.json(publicUser(req.account)));
+
+// ---------- Perfil ----------
+const profileSchema = z.object({
+  name: nameField,
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9\s-]{8,15}$/)
+    .nullable()
+    .or(z.literal('').transform(() => null)),
+});
+
+router.patch('/me', authenticate, currentUser, validateBody(profileSchema), (req, res) => {
+  Object.assign(req.account, req.body); // solo name y phone: zod descarta cualquier otro campo
+  res.json(publicUser(req.account));
+});
+
+const changePasswordSchema = z.object({ currentPassword: z.string().min(1).max(128), newPassword: newPasswordField });
+
+router.post(
+  '/change-password',
+  emailActionLimiter,
+  authenticate,
+  currentUser,
+  validateBody(changePasswordSchema),
+  async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!(await bcrypt.compare(currentPassword, req.account.passwordHash))) {
+      return res.status(400).json({ error: 'INVALID_PASSWORD' });
+    }
+    req.account.passwordHash = await bcrypt.hash(newPassword, 12);
+    revokeAllFor(req.account.id); // cierra las otras sesiones; esta recibe tokens nuevos
+    res.json(issueTokens(res, req.account));
+  }
+);
+
+router.post('/logout-all', requireXhrHeader, authenticate, (req, res) => {
+  revokeAllFor(req.user.id);
+  res.clearCookie(REFRESH_COOKIE, cookieOptions);
+  res.status(204).end();
+});
+
+// ---------- Recuperar contraseña ----------
+// Siempre responde 204: no revela si el correo está registrado.
+router.post('/forgot-password', emailActionLimiter, validateBody(z.object({ email: emailField })), (req, res) => {
+  const user = findByEmail(req.body.email);
+  if (user) {
+    const token = issueToken(db.passwordResets, user.id, RESET_TTL_MS);
+    sendMail({
+      to: user.email,
+      subject: 'Restablece tu contraseña · Bingo Hogar Sol',
+      text: `Hola ${user.name}, para crear una contraseña nueva abre este enlace:
+${clientLink('/restablecer', token)}
+Vence en 30 minutos. Si no lo pediste, ignora este correo.`,
+    });
+  }
+  res.status(204).end();
+});
+
+router.post(
+  '/reset-password',
+  emailActionLimiter,
+  validateBody(z.object({ token: z.string().max(128), password: newPasswordField })),
+  async (req, res) => {
+    const userId = consumeToken(db.passwordResets, req.body.token);
+    const user = userId && db.users.get(userId);
+    if (!user) return res.status(400).json({ error: 'INVALID_TOKEN' });
+    user.passwordHash = await bcrypt.hash(req.body.password, 12);
+    user.emailVerified = true; // abrió un enlace enviado a su correo
+    revokeAllFor(user.id);
+    res.status(204).end();
+  }
+);
+
+// ---------- Verificación de correo ----------
+router.post('/verify-email', validateBody(z.object({ token: z.string().max(128) })), (req, res) => {
+  const userId = consumeToken(db.emailVerifications, req.body.token);
+  const user = userId && db.users.get(userId);
+  if (!user) return res.status(400).json({ error: 'INVALID_TOKEN' });
+  user.emailVerified = true;
   res.json(publicUser(user));
+});
+
+router.post('/resend-verification', emailActionLimiter, authenticate, currentUser, (req, res) => {
+  if (!req.account.emailVerified) sendVerificationEmail(req.account);
+  res.status(204).end();
 });
 
 export default router;

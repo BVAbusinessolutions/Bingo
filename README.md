@@ -8,7 +8,13 @@ Desde la carpeta raíz `Bingo/`:
 
 ```bash
 npm run setup   # solo la primera vez: instala todo y crea server/.env con secretos aleatorios
-npm run dev     # levanta API (puerto 4000) y web (puerto 5173) a la vez
+```
+
+En dos terminales, desde la carpeta raíz `Bingo/`:
+
+```bash
+npm run server  # terminal 1: API (puerto 4000)
+npm run dev     # terminal 2: web (puerto 5173)
 ```
 
 Luego abre <http://localhost:5173>.
@@ -44,22 +50,35 @@ Bingo/
 │   ├── index.html
 │   ├── vite.config.js            # Tailwind + proxy /api y /socket.io -> :4000
 │   └── src/
-│       ├── main.jsx
-│       ├── index.css             # tokens de marca (sol-red, sol-gold, sol-blue)
-│       ├── app/App.jsx           # rutas públicas / USER / ADMIN
+│       ├── main.jsx              # monta <App /> e importa styles/index.css
+│       ├── app/
+│       │   ├── App.jsx           # Providers + AppRouter
+│       │   └── providers.jsx     # Theme, BrowserRouter, Auth
+│       ├── routing/
+│       │   ├── AppRouter.jsx     # todas las rutas (páginas con carga diferida)
+│       │   ├── private-routes.jsx# seguridad: PrivateRoute, PublicOnlyRoute, ACCESS, safeRedirect
+│       │   └── paths.js          # constantes de URLs
+│       ├── pages/                # una pantalla por ruta
+│       │   ├── public/           # Home, Catálogo, Login, Registro
+│       │   ├── client/           # Checkout, Mis compras, Live
+│       │   ├── admin/            # Dashboard, Pagos, Sorteo, Eventos, Cartones
+│       │   └── errors/           # Unauthorized
+│       ├── components/           # piezas reutilizables
+│       │   ├── ui/               # Field, StatusBadge, ThemeToggle, PageLoader
+│       │   ├── layout/           # SiteHeader, PublicLayout, AdminLayout
+│       │   └── bingo/ cards/ payments/ player/
+│       ├── context/              # AuthContext, ThemeContext
+│       ├── constants/            # roles, cardStatus, patterns
+│       ├── styles/
+│       │   ├── index.css         # entrada: Tailwind + imports
+│       │   ├── tokens.css        # marca (sol-red, sol-gold, sol-blue) + Día/Noche
+│       │   └── global.css        # base, foco visible, reduced-motion
 │       ├── api/
 │       │   ├── tokenStore.js     # access token en memoria
 │       │   ├── httpClient.js     # Axios + interceptores (Bearer + refresh automático)
 │       │   └── endpoints.js
-│       ├── hooks/                # useSocket, useCountdown
-│       ├── lib/validation.js     # esquemas zod + sanitización
-│       └── features/
-│           ├── auth/             # AuthContext, ProtectedRoute, LoginPage, roles
-│           ├── bingo/            # BingoCard, patterns
-│           ├── player/           # PlayerDashboard, LiveStream, CalledNumbersBoard
-│           ├── home/             # HomePage (countdown + CTA)
-│           ├── reservations/     # (siguiente fase) selección, formulario, temporizador, pago
-│           └── admin/            # AdminDrawConsole  (+ eventos, inventario, pagos)
+│       ├── hooks/                # useSocket, useCountdown, useCurrentEvent, useAdmin
+│       └── lib/                  # validation (zod + sanitización), format
 └── server/
     └── src/
         ├── index.js              # Express + helmet + CORS + Socket.io

@@ -18,6 +18,12 @@ const ERRORS = {
   INVALID_FILE: 'El archivo debe ser JPG, PNG, WEBP o PDF.',
   FILE_TOO_LARGE: 'El archivo supera los 5 MB.',
   VALIDATION_ERROR: 'Revisa los datos ingresados.',
+  EMAIL_NOT_VERIFIED: 'Confirma tu correo antes de comprar. Revisa tu bandeja de entrada.',
+  INVALID_TOKEN: 'El enlace no es válido o ya venció. Solicita uno nuevo.',
+  INVALID_PASSWORD: 'La contraseña actual no es correcta.',
+  TOO_MANY_REQUESTS: 'Demasiados intentos. Espera unos minutos.',
+  NOT_A_WINNER: 'Ese cartón todavía no completa el patrón con las balotas cantadas.',
+  EVENT_NOT_LIVE: 'El sorteo no está en vivo en este momento.',
 };
 
 export const errorMessage = (err, fallback = 'Ocurrió un error. Intenta de nuevo.') =>

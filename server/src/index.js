@@ -11,9 +11,10 @@ import authRoutes from './modules/auth/auth.routes.js';
 import eventRoutes from './modules/events/events.routes.js';
 import reservationRoutes from './modules/reservations/reservations.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import claimRoutes from './modules/claims/claims.routes.js';
 import { releaseExpiredReservations } from './modules/reservations/reservations.service.js';
 import { drawRouter, registerDrawSocket } from './modules/draw/draw.js';
-import { registerAdminSocket } from './realtime.js';
+import { registerAdminSocket, registerUserSocket } from './realtime.js';
 
 await seed();
 
@@ -28,6 +29,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/events/:eventId', drawRouter);
+app.use('/api/events/:eventId/claims', claimRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -42,6 +44,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: env.clientOrigin, credentials: true } });
 registerDrawSocket(io);
 registerAdminSocket(io);
+registerUserSocket(io);
 
 setInterval(releaseExpiredReservations, 30_000);
 

@@ -9,6 +9,10 @@ export const loginLimiter = limiter(15 * 60_000, 5, 'TOO_MANY_LOGIN_ATTEMPTS', {
 export const registerLimiter = limiter(60 * 60_000, 10, 'TOO_MANY_REQUESTS');
 // Acaparamiento de cartones: 10 reservas / 10 min por IP
 export const reservationLimiter = limiter(10 * 60_000, 10, 'TOO_MANY_RESERVATIONS');
+// Correos de recuperación / verificación y cambios de contraseña: 10 por 15 min por IP
+export const emailActionLimiter = limiter(15 * 60_000, 10, 'TOO_MANY_REQUESTS');
+// Reclamos de bingo: 10 por minuto por IP
+export const claimLimiter = limiter(60_000, 10, 'TOO_MANY_REQUESTS');
 export const apiLimiter = limiter(60_000, 300, 'TOO_MANY_REQUESTS');
 
 /** Valida body con un schema zod; reemplaza req.body por los datos ya limpios. */

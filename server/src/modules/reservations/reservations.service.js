@@ -1,6 +1,8 @@
 import { db } from '../../db.js';
 import { env } from '../../config/env.js';
-import { notifyAdmins } from '../../realtime.js';
+import path from 'node:path';
+import { UPLOAD_DIR } from '../../db.js';
+import { notifyAdmins, notifyUser } from '../../realtime.js';
 import { sendMail } from '../../utils/mailer.js';
 import { formatCRC } from '../../utils/format.js';
 
@@ -36,6 +38,7 @@ export function approveReservation(r) {
       `Los verás en la sección "En vivo" al iniciar sesión. ¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
   });
   notifyAdmins('reservation:updated', reservationView(r));
+  notifyUser(r.userId, 'reservation:updated', reservationView(r));
 }
 
 export function rejectReservation(r, status = 'REJECTED') {
@@ -50,7 +53,26 @@ export function rejectReservation(r, status = 'REJECTED') {
     });
   }
   notifyAdmins('reservation:updated', reservationView(r));
+  if (status === 'REJECTED') notifyUser(r.userId, 'reservation:updated', reservationView(r));
 }
+
+/** Envía el comprobante adjunto; 404 si la reserva solo tiene número de referencia. */
+export function sendProofFile(res, r) {
+  if (!r?.proof?.filename) return res.status(404).json({ error: 'NOT_FOUND' });
+  res.type(r.proof.mimetype);
+  res.set('Content-Disposition', 'inline');
+  res.set('Content-Security-Policy', 'sandbox'); // un PDF o imagen no puede ejecutar scripts en nuestro origen
+  res.sendFile(path.join(UPLOAD_DIR, r.proof.filename));
+}
+
+/** Detalle para el dueño de la reserva: incluye los cartones completos para verlos o imprimirlos. */
+export const reservationDetailView = (r) => ({
+  ...reservationView(r),
+  cards: r.cardIds.map((id) => {
+    const { serial, grid } = db.cards.get(id);
+    return { id, serial, grid };
+  }),
+});
 
 export function reservationView(r) {
   const event = db.events.get(r.eventId);

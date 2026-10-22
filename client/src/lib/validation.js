@@ -18,22 +18,41 @@ export const loginSchema = z.object({
   password: z.string().min(8, 'Mínimo 8 caracteres').max(128),
 });
 
+const email = z.string().trim().toLowerCase().email('Correo inválido').max(120);
+const newPassword = z
+  .string()
+  .min(8, 'Mínimo 8 caracteres')
+  .max(128)
+  .regex(/[A-Za-z]/, 'Debe incluir letras')
+  .regex(/\d/, 'Debe incluir números');
+const phone = z.string().trim().regex(/^\+?[0-9\s-]{8,15}$/, 'Teléfono inválido');
+
+const matchingPasswords = (schema, field) =>
+  schema.refine((d) => d[field] === d.confirmPassword, { message: 'Las contraseñas no coinciden', path: ['confirmPassword'] });
+
 export const registerSchema = z.object({
   name: personName,
-  email: z.string().trim().toLowerCase().email('Correo inválido').max(120),
-  password: z
-    .string()
-    .min(8, 'Mínimo 8 caracteres')
-    .max(128)
-    .regex(/[A-Za-z]/, 'Debe incluir letras')
-    .regex(/\d/, 'Debe incluir números'),
+  email,
+  password: newPassword,
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar para continuar' }) }),
 });
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = matchingPasswords(z.object({ password: newPassword, confirmPassword: z.string() }), 'password');
+
+export const profileSchema = z.object({ name: personName, phone: phone.or(z.literal('')) });
+
+export const changePasswordSchema = matchingPasswords(
+  z.object({ currentPassword: z.string().min(1, 'Requerido'), newPassword, confirmPassword: z.string() }),
+  'newPassword'
+);
 
 export const buyerSchema = z.object({
   fullName: personName,
   nationalId: z.string().trim().regex(/^[0-9A-Za-z-]{5,20}$/, 'Cédula inválida'),
-  phone: z.string().trim().regex(/^\+?[0-9\s-]{8,15}$/, 'Teléfono inválido'),
-  email: z.string().trim().toLowerCase().email('Correo inválido').max(120),
+  phone,
+  email,
 });
 
 /** Devuelve { data, errors } con el primer error por campo. */

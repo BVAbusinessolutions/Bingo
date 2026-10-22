@@ -5,14 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#0e4a8e" />
+    <meta name="description" content="Bingo benéfico en línea de la Asociación Infantil Hogar Sol. Compra tus cartones y juega en vivo." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
     <title>Bingo Benéfico · Asociación Infantil Hogar Sol</title>
     <script>
-      // Aplica el tema antes de pintar para evitar el destello blanco en modo noche.
+      // Aplica el tema y el tamaño de letra antes de pintar para evitar el destello blanco en modo noche.
       try {
         var t = localStorage.getItem('hs-theme');
         if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
         }
+        var s = localStorage.getItem('hs-text-size');
+        if (s === 'large' || s === 'xlarge') document.documentElement.dataset.textSize = s;
       } catch (e) {}
     </script>
   </head>

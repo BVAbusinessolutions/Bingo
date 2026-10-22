@@ -1,0 +1,71 @@
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { ROLES } from '../constants/roles';
+import PageLoader from '../components/ui/PageLoader';
+import { PATHS } from './paths';
+
+/*
+ * Seguridad de navegación del frontend.
+ * Todo esto es UX: oculta pantallas a quien no corresponde. La autorización real
+ * SIEMPRE la valida el backend (server/src/middleware/auth.js) en cada petición.
+ */
+
+const { ADMIN, CLIENTE } = ROLES;
+
+/** Grupos de roles por zona de la app. */
+export const ACCESS = Object.freeze({
+  client: [CLIENTE, ADMIN],
+  admin: [ADMIN],
+});
+
+/** Pantalla de inicio de cada rol después de autenticarse. */
+export const homeFor = (role) => (role === ADMIN ? PATHS.admin : PATHS.live);
+
+/**
+ * Evita redirecciones abiertas: solo acepta rutas internas ("/algo"),
+ * nunca "//dominio.com", "/\dominio.com" ni URLs absolutas.
+ */
+export const safeRedirect = (from, fallback) => {
+  const target = typeof from === 'string' ? from : from?.pathname;
+  if (typeof target !== 'string' || !target.startsWith('/') || /^\/[/\\]/.test(target)) return fallback;
+  return `${target}${from?.search ?? ''}`;
+};
+
+/**
+ * Requiere sesión y, opcionalmente, uno de los roles indicados:
+ *   <Route element={<PrivateRoute roles={ACCESS.admin} />}> ... </Route>
+ */
+export function PrivateRoute({ roles }) {
+  const { status, role } = useAuth();
+  const location = useLocation();
+
+  if (status === 'loading') return <PageLoader fullScreen />;
+
+  if (status !== 'authenticated') {
+    return <Navigate to={PATHS.login} replace state={{ from: location }} />;
+  }
+
+  if (roles?.length && !roles.includes(role)) {
+    return <Navigate to={PATHS.unauthorized} replace />;
+  }
+
+  return <Outlet />;
+}
+
+/**
+ * Solo para invitados (login, registro): si ya hay sesión, envía al destino pendiente
+ * o a la pantalla indicada por `fallback(role)`. Usa la misma regla que las páginas
+ * para que ambas lleguen siempre al mismo lugar.
+ */
+export function PublicOnlyRoute({ fallback = homeFor }) {
+  const { status, role } = useAuth();
+  const location = useLocation();
+
+  if (status === 'loading') return <PageLoader fullScreen />;
+
+  if (status === 'authenticated') {
+    return <Navigate to={safeRedirect(location.state?.from, fallback(role))} replace />;
+  }
+
+  return <Outlet />;
+}

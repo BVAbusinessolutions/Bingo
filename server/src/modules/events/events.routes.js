@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../../db.js';
 import { authenticate } from '../../middleware/auth.js';
 import { releaseExpiredReservations } from '../reservations/reservations.service.js';
+import { publicWinnerName } from '../claims/claims.service.js';
 
 const router = Router();
 
@@ -49,6 +50,31 @@ router.get('/', (req, res) => {
       .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
       .map(publicEvent)
   );
+});
+
+/** Resultados públicos: eventos en vivo o finalizados con sus ganadores confirmados. */
+router.get('/results', (req, res) => {
+  const results = [...db.events.values()]
+    .filter((e) => e.status === 'LIVE' || e.status === 'FINISHED')
+    .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))
+    .map((e) => ({
+      id: e.id,
+      name: e.name,
+      description: e.description,
+      pattern: e.pattern,
+      startsAt: e.startsAt,
+      status: e.status,
+      calledCount: db.draws.get(e.id)?.length ?? 0,
+      winners: [...db.claims.values()]
+        .filter((c) => c.eventId === e.id && c.status === 'CONFIRMED')
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .map((c) => ({
+          name: publicWinnerName(db.users.get(c.userId)?.name),
+          serial: db.cards.get(c.cardId)?.serial,
+          calledCount: c.calledCount,
+        })),
+    }));
+  res.json(results);
 });
 
 router.get('/:eventId/cards/mine', authenticate, (req, res) => {

@@ -1,0 +1,106 @@
+/* Estilos globales y utilidades base. */
+
+/* Tarjeta base: sombra suave de día, borde amarillo cálido iluminado de noche. */
+@utility surface {
+  background-color: var(--card);
+  border-radius: 1rem;
+  box-shadow: var(--card-glow);
+}
+
+/* Contenedor de página: mismo ancho y margen lateral en toda la app. */
+@utility container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+}
+
+/*
+ * Tamaño de letra elegible por la persona (A, A+, A++). Todo usa rem, así que
+ * crecen a la vez textos, botones y cartones. Base 17 px: más legible que 16 px.
+ */
+html {
+  font-size: 106.25%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-padding-top: 5rem;
+}
+html[data-text-size='large'] {
+  font-size: 118.75%;
+}
+html[data-text-size='xlarge'] {
+  font-size: 131.25%;
+}
+
+body {
+  background-color: var(--page);
+  color: var(--fg);
+  font-family: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sol-gold);
+  outline-offset: 2px;
+}
+
+/* Enlace "Saltar al contenido": invisible hasta que se navega con teclado. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  border-radius: 0.75rem;
+  background: var(--color-sol-gold);
+  color: var(--color-sol-blue);
+  font-weight: 800;
+  padding: 0.75rem 1rem;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Impresión de cartones: solo se imprime el contenido marcado, en blanco y con colores reales. */
+@media print {
+  html {
+    font-size: 100%;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    animation: none !important;
+  }
+  .print-cards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .print-cards > * {
+    break-inside: avoid;
+  }
+}

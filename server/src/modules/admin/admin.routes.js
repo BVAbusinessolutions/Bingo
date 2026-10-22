@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import path from 'node:path';
 import { z } from 'zod';
-import { db, generateCards, createEvent, UPLOAD_DIR } from '../../db.js';
+import { db, generateCards, createEvent } from '../../db.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/security.js';
 import { cardsOf, publicEvent } from '../events/events.routes.js';
@@ -10,7 +9,9 @@ import {
   rejectReservation,
   releaseExpiredReservations,
   reservationView,
+  sendProofFile,
 } from '../reservations/reservations.service.js';
+import { adminClaimView, decideClaim } from '../claims/claims.service.js';
 
 const router = Router();
 router.use(authenticate, authorize('ADMIN'));
@@ -117,13 +118,7 @@ router.get('/reservations', (req, res) => {
   );
 });
 
-router.get('/reservations/:id/proof', (req, res) => {
-  const r = db.reservations.get(req.params.id);
-  if (!r?.proof) return res.status(404).json({ error: 'NOT_FOUND' });
-  res.type(r.proof.mimetype);
-  res.set('Content-Disposition', 'inline');
-  res.sendFile(path.join(UPLOAD_DIR, r.proof.filename));
-});
+router.get('/reservations/:id/proof', (req, res) => sendProofFile(res, db.reservations.get(req.params.id)));
 
 router.post('/reservations/:id/decision', validateBody(z.object({ approve: z.boolean() })), (req, res) => {
   const r = db.reservations.get(req.params.id);
@@ -131,6 +126,23 @@ router.post('/reservations/:id/decision', validateBody(z.object({ approve: z.boo
   if (req.body.approve) approveReservation(r);
   else rejectReservation(r);
   res.json(reservationView(r));
+});
+
+// ---------- Reclamos de bingo ----------
+router.get('/claims', (req, res) => {
+  const eventId = String(req.query.eventId ?? '');
+  res.json(
+    [...db.claims.values()]
+      .filter((c) => !eventId || c.eventId === eventId)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map(adminClaimView)
+  );
+});
+
+router.post('/claims/:id/decision', validateBody(z.object({ approve: z.boolean() })), (req, res) => {
+  const claim = db.claims.get(req.params.id);
+  if (!claim || claim.status !== 'PENDING') return res.status(409).json({ error: 'NOT_DECIDABLE' });
+  res.json(decideClaim(claim, req.body.approve));
 });
 
 export default router;

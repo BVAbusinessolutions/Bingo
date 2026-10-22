@@ -13,18 +13,21 @@ export const UPLOAD_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.ur
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 export const db = {
-  users: new Map(), // id -> { id, name, email, role, passwordHash }
+  users: new Map(), // id -> { id, name, email, phone, role, passwordHash, emailVerified }
   refreshTokens: new Map(), // jti -> { userId, expiresAt }
   events: new Map(), // id -> { id, name, description, pattern, price, startsAt, status, stream }
   cards: new Map(), // id -> { id, eventId, serial, grid, status, ownerId, reservationId }
   reservations: new Map(), // id -> ver modules/reservations
   draws: new Map(), // eventId -> number[]
+  claims: new Map(), // id -> { id, eventId, cardId, userId, status, calledCount, createdAt, decidedAt }
+  passwordResets: new Map(), // sha256(token) -> { userId, expiresAt }
+  emailVerifications: new Map(), // sha256(token) -> { userId, expiresAt }
   outbox: [], // correos enviados (simulados)
 };
 
-export async function createUser({ name, email, password, role = ROLES.CLIENTE }) {
+export async function createUser({ name, email, password, role = ROLES.CLIENTE, emailVerified = false }) {
   const id = randomUUID();
-  const user = { id, name, email, role, passwordHash: await bcrypt.hash(password, 12) };
+  const user = { id, name, email, phone: null, role, emailVerified, passwordHash: await bcrypt.hash(password, 12) };
   db.users.set(id, user);
   return user;
 }
@@ -62,10 +65,10 @@ export function generateCards(eventId, count) {
 }
 
 export async function seed() {
-  await createUser({ name: 'Administración Hogar Sol', email: 'admin@hogarsol.org', password: 'Admin123!', role: ROLES.ADMIN });
-  const cliente = await createUser({ name: 'Cliente Demo', email: 'cliente@hogarsol.org', password: 'Cliente123!' });
+  await createUser({ name: 'Administración Hogar Sol', email: 'admin@hogarsol.org', password: 'Admin123!', role: ROLES.ADMIN, emailVerified: true });
+  const cliente = await createUser({ name: 'Cliente Demo', email: 'cliente@hogarsol.org', password: 'Cliente123!', emailVerified: true });
   // Cuenta de prueba anterior (se mantiene para quien ya la usaba).
-  const jugador = await createUser({ name: 'Jugador Demo', email: 'jugador@hogarsol.org', password: 'Jugador123!' });
+  const jugador = await createUser({ name: 'Jugador Demo', email: 'jugador@hogarsol.org', password: 'Jugador123!', emailVerified: true });
 
   const event = createEvent({
     id: 'evt-2026-hogar-sol',

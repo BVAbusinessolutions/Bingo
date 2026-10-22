@@ -5,11 +5,9 @@
   "description": "Bingo Benéfico Fundación Hogar Sol (cliente + servidor)",
   "scripts": {
     "setup": "npm install && npm install --prefix server && npm install --prefix client && node scripts/ensure-env.mjs",
-    "dev": "node scripts/ensure-env.mjs && concurrently -k -n API,WEB -c red,yellow \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev": "npm run dev --prefix client",
+    "server": "node scripts/ensure-env.mjs && npm run dev --prefix server",
     "build": "npm run build --prefix client",
     "start": "npm start --prefix server"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.0"
   }
 }

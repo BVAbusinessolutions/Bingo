@@ -14,7 +14,9 @@ import {
   RESERVATION_TTL_MS,
   rejectReservation,
   releaseExpiredReservations,
+  reservationDetailView,
   reservationView,
+  sendProofFile,
 } from './reservations.service.js';
 
 const router = Router();
@@ -31,6 +33,7 @@ const createSchema = z
 // Paso 1: aparta los cartones e inicia el temporizador de pago.
 router.post('/', authenticate, reservationLimiter, validateBody(createSchema), (req, res) => {
   releaseExpiredReservations();
+  if (!db.users.get(req.user.id)?.emailVerified) return res.status(403).json({ error: 'EMAIL_NOT_VERIFIED' });
   const { eventId, quantity, serials } = req.body;
   const event = db.events.get(eventId);
   if (!event || event.status !== 'SCHEDULED') return res.status(409).json({ error: 'EVENT_NOT_ON_SALE' });
@@ -90,7 +93,9 @@ function ownReservation(req, res, next) {
 const requirePending = (req, res, next) =>
   req.reservation.status === 'PENDING' ? next() : res.status(409).json({ error: 'RESERVATION_NOT_PENDING' });
 
-router.get('/:id', authenticate, ownReservation, (req, res) => res.json(reservationView(req.reservation)));
+router.get('/:id', authenticate, ownReservation, (req, res) => res.json(reservationDetailView(req.reservation)));
+
+router.get('/:id/proof', authenticate, ownReservation, (req, res) => sendProofFile(res, req.reservation));
 
 router.delete('/:id', authenticate, ownReservation, requirePending, (req, res) => {
   rejectReservation(req.reservation, 'CANCELLED');
