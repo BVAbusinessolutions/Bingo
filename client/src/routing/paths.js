@@ -20,7 +20,9 @@ export const PATHS = Object.freeze({
   live: '/live',
 
   admin: '/admin',
-  adminPayments: 'pagos',
+  adminPurchases: 'compras',
+  adminPurchaseDetail: 'compras/:id',
+  adminWinners: 'ganadores',
   adminDraw: 'sorteo',
   adminEvents: 'eventos',
   adminCards: 'cartones',

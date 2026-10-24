@@ -8,6 +8,7 @@ import {
   approveReservation,
   rejectReservation,
   releaseExpiredReservations,
+  reservationDetailView,
   reservationView,
   sendProofFile,
 } from '../reservations/reservations.service.js';
@@ -118,11 +119,25 @@ router.get('/reservations', (req, res) => {
   );
 });
 
+/** Detalle de una compra: datos del formulario, cuenta que la hizo, cartones y comprobante. */
+router.get('/reservations/:id', (req, res) => {
+  releaseExpiredReservations();
+  const r = db.reservations.get(req.params.id);
+  if (!r) return res.status(404).json({ error: 'NOT_FOUND' });
+  const account = db.users.get(r.userId);
+  res.json({
+    ...reservationDetailView(r),
+    account: account ? { name: account.name, email: account.email, phone: account.phone, emailVerified: account.emailVerified } : null,
+  });
+});
+
 router.get('/reservations/:id/proof', (req, res) => sendProofFile(res, db.reservations.get(req.params.id)));
 
+// Solo se decide sobre compras con comprobante enviado (y que no hayan vencido).
 router.post('/reservations/:id/decision', validateBody(z.object({ approve: z.boolean() })), (req, res) => {
+  releaseExpiredReservations();
   const r = db.reservations.get(req.params.id);
-  if (!r || !['PENDING', 'PROOF_SUBMITTED'].includes(r.status)) return res.status(409).json({ error: 'NOT_DECIDABLE' });
+  if (!r || r.status !== 'PROOF_SUBMITTED') return res.status(409).json({ error: 'NOT_DECIDABLE' });
   if (req.body.approve) approveReservation(r);
   else rejectReservation(r);
   res.json(reservationView(r));

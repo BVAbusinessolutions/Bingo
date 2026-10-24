@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       <section className="surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-bold text-fg">Pagos por verificar</h2>
-          <Link to="pagos" className="flex items-center gap-1 text-sm font-semibold text-sol-blue hover:underline dark:text-sol-gold">
+          <Link to="compras" className="flex items-center gap-1 text-sm font-semibold text-sol-blue hover:underline dark:text-sol-gold">
             Ver todos <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -77,7 +77,8 @@ export default function AdminDashboard() {
         ) : (
           <ul className="divide-y divide-line">
             {queue.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={r.id}>
+                <Link to={`compras/${r.id}`} className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 hover:bg-muted">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-fg">{r.buyer?.fullName}</p>
                   <p className="truncate text-xs text-fg-muted">
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
                   <span className="font-black tabular-nums text-fg">{formatCRC(r.total)}</span>
                   <StatusBadge status={r.status} />
                 </div>
+                </Link>
               </li>
             ))}
           </ul>

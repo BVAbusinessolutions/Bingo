@@ -5,6 +5,8 @@ import { db } from '../../db.js';
 import { authenticate } from '../../middleware/auth.js';
 import { claimLimiter, validateBody } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
+import { env } from '../../config/env.js';
+import { notifyAdminsByMail } from '../../utils/mailer.js';
 import { isWinningCard } from '../../utils/patterns.js';
 import { adminClaimView, claimView } from './claims.service.js';
 
@@ -56,6 +58,12 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
   };
   db.claims.set(claim.id, claim);
   notifyAdmins('claim:new', adminClaimView(claim));
+  notifyAdminsByMail({
+    subject: `🏆 ¡Bingo reclamado! Cartón #${card.serial}`,
+    text: `Un jugador reclamó bingo en ${event.name} con el cartón #${card.serial} tras ${called.length} balotas.
+El sistema ya verificó el patrón; confirma el premio desde el panel.`,
+    action: { label: 'Revisar reclamo', url: `${env.clientOrigin}/admin/ganadores` },
+  });
   res.status(201).json(claimView(claim));
 });
 

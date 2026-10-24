@@ -7,6 +7,8 @@ import { sendMail } from '../../utils/mailer.js';
 import { formatCRC } from '../../utils/format.js';
 
 export const RESERVATION_TTL_MS = env.reservationTtlMin * 60_000;
+/** Texto que el cliente debe escribir en el detalle del SINPE o la transferencia. */
+export const PAYMENT_DETAIL_TEXT = 'BINGO';
 
 const releaseCards = (r) =>
   r.cardIds.forEach((id) => Object.assign(db.cards.get(id), { status: 'AVAILABLE', reservationId: null, ownerId: null }));
@@ -34,8 +36,10 @@ export function approveReservation(r) {
     subject: `✅ Pago confirmado · ${event.name}`,
     text:
       `Hola ${r.buyer.fullName}, confirmamos tu pago de ${formatCRC(r.total)}.\n` +
-      `Tus cartones: ${serialsOf(r).map((s) => `#${s}`).join(', ')}.\n` +
-      `Los verás en la sección "En vivo" al iniciar sesión. ¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
+      `Tus cartones ya están disponibles: ${serialsOf(r).map((s) => `#${s}`).join(', ')}.\n` +
+      `Entra a la página con tu cuenta para verlos, imprimirlos y jugar en vivo el día del sorteo.\n` +
+      `¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
+    action: { label: 'Ver mis cartones', url: `${env.clientOrigin}/mis-compras/${r.id}` },
   });
   notifyAdmins('reservation:updated', reservationView(r));
   notifyUser(r.userId, 'reservation:updated', reservationView(r));
@@ -89,6 +93,8 @@ export function reservationView(r) {
     reference: r.proof?.reference ?? null,
     method: r.proof?.method ?? null,
     hasProof: Boolean(r.proof?.filename),
-    payment: env.payment,
+    proofUploadedAt: r.proof?.uploadedAt ? new Date(r.proof.uploadedAt).toISOString() : null,
+    decidedAt: r.decidedAt ? new Date(r.decidedAt).toISOString() : null,
+    payment: { ...env.payment, detail: PAYMENT_DETAIL_TEXT },
   };
 }

@@ -7,6 +7,7 @@ const VARIANTS = {
     'bg-sol-blue text-white hover:bg-sol-blue-light dark:bg-sol-gold dark:text-sol-blue dark:hover:bg-sol-gold-dark',
   gold: 'bg-sol-gold text-sol-blue shadow-md hover:bg-sol-gold-dark',
   danger: 'bg-sol-red text-white hover:bg-sol-red-dark',
+  success: 'bg-emerald-600 text-white hover:bg-emerald-700',
   outline: 'border-2 border-line bg-card text-fg hover:border-sol-blue dark:hover:border-sol-gold',
   ghost: 'text-fg hover:bg-muted',
   light: 'border-2 border-white/80 text-white hover:bg-white/10',

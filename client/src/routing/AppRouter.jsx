@@ -27,7 +27,9 @@ const LivePage = lazy(() => import('../pages/client/LivePage'));
 
 const AdminLayout = lazy(() => import('../components/layout/AdminLayout'));
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
-const AdminPaymentsPage = lazy(() => import('../pages/admin/AdminPaymentsPage'));
+const AdminPurchasesPage = lazy(() => import('../pages/admin/AdminPurchasesPage'));
+const AdminPurchaseDetailPage = lazy(() => import('../pages/admin/AdminPurchaseDetailPage'));
+const AdminWinnersPage = lazy(() => import('../pages/admin/AdminWinnersPage'));
 const AdminDrawPage = lazy(() => import('../pages/admin/AdminDrawPage'));
 const AdminEventsPage = lazy(() => import('../pages/admin/AdminEventsPage'));
 const AdminCardsPage = lazy(() => import('../pages/admin/AdminCardsPage'));
@@ -68,7 +70,10 @@ export default function AppRouter() {
         <Route element={<PrivateRoute roles={ACCESS.admin} />}>
           <Route path={PATHS.admin} element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
-            <Route path={PATHS.adminPayments} element={<AdminPaymentsPage />} />
+            <Route path={PATHS.adminPurchases} element={<AdminPurchasesPage />} />
+            <Route path={PATHS.adminPurchaseDetail} element={<AdminPurchaseDetailPage />} />
+            <Route path={PATHS.adminWinners} element={<AdminWinnersPage />} />
+            <Route path="pagos" element={<Navigate to="/admin/compras" replace />} />
             <Route path={PATHS.adminDraw} element={<AdminDrawPage />} />
             <Route path={PATHS.adminEvents} element={<AdminEventsPage />} />
             <Route path={PATHS.adminCards} element={<AdminCardsPage />} />

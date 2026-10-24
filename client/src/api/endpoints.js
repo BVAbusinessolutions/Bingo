@@ -61,6 +61,9 @@ export const adminApi = {
   cards: (eventId, params) => http.get(`/admin/events/${eventId}/cards`, { params }).then(data),
   generateCards: (eventId, count) => http.post(`/admin/events/${eventId}/cards/generate`, { count }).then(data),
   reservations: (status) => http.get('/admin/reservations', { params: { status } }).then(data),
+  reservation: (id) => http.get(`/admin/reservations/${id}`).then(data),
   proofBlob: (id) => http.get(`/admin/reservations/${id}/proof`, { responseType: 'blob' }).then(data),
   decide: (id, approve) => http.post(`/admin/reservations/${id}/decision`, { approve }).then(data),
+  claims: (eventId) => http.get('/admin/claims', { params: { eventId } }).then(data),
+  decideClaim: (id, approve) => http.post(`/admin/claims/${id}/decision`, { approve }).then(data),
 };

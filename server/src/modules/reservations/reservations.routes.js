@@ -8,9 +8,12 @@ import { db, UPLOAD_DIR } from '../../db.js';
 import { authenticate } from '../../middleware/auth.js';
 import { reservationLimiter, validateBody } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
-import { sendMail } from '../../utils/mailer.js';
+import { env } from '../../config/env.js';
+import { notifyAdminsByMail, sendMail } from '../../utils/mailer.js';
+import { formatCRC } from '../../utils/format.js';
 import { cardsOf } from '../events/events.routes.js';
 import {
+  PAYMENT_DETAIL_TEXT,
   RESERVATION_TTL_MS,
   rejectReservation,
   releaseExpiredReservations,
@@ -122,12 +125,8 @@ const confirmSchema = z.object({
   phone: z.string().trim().regex(/^\+?[0-9\s-]{8,15}$/),
   email: z.string().trim().toLowerCase().email().max(120),
   method: z.enum(['SINPE', 'TRANSFER']),
-  reference: z
-    .string()
-    .trim()
-    .regex(/^[0-9A-Za-z-]{4,30}$/)
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
+  // Número de comprobante obligatorio: el admin lo compara con el de la foto y con el banco.
+  reference: z.string().trim().regex(/^[0-9A-Za-z-]{4,30}$/),
 });
 
 router.post(
@@ -140,30 +139,43 @@ router.post(
   async (req, res) => {
     const { reference, method, ...buyer } = req.body;
     const file = req.file;
-    if (!reference && !file) return res.status(400).json({ error: 'PROOF_REQUIRED' });
+    if (!file) return res.status(400).json({ error: 'PROOF_REQUIRED' });
 
-    let filename;
-    if (file) {
-      const type = ALLOWED[file.mimetype];
-      // El mimetype lo declara el cliente: se verifica también la firma real del archivo.
-      if (!type || !type.magic.every((b, i) => file.buffer[i] === b)) return res.status(400).json({ error: 'INVALID_FILE' });
-      // Nombre aleatorio: nunca se usa el nombre que envió el usuario (evita path traversal).
-      filename = randomUUID() + type.ext;
-      await fs.writeFile(path.join(UPLOAD_DIR, filename), file.buffer);
-    }
+    const type = ALLOWED[file.mimetype];
+    // El mimetype lo declara el cliente: se verifica también la firma real del archivo.
+    if (!type || !type.magic.every((b, i) => file.buffer[i] === b)) return res.status(400).json({ error: 'INVALID_FILE' });
+    // Nombre aleatorio: nunca se usa el nombre que envió el usuario (evita path traversal).
+    const filename = randomUUID() + type.ext;
+    await fs.writeFile(path.join(UPLOAD_DIR, filename), file.buffer);
 
     const r = req.reservation;
     if (r.status !== 'PENDING') return res.status(409).json({ error: 'RESERVATION_NOT_PENDING' }); // pudo vencer durante la subida
     r.buyer = buyer;
-    r.proof = { method, reference: reference ?? null, filename, mimetype: file?.mimetype, uploadedAt: Date.now() };
+    r.proof = { method, reference, filename, mimetype: file.mimetype, uploadedAt: Date.now() };
     r.status = 'PROOF_SUBMITTED';
 
     const view = reservationView(r);
     notifyAdmins('reservation:proof', view);
+    const serials = view.serials.map((s) => `#${s}`).join(', ');
     sendMail({
       to: buyer.email,
       subject: 'Recibimos tu comprobante · Bingo Hogar Sol',
-      text: `Hola ${buyer.fullName}, recibimos tu comprobante. Tus cartones (${view.serials.map((s) => `#${s}`).join(', ')}) están en verificación; te avisaremos por este medio.`,
+      text: `Hola ${buyer.fullName}, recibimos tu comprobante. Tus cartones (${serials}) están en verificación; te avisaremos por este medio cuando se apruebe el pago.`,
+    });
+    notifyAdminsByMail({
+      subject: `🛒 Nueva compra por verificar · ${formatCRC(view.total)}`,
+      text: [
+        `${buyer.fullName} envió un comprobante de pago para ${view.eventName}.`,
+        '',
+        `Monto: ${formatCRC(view.total)}`,
+        `Cartones (${view.serials.length}): ${serials}`,
+        `Método: ${method === 'SINPE' ? 'SINPE Móvil' : 'Transferencia'} · N.º de comprobante: ${reference}`,
+        `Cédula: ${buyer.nationalId} · Teléfono: ${buyer.phone}`,
+        `Correo: ${buyer.email}`,
+        '',
+        `Recuerda verificar que el detalle de la transferencia diga ${PAYMENT_DETAIL_TEXT}.`,
+      ].join('\n'),
+      action: { label: 'Revisar la compra', url: `${env.clientOrigin}/admin/compras/${r.id}` },
     });
     res.json(view);
   }

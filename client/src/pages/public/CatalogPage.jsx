@@ -6,7 +6,9 @@ import { useCurrentEvent } from '../../hooks/useCurrentEvent';
 import { eventsApi, reservationsApi } from '../../api/endpoints';
 import CardSelector from '../../components/cards/CardSelector';
 import BingoCard from '../../components/bingo/BingoCard';
-import PaymentModal from '../../components/payments/PaymentModal';
+import CheckoutSteps from '../../components/checkout/CheckoutSteps';
+import Alert from '../../components/ui/Alert';
+import { PATHS, toPath } from '../../routing/paths';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
 
 const MAX = 20;
@@ -32,7 +34,6 @@ export default function CatalogPage() {
   const [clockOffset, setClockOffset] = useState(0); // hora servidor - hora local
   const [now, setNow] = useState(Date.now());
   const [selected, setSelected] = useState(loadSelection);
-  const [reservation, setReservation] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -81,16 +82,15 @@ export default function CatalogPage() {
 
   const reserve = async () => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: location } });
+      navigate(PATHS.login, { state: { from: location } });
       return;
     }
     setBusy(true);
     setError('');
     try {
       const r = await reservationsApi.create({ eventId: event.id, serials: selected });
-      setReservation(r);
       setSelected([]);
-      loadCatalog();
+      navigate(toPath(PATHS.checkout, { id: r.id }));
     } catch (err) {
       setError(errorMessage(err));
       loadCatalog();
@@ -98,11 +98,6 @@ export default function CatalogPage() {
       setBusy(false);
     }
   };
-
-  const closeModal = useCallback(() => {
-    setReservation(null);
-    loadCatalog();
-  }, [loadCatalog]);
 
   if (loading) return <Loader2 className="mx-auto mt-20 h-8 w-8 animate-spin text-sol-blue dark:text-sol-gold" />;
   if (!event || event.status !== 'SCHEDULED') {
@@ -112,19 +107,16 @@ export default function CatalogPage() {
   const total = selected.length * event.price;
 
   return (
-    <main className="mx-auto max-w-7xl space-y-5 px-4 pb-32 pt-6">
+    <main className="container-page space-y-5 pb-32 pt-6">
+      <CheckoutSteps current={1} />
       <div>
-        <h1 className="text-2xl font-black text-brand sm:text-3xl">Elige tus cartones</h1>
-        <p className="text-fg-muted">
+        <h1 className="text-3xl font-black text-brand sm:text-4xl">Elige tus cartones</h1>
+        <p className="text-lg text-fg-muted">
           {event.name} · {formatDate(event.startsAt)} · <b className="text-fg">{formatCRC(event.price)}</b> por cartón
         </p>
       </div>
 
-      {error && (
-        <p role="alert" className="rounded-xl bg-sol-red/10 p-3 text-sol-red">
-          {error}
-        </p>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {cards ? (
@@ -176,12 +168,11 @@ export default function CatalogPage() {
             className="flex items-center gap-2 rounded-xl bg-sol-gold px-5 py-3.5 font-black text-sol-blue shadow-lg hover:bg-sol-gold-dark disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Ticket className="h-5 w-5" />}
-            {isAuthenticated ? 'Reservar y Pagar' : 'Entrar para reservar'}
+            {isAuthenticated ? 'Continuar al pago' : 'Entrar para continuar'}
           </button>
         </div>
       </div>
 
-      {reservation && <PaymentModal reservation={reservation} onClose={closeModal} onChange={setReservation} />}
     </main>
   );
 }

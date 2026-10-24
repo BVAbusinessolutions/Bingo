@@ -30,14 +30,14 @@ administrador con la contraseña de prueba `Admin123!`.
 ## 1. Seguridad · bloqueantes 🔴
 
 - [ ] **Usuarios demo en producción.** `seed()` siempre crea `admin@hogarsol.org / Admin123!` y otros usuarios con contraseña conocida (`server/src/db.js:64`, `server/src/index.js:19`). Ejecutar el seed solo si `NODE_ENV !== 'production'` y crear el admin real con un script aparte.
-- [ ] **Bug al aprobar un pago sin comprobante.** El panel deja aprobar reservas `PENDING`, pero `approveReservation` usa `r.buyer.email` y `buyer` es `null` → los cartones quedan como VENDIDOS, el servidor responde 500 y no se envía correo (`server/src/modules/admin/admin.routes.js` ruta `/decision`, `reservations.service.js` `approveReservation`). Permitir aprobar solo `PROOF_SUBMITTED` y ocultar el botón en `AdminPaymentsPage`.
-- [ ] **Aprobar reservas ya vencidas.** La ruta `/decision` no llama a `releaseExpiredReservations()` antes de decidir; durante hasta 30 s se puede aprobar una reserva vencida cuyos cartones ya deberían estar libres.
+- [x] ~~**Bug al aprobar un pago sin comprobante.**~~ Resuelto el 22/10/2026: solo se aprueban compras con comprobante (`PROOF_SUBMITTED`). El panel deja aprobar reservas `PENDING`, pero `approveReservation` usa `r.buyer.email` y `buyer` es `null` → los cartones quedan como VENDIDOS, el servidor responde 500 y no se envía correo (`server/src/modules/admin/admin.routes.js` ruta `/decision`, `reservations.service.js` `approveReservation`). Permitir aprobar solo `PROOF_SUBMITTED` y ocultar el botón en `AdminPaymentsPage`.
+- [x] ~~**Aprobar reservas ya vencidas.**~~ Resuelto el 22/10/2026: `/decision` libera las vencidas antes de decidir. La ruta `/decision` no llama a `releaseExpiredReservations()` antes de decidir; durante hasta 30 s se puede aprobar una reserva vencida cuyos cartones ya deberían estar libres.
 - [x] **El ganador solo se calcula en el navegador.** Resuelto el 22/10/2026: `POST /api/events/:id/claims` valida en el servidor dueño del cartón, sorteo en vivo y patrón con las balotas cantadas (`server/src/modules/claims/`).
 
 ## 2. Seguridad · importante 🟠
 
 - [ ] Validar al iniciar que `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET` tengan ≥ 32 caracteres, sean distintos y no sean `cambia-esto` (`server/src/config/env.js`).
-- [ ] Actualizar `multer` a 2.x: la rama 1.x tiene avisos de DoS publicados. Correr `npm audit` en `client/` y `server/` y revisar resultados.
+- [ ] Actualizar `multer` a 2.x: la rama 1.x tiene avisos de DoS publicados. Correr `npm audit` en `client/` y `server/` y revisar resultados. (`nodemailer` ya se instaló en la versión corregida 10.2.1; `npm audit` del servidor: 0 vulnerabilidades al 22/10/2026.)
 - [x] Comprobantes servidos con `Content-Security-Policy: sandbox` (`sendProofFile` en `reservations.service.js`).
 - [x] `/admin/reservations/:id/proof` ya responde 404 (no 500) si la reserva solo tiene número de referencia.
 - [ ] No permitir cantar balotas en eventos `FINISHED` o `CANCELLED`; hoy `draw/call` además los cambia a `LIVE`.
@@ -56,7 +56,9 @@ administrador con la contraseña de prueba `Admin123!`.
 - [ ] **Base de datos real** (PostgreSQL recomendado). Hoy todo vive en memoria: un reinicio borra usuarios, pagos, cartones vendidos y sesiones.
 - [ ] Reservas atómicas en BD: `UPDATE ... WHERE status = 'AVAILABLE'` dentro de una transacción.
 - [ ] Liberación de reservas vencidas como tarea programada sobre la BD.
-- [ ] Correo real (SMTP, Resend o SendGrid) en lugar de `utils/mailer.js` simulado.
+- [x] Envío de correo real por SMTP con `nodemailer` (plantilla HTML con botón). Sin `SMTP_HOST` sigue mostrándose en consola.
+- [ ] 🔴 **Configurar el SMTP** en `server/.env` (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Con Gmail usar una *contraseña de aplicación*. Hasta entonces los correos solo salen en la consola del servidor.
+- [ ] Cambiar `ADMIN_NOTIFY_EMAILS` (hoy `bryanbs2595@gmail.com`, de pruebas) por el correo real de la Asociación.
 - [ ] Almacenamiento de comprobantes fuera del servidor (bucket privado) con respaldo.
 - [ ] Despliegue con HTTPS, `NODE_ENV=production` (activa la cookie `secure`) y servir `client/dist`.
 - [ ] Respaldos automáticos de la base de datos.
@@ -78,13 +80,21 @@ administrador con la contraseña de prueba `Admin123!`.
 - [x] Resultados y ganadores (`/resultados`), con nombre abreviado ("María G.") por privacidad.
 - [x] Accesibilidad: control de tamaño de letra A / A+ / A++, letra base de 17 px (Nunito), botones de 48 px o más, "Saltar al contenido", etiquetas y errores ligados a cada campo, última balota anunciada a lectores de pantalla, respeto de "reducir movimiento".
 - [ ] 🟢 Prueba con personas reales (adultos mayores y niños) y con lector de pantalla (NVDA / VoiceOver).
-- [ ] 🟢 Pasar el rediseño también al catálogo de cartones y al modal de pago (hoy usan el estilo anterior, que ya es compatible).
+- [x] Compra por pasos estilo cine: **1 Elige tus cartones → 2 Tus datos y pago → 3 Confirmación** (`/cartones` → `/reservas/:id`). El modal de pago se reemplazó por una página completa.
+- [x] Paso 2 con aviso grande y obligatorio: el detalle del SINPE / transferencia debe decir **BINGO** (botón para copiarlo).
+- [x] Número de comprobante **y** foto del comprobante obligatorios (antes bastaba uno de los dos).
+- [ ] 🟢 Rediseñar la cuadrícula del catálogo (selector de cartones) con el mismo estilo nuevo.
 
 ## 5. Interfaz de administración 🛠️
 
-**Ya existe:** dashboard con estadísticas · verificación de pagos con vista del comprobante y avisos en tiempo real · consola de sorteo (cantar/deshacer) · crear eventos · generar y buscar cartones.
+**Ya existía:** dashboard con estadísticas · consola de sorteo (cantar/deshacer) · crear eventos · generar y buscar cartones.
 
-- [ ] 🔴 Panel de **verificación de ganadores**: ver reclamos, comprobar el cartón contra las balotas y confirmar o rechazar. El backend ya está listo: `GET /api/admin/claims`, `POST /api/admin/claims/:id/decision` y avisos `claim:new` por el socket `/admin`.
+- [x] Barra lateral de administración con contadores de pendientes (Panel, Compras, Ganadores, Bingo Master, Eventos, Cartones).
+- [x] **Correo al admin en cada compra** (`ADMIN_NOTIFY_EMAILS`) con los datos del comprador, cartones, monto, n.º de comprobante y enlace directo al detalle. También avisa por correo cada bingo reclamado.
+- [x] **Compras** (`/admin/compras`): filtros por estado, búsqueda por nombre, cédula, comprobante o cartón, y miniatura del comprobante.
+- [x] **Detalle de compra** (`/admin/compras/:id`): foto del comprobante ampliable, n.º de comprobante (copiable), método, monto, datos del formulario, cuenta que compró y cartones.
+- [x] Aprobación con **lista de verificación** (monto, n.º de comprobante, detalle "BINGO", dinero recibido) y diálogo de confirmación. Al aprobar, el cliente recibe un correo con el enlace a sus cartones.
+- [x] **Ganadores** (`/admin/ganadores`): cartón marcado con las balotas cantadas al reclamar, datos de contacto y botones confirmar o rechazar.
 - [ ] 🟠 Editar y cancelar eventos desde la interfaz, con las restricciones del punto 2.
 - [ ] 🟠 Gestión de usuarios: buscar, desactivar y crear otros administradores (sin usar el seed).
 - [ ] 🟠 Bitácora de auditoría visible (quién hizo qué y cuándo).

@@ -1,0 +1,120 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, RefreshCw, Search } from 'lucide-react';
+import { useAdmin } from '../../hooks/useAdmin';
+import { adminApi } from '../../api/endpoints';
+import { ProofThumb } from '../../components/admin/AdminProof';
+import StatusBadge from '../../components/ui/StatusBadge';
+import PageLoader from '../../components/ui/PageLoader';
+import { formatCRC, formatDate } from '../../lib/format';
+
+const FILTERS = [
+  ['PROOF_SUBMITTED', 'Por verificar'],
+  ['APPROVED', 'Aprobadas'],
+  ['PENDING', 'Sin pagar aún'],
+  ['REJECTED', 'Rechazadas'],
+  ['', 'Todas'],
+];
+
+const normalize = (s) =>
+  String(s ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+
+/** Busca por nombre, cédula, teléfono, correo, n.º de comprobante o número de cartón. */
+const matches = (r, q) =>
+  !q ||
+  normalize([r.buyer?.fullName, r.buyer?.nationalId, r.buyer?.phone, r.buyer?.email, r.reference, ...r.serials].join(' ')).includes(q);
+
+export default function AdminPurchasesPage() {
+  const { revision, eventId, event } = useAdmin();
+  const [status, setStatus] = useState('PROOF_SUBMITTED');
+  const [items, setItems] = useState(null);
+  const [query, setQuery] = useState('');
+
+  const load = useCallback(() => adminApi.reservations(status).then(setItems), [status]);
+
+  useEffect(() => {
+    load();
+  }, [load, revision]);
+
+  const q = normalize(query.trim());
+  const visible = useMemo(() => (items ?? []).filter((r) => (!eventId || r.eventId === eventId) && matches(r, q)), [items, eventId, q]);
+
+  return (
+    <section className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-black text-brand">Compras</h1>
+          <p className="text-lg text-fg-muted">{event?.name ?? 'Todas las compras'} · revisa los comprobantes y aprueba los pagos.</p>
+        </div>
+        <button onClick={load} className="surface grid h-12 w-12 place-items-center text-fg" aria-label="Actualizar lista">
+          <RefreshCw className="h-5 w-5" />
+        </button>
+      </header>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
+          {FILTERS.map(([s, label]) => (
+            <button
+              key={s}
+              onClick={() => {
+                setStatus(s);
+                setItems(null);
+              }}
+              aria-pressed={status === s}
+              className={`min-h-11 rounded-full px-4 font-extrabold ${
+                status === s ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'surface text-fg-muted hover:text-fg'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label className="relative lg:ml-auto lg:w-80">
+          <span className="sr-only">Buscar compra</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-subtle" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Nombre, cédula, comprobante o cartón"
+            className="min-h-12 w-full rounded-xl border-2 border-line bg-card pl-10 pr-3 text-fg outline-none focus:border-sol-blue dark:focus:border-sol-gold"
+          />
+        </label>
+      </div>
+
+      {!items ? (
+        <PageLoader />
+      ) : visible.length === 0 ? (
+        <p className="surface p-10 text-center text-lg text-fg-muted">No hay compras en este estado.</p>
+      ) : (
+        <ul className="grid gap-3">
+          {visible.map((r) => (
+            <li key={r.id}>
+              <Link to={r.id} className="surface flex items-center gap-4 p-4 transition hover:ring-2 hover:ring-sol-gold">
+                <ProofThumb reservationId={r.id} hasProof={r.hasProof} />
+                <div className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-black text-fg">{r.buyer?.fullName ?? 'Sin datos todavía'}</p>
+                    <p className="truncate text-fg-muted">{r.buyer ? `Céd. ${r.buyer.nationalId} · ${r.buyer.phone}` : formatDate(r.createdAt)}</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-fg">{r.serials.map((s) => `#${s}`).join(', ')}</p>
+                    <p className="truncate text-fg-muted">{r.reference ? `Comprobante ${r.reference}` : 'Sin comprobante'}</p>
+                  </div>
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+                    <span className="text-xl font-black tabular-nums text-fg">{formatCRC(r.total)}</span>
+                    <StatusBadge status={r.status} />
+                  </div>
+                </div>
+                <ChevronRight className="h-6 w-6 shrink-0 text-fg-subtle" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}

@@ -1,10 +1,60 @@
-// Envío de correos SIMULADO: se imprime en consola y se guarda en db.outbox.
-// En producción reemplazar por nodemailer (SMTP) o un servicio como Resend / SendGrid.
+// Envío de correos. Con SMTP_HOST configurado se envían de verdad (nodemailer); si no, se imprimen
+// en consola (modo desarrollo). En ambos casos se guardan en db.outbox para depurar.
+import nodemailer from 'nodemailer';
 import { db } from '../db.js';
+import { env } from '../config/env.js';
 
-export function sendMail({ to, subject, text }) {
-  const mail = { to, subject, text, sentAt: new Date().toISOString() };
+const transport = env.smtp.host
+  ? nodemailer.createTransport({
+      host: env.smtp.host,
+      port: env.smtp.port,
+      secure: env.smtp.secure,
+      auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.pass } : undefined,
+    })
+  : null;
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+/** Plantilla HTML sencilla con la marca; `text` se escapa, `action` agrega un botón con enlace. */
+function toHtml({ subject, text, action }) {
+  const paragraphs = escapeHtml(text)
+    .split('\n')
+    .map((line) => `<p style="margin:0 0 10px;font-size:16px;line-height:1.5;color:#0f172a">${line || '&nbsp;'}</p>`)
+    .join('');
+  const button = action
+    ? `<p style="margin:24px 0"><a href="${escapeHtml(action.url)}" style="background:#ffc700;color:#0e4a8e;font-weight:800;font-size:17px;padding:14px 22px;border-radius:12px;text-decoration:none;display:inline-block">${escapeHtml(action.label)}</a></p>`
+    : '';
+  return `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:24px">
+<div style="background:#0e4a8e;color:#fff;border-bottom:6px solid #ffc700;border-radius:16px 16px 0 0;padding:18px 22px">
+<p style="margin:0;font-size:20px;font-weight:800">☀ Hogar Sol · Bingo Benéfico</p></div>
+<div style="background:#fff;border-radius:0 0 16px 16px;padding:22px">
+<h1 style="margin:0 0 14px;font-size:21px;color:#0e4a8e">${escapeHtml(subject)}</h1>${paragraphs}${button}</div>
+<p style="text-align:center;color:#64748b;font-size:12px">Asociación Infantil Hogar Sol</p></div></body></html>`;
+}
+
+/**
+ * Envía un correo sin bloquear ni romper la petición que lo origina: si el SMTP falla, se registra el error.
+ * - action: { label, url } botón opcional
+ */
+export function sendMail({ to, subject, text, action }) {
+  const recipients = [to].flat().filter(Boolean);
+  if (recipients.length === 0) return null;
+  const body = action ? `${text}\n\n${action.label}: ${action.url}` : text;
+  const mail = { to: recipients, subject, text: body, sentAt: new Date().toISOString() };
   db.outbox.push(mail);
-  console.log(`\n📧 Correo a ${to}\n   Asunto: ${subject}\n   ${text.replace(/\n/g, '\n   ')}\n`);
+
+  if (!transport) {
+    console.log(`\n📧 Correo a ${recipients.join(', ')}\n   Asunto: ${subject}\n   ${body.replace(/\n/g, '\n   ')}\n`);
+    return mail;
+  }
+
+  transport
+    .sendMail({ from: env.smtp.from, to: recipients, subject, text: body, html: toHtml({ subject, text, action }) })
+    .catch((err) => console.error(`No se pudo enviar el correo "${subject}" a ${recipients.join(', ')}:`, err.message));
   return mail;
 }
+
+/** Avisa a los administradores configurados en ADMIN_NOTIFY_EMAILS. */
+export const notifyAdminsByMail = (mail) => sendMail({ ...mail, to: env.adminNotifyEmails });

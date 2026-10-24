@@ -67,10 +67,10 @@ export function validate(schema, input) {
 const reference = z
   .string()
   .trim()
-  .regex(/^[0-9A-Za-z-]{4,30}$/, 'Solo letras, números y guiones (4 a 30)')
-  .or(z.literal(''));
+  .min(1, 'Escribe el número de comprobante')
+  .regex(/^[0-9A-Za-z-]{4,30}$/, 'Solo letras, números y guiones (4 a 30)');
 
-/** Confirmación de pago SINPE / Transferencia: comprador + referencia y/o comprobante. */
+/** Confirmación de pago SINPE / Transferencia: comprador + número de comprobante (la foto se valida aparte). */
 export const paymentConfirmSchema = buyerSchema.extend({
   method: z.enum(['SINPE', 'TRANSFER']),
   reference,
