@@ -24,6 +24,12 @@ export const PATHS = Object.freeze({
   adminPurchaseDetail: 'compras/:id',
   adminWinners: 'ganadores',
   adminDraw: 'sorteo',
+  adminSeries: 'series',
+  adminSeriesDetail: 'series/:id',
+  adminUsers: 'usuarios',
+  adminAudit: 'bitacora',
+  adminSettings: 'configuracion',
+  adminPrint: 'imprimir',
   adminEvents: 'eventos',
   adminCards: 'cartones',
 });

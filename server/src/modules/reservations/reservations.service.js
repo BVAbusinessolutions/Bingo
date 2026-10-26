@@ -1,100 +1,171 @@
-import { db } from '../../db.js';
+import { one, query, tx } from '../../db/index.js';
 import { env } from '../../config/env.js';
-import path from 'node:path';
-import { UPLOAD_DIR } from '../../db.js';
 import { notifyAdmins, notifyUser } from '../../realtime.js';
 import { sendMail } from '../../utils/mailer.js';
 import { formatCRC } from '../../utils/format.js';
+import { getPayment } from '../../services/settings.js';
+import { audit } from '../../services/audit.js';
+import { logger } from '../../utils/logger.js';
 
 export const RESERVATION_TTL_MS = env.reservationTtlMin * 60_000;
-/** Texto que el cliente debe escribir en el detalle del SINPE o la transferencia. */
-export const PAYMENT_DETAIL_TEXT = 'BINGO';
 
-const releaseCards = (r) =>
-  r.cardIds.forEach((id) => Object.assign(db.cards.get(id), { status: 'AVAILABLE', reservationId: null, ownerId: null }));
+/** Columnas de una reserva + nombre del evento + series de sus cartones (historial, aunque se hayan liberado). */
+export const RESERVATION_SELECT = `
+  select r.*, e.name as event_name,
+         coalesce((select array_agg(c.serial order by c.serial)
+                     from app.reservation_cards rc join app.cards c on c.id = rc.card_id
+                    where rc.reservation_id = r.id), '{}') as serials
+    from app.reservations r
+    join app.events e on e.id = r.event_id`;
 
-/** Libera cartones de reservas vencidas. En producción: job programado + transacción en BD. */
-export function releaseExpiredReservations() {
-  const now = Date.now();
-  for (const r of db.reservations.values()) {
-    if (r.status === 'PENDING' && r.expiresAt <= now) {
-      r.status = 'EXPIRED';
-      releaseCards(r);
-    }
-  }
-}
+const iso = (d) => (d ? new Date(d).toISOString() : null);
 
-const serialsOf = (r) => r.cardIds.map((id) => db.cards.get(id).serial);
-
-export function approveReservation(r) {
-  r.status = 'APPROVED';
-  r.decidedAt = Date.now();
-  r.cardIds.forEach((id) => Object.assign(db.cards.get(id), { status: 'SOLD', ownerId: r.userId }));
-  const event = db.events.get(r.eventId);
-  sendMail({
-    to: r.buyer.email,
-    subject: `✅ Pago confirmado · ${event.name}`,
-    text:
-      `Hola ${r.buyer.fullName}, confirmamos tu pago de ${formatCRC(r.total)}.\n` +
-      `Tus cartones ya están disponibles: ${serialsOf(r).map((s) => `#${s}`).join(', ')}.\n` +
-      `Entra a la página con tu cuenta para verlos, imprimirlos y jugar en vivo el día del sorteo.\n` +
-      `¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
-    action: { label: 'Ver mis cartones', url: `${env.clientOrigin}/mis-compras/${r.id}` },
-  });
-  notifyAdmins('reservation:updated', reservationView(r));
-  notifyUser(r.userId, 'reservation:updated', reservationView(r));
-}
-
-export function rejectReservation(r, status = 'REJECTED') {
-  r.status = status;
-  r.decidedAt = Date.now();
-  releaseCards(r);
-  if (status === 'REJECTED' && r.buyer) {
-    sendMail({
-      to: r.buyer.email,
-      subject: 'Pago no verificado · Bingo Hogar Sol',
-      text: `Hola ${r.buyer.fullName}, no pudimos verificar tu pago (ref. ${r.proof?.reference ?? '—'}). Los cartones fueron liberados. Si crees que es un error, contáctanos.`,
-    });
-  }
-  notifyAdmins('reservation:updated', reservationView(r));
-  if (status === 'REJECTED') notifyUser(r.userId, 'reservation:updated', reservationView(r));
-}
-
-/** Envía el comprobante adjunto; 404 si la reserva solo tiene número de referencia. */
-export function sendProofFile(res, r) {
-  if (!r?.proof?.filename) return res.status(404).json({ error: 'NOT_FOUND' });
-  res.type(r.proof.mimetype);
-  res.set('Content-Disposition', 'inline');
-  res.set('Content-Security-Policy', 'sandbox'); // un PDF o imagen no puede ejecutar scripts en nuestro origen
-  res.sendFile(path.join(UPLOAD_DIR, r.proof.filename));
-}
-
-/** Detalle para el dueño de la reserva: incluye los cartones completos para verlos o imprimirlos. */
-export const reservationDetailView = (r) => ({
-  ...reservationView(r),
-  cards: r.cardIds.map((id) => {
-    const { serial, grid } = db.cards.get(id);
-    return { id, serial, grid };
-  }),
-});
-
-export function reservationView(r) {
-  const event = db.events.get(r.eventId);
+/** Vista pública de una reserva (para el dueño y el admin). */
+export async function reservationView(r) {
   return {
     id: r.id,
-    eventId: r.eventId,
-    eventName: event?.name,
-    status: r.status, // PENDING | PROOF_SUBMITTED | APPROVED | REJECTED | EXPIRED | CANCELLED
-    buyer: r.buyer ?? null,
-    serials: serialsOf(r),
+    eventId: r.event_id,
+    eventName: r.event_name,
+    status: r.status, // PENDING | PROOF_SUBMITTED | APPROVED | REJECTED | EXPIRED | CANCELLED | REFUNDED
+    channel: r.channel,
+    buyer: r.buyer_full_name
+      ? { fullName: r.buyer_full_name, nationalId: r.buyer_national_id, phone: r.buyer_phone, email: r.buyer_email }
+      : null,
+    serials: r.serials ?? [],
     total: r.total,
-    createdAt: new Date(r.createdAt).toISOString(),
-    expiresAt: new Date(r.expiresAt).toISOString(),
-    reference: r.proof?.reference ?? null,
-    method: r.proof?.method ?? null,
-    hasProof: Boolean(r.proof?.filename),
-    proofUploadedAt: r.proof?.uploadedAt ? new Date(r.proof.uploadedAt).toISOString() : null,
-    decidedAt: r.decidedAt ? new Date(r.decidedAt).toISOString() : null,
-    payment: { ...env.payment, detail: PAYMENT_DETAIL_TEXT },
+    createdAt: iso(r.created_at),
+    expiresAt: iso(r.expires_at),
+    reference: r.payment_reference ?? null,
+    method: r.payment_method ?? null,
+    hasProof: Boolean(r.proof_file_id),
+    proofUploadedAt: iso(r.proof_uploaded_at),
+    decidedAt: iso(r.decided_at),
+    refundedAt: iso(r.refunded_at),
+    payment: await getPayment(),
   };
+}
+
+export const findReservation = (id) => one(`${RESERVATION_SELECT} where r.id = $1`, [id]);
+
+/** Reserva del usuario: la propiedad va en la consulta misma (un id ajeno simplemente no existe). */
+export const findOwnReservation = (id, userId) => one(`${RESERVATION_SELECT} where r.id = $1 and r.user_id = $2`, [id, userId]);
+
+/** Detalle con los cartones completos (para verlos o imprimirlos). */
+export async function reservationDetailView(r) {
+  const cards = await query(
+    `select c.id, c.serial, c.grid, sc.image_id is not null as has_image, sc.id as series_card_id
+       from app.reservation_cards rc
+       join app.cards c on c.id = rc.card_id
+       left join app.series_cards sc on sc.id = c.series_card_id
+      where rc.reservation_id = $1
+      order by c.serial`,
+    [r.id]
+  );
+  return {
+    ...(await reservationView(r)),
+    cards: cards.map((c) => ({
+      id: c.id,
+      serial: c.serial,
+      grid: c.grid,
+      imageUrl: c.has_image ? `/api/card-images/${c.series_card_id}` : null,
+    })),
+  };
+}
+
+/**
+ * Vence reservas sin pagar y libera sus cartones (una sola sentencia, atómica).
+ * Se llama periódicamente y antes de cada operación que dependa del estado de los cartones.
+ */
+export async function releaseExpiredReservations() {
+  try {
+    await query(
+      `with expired as (
+         update app.reservations set status = 'EXPIRED'
+          where status = 'PENDING' and expires_at <= now()
+          returning id
+       )
+       update app.cards set status = 'AVAILABLE', reservation_id = null, owner_id = null
+        where reservation_id in (select id from expired) and status = 'RESERVED'`
+    );
+  } catch (err) {
+    logger.error('reservations.release_failed', { message: err.message });
+  }
+}
+
+const serialsText = (serials) => serials.map((s) => `#${s}`).join(', ');
+
+/** Aprueba una compra con comprobante: cartones vendidos al dueño y correo con el enlace a sus cartones. */
+export async function approveReservation(id, actor) {
+  const updated = await tx(async (q) => {
+    const [r] = await q(
+      `update app.reservations set status = 'APPROVED', decided_at = now(), decided_by = $2
+        where id = $1 and status = 'PROOF_SUBMITTED' returning *`,
+      [id, actor.actorId]
+    );
+    if (!r) return null;
+    await q(`update app.cards set status = 'SOLD', owner_id = $2 where reservation_id = $1`, [id, r.user_id]);
+    await audit({ ...actor, action: 'reservation.approved', targetType: 'reservation', targetId: id, details: { total: r.total } }, q);
+    return r;
+  });
+  if (!updated) return null;
+  const r = await findReservation(id);
+  const view = await reservationView(r);
+  sendMail({
+    to: r.buyer_email,
+    subject: `✅ Pago confirmado · ${r.event_name}`,
+    text:
+      `Hola ${r.buyer_full_name}, confirmamos tu pago de ${formatCRC(r.total)}.\n` +
+      `Tus cartones ya están disponibles: ${serialsText(view.serials)}.\n` +
+      `Entra a la página con tu cuenta para verlos, imprimirlos y jugar en vivo el día del sorteo.\n` +
+      `¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
+    action: { label: 'Ver mis cartones', url: `${env.clientOrigin}/mis-compras/${id}` },
+  });
+  notifyAdmins('reservation:updated', view);
+  notifyUser(r.user_id, 'reservation:updated', view);
+  return view;
+}
+
+/**
+ * Cierra una reserva y libera sus cartones.
+ * status: REJECTED (admin), CANCELLED (el dueño) o REFUNDED (admin, compra aprobada que se devuelve).
+ */
+export async function closeReservation(id, status, actor, { from = ['PENDING', 'PROOF_SUBMITTED'] } = {}) {
+  const updated = await tx(async (q) => {
+    const [r] = await q(
+      `update app.reservations
+          set status = $2, decided_at = coalesce(decided_at, now()), decided_by = coalesce(decided_by, $3),
+              refunded_at = case when $2 = 'REFUNDED' then now() else refunded_at end
+        where id = $1 and status = any($4::text[]) returning *`,
+      [id, status, actor.actorId, from]
+    );
+    if (!r) return null;
+    await q(`update app.cards set status = 'AVAILABLE', reservation_id = null, owner_id = null where reservation_id = $1`, [id]);
+    if (status !== 'CANCELLED') {
+      await audit(
+        { ...actor, action: `reservation.${status.toLowerCase()}`, targetType: 'reservation', targetId: id, details: { total: r.total } },
+        q
+      );
+    }
+    return r;
+  });
+  if (!updated) return null;
+  const r = await findReservation(id);
+  const view = await reservationView(r);
+  if (r.buyer_email && status === 'REJECTED') {
+    sendMail({
+      to: r.buyer_email,
+      subject: 'Pago no verificado · Bingo Hogar Sol',
+      text: `Hola ${r.buyer_full_name}, no pudimos verificar tu pago (comprobante ${r.payment_reference ?? '—'}). Los cartones fueron liberados. Si crees que es un error, contáctanos.`,
+    });
+  }
+  if (r.buyer_email && status === 'REFUNDED') {
+    sendMail({
+      to: r.buyer_email,
+      subject: 'Reembolso registrado · Bingo Hogar Sol',
+      text: `Hola ${r.buyer_full_name}, registramos el reembolso de tu compra de ${formatCRC(r.total)} (cartones ${serialsText(view.serials)}). Esos cartones ya no participan en el sorteo.`,
+    });
+  }
+  notifyAdmins('reservation:updated', view);
+  if (status !== 'CANCELLED') notifyUser(r.user_id, 'reservation:updated', view);
+  return view;
 }

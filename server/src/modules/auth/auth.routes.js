@@ -3,22 +3,22 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { db, createUser } from '../../db.js';
+import { one, query } from '../../db/index.js';
 import { env } from '../../config/env.js';
-import { authenticate } from '../../middleware/auth.js';
-import {
-  emailActionLimiter,
-  loginLimiter,
-  registerLimiter,
-  requireXhrHeader,
-  validateBody,
-} from '../../middleware/security.js';
+import { authenticate, JWT_AUDIENCE, JWT_ISSUER } from '../../middleware/auth.js';
+import { emailActionLimiter, loginLimiter, registerLimiter, requireXhrHeader, validateBody } from '../../middleware/security.js';
 import { sendMail } from '../../utils/mailer.js';
-import { consumeToken, issueToken } from '../../utils/oneTimeTokens.js';
+import { consumeToken, issueToken } from '../../services/oneTimeTokens.js';
+import { audit } from '../../services/audit.js';
+import { disconnectUser } from '../../realtime.js';
+import { emailField, nameField, newPasswordField, phoneField } from './auth.schemas.js';
 
 const router = Router();
 const REFRESH_COOKIE = 'hs_rt';
 const refreshMaxAge = env.refreshTtlDays * 24 * 60 * 60 * 1000;
+const RESET_TTL_MS = 30 * 60_000;
+const VERIFY_TTL_MS = 24 * 60 * 60_000;
+const BCRYPT_COST = 12;
 
 const cookieOptions = {
   httpOnly: true, // JS no puede leerla (protege contra XSS)
@@ -27,81 +27,104 @@ const cookieOptions = {
   path: '/api/auth', // solo viaja a las rutas de auth
 };
 
-const RESET_TTL_MS = 30 * 60_000;
-const VERIFY_TTL_MS = 24 * 60 * 60_000;
+const USER_COLUMNS = 'id, name, email, phone, role, status, email_verified, password_hash, failed_logins, locked_until';
 
-const publicUser = (u) => ({
+/** Lo único que se devuelve de un usuario: nunca el hash ni contadores internos. */
+export const publicUser = (u) => ({
   id: u.id,
   name: u.name,
   email: u.email,
   phone: u.phone,
   role: u.role,
-  emailVerified: u.emailVerified,
+  emailVerified: u.email_verified,
 });
 
-const findByEmail = (email) => [...db.users.values()].find((u) => u.email === email);
+const findByEmail = (email) => one(`select ${USER_COLUMNS} from app.users where email = $1`, [email]);
+const findById = (id) => one(`select ${USER_COLUMNS} from app.users where id = $1`, [id]);
 const clientLink = (path, token) => `${env.clientOrigin}${path}?token=${token}`;
 
-function sendVerificationEmail(user) {
-  const token = issueToken(db.emailVerifications, user.id, VERIFY_TTL_MS);
-  sendMail({
-    to: user.email,
-    subject: 'Confirma tu correo · Bingo Hogar Sol',
-    text: `Hola ${user.name}, confirma tu correo para poder comprar cartones:
-${clientLink('/verificar-correo', token)}
-El enlace vence en 24 horas.`,
-  });
-}
-
-function issueTokens(res, user) {
+async function issueTokens(res, user) {
   const accessToken = jwt.sign({ role: user.role }, env.accessSecret, {
     subject: user.id,
     expiresIn: env.accessTtl,
-    issuer: 'hogar-sol',
+    issuer: JWT_ISSUER,
+    audience: JWT_AUDIENCE,
     algorithm: 'HS256',
   });
   const jti = randomUUID();
-  db.refreshTokens.set(jti, { userId: user.id, expiresAt: Date.now() + refreshMaxAge });
+  await query('insert into app.refresh_tokens (jti, user_id, expires_at) values ($1, $2, $3)', [
+    jti,
+    user.id,
+    new Date(Date.now() + refreshMaxAge),
+  ]);
   const refreshToken = jwt.sign({}, env.refreshSecret, {
     subject: user.id,
     jwtid: jti,
     expiresIn: `${env.refreshTtlDays}d`,
-    issuer: 'hogar-sol',
+    issuer: JWT_ISSUER,
+    audience: JWT_AUDIENCE,
     algorithm: 'HS256',
   });
   res.cookie(REFRESH_COOKIE, refreshToken, { ...cookieOptions, maxAge: refreshMaxAge });
   return { accessToken, user: publicUser(user) };
 }
 
-const revokeAllFor = (userId) => {
-  for (const [jti, t] of db.refreshTokens) if (t.userId === userId) db.refreshTokens.delete(jti);
-};
+/** Cierra todas las sesiones: borra refresh tokens y desconecta sus sockets. */
+export async function revokeAllFor(userId) {
+  await query('delete from app.refresh_tokens where user_id = $1', [userId]);
+  disconnectUser(userId);
+}
 
-const emailField = z.string().trim().toLowerCase().email().max(120);
-const nameField = z.string().trim().min(3).max(80).regex(/^[\p{L}\p{M}\s'.-]+$/u);
-const newPasswordField = z
-  .string()
-  .min(8)
-  .max(128)
-  .regex(/[A-Za-z]/)
-  .regex(/\d/);
+async function sendVerificationEmail(user) {
+  const token = await issueToken(user.id, 'VERIFY_EMAIL', VERIFY_TTL_MS);
+  sendMail({
+    to: user.email,
+    subject: 'Confirma tu correo · Bingo Hogar Sol',
+    text: `Hola ${user.name}, confirma tu correo para poder comprar cartones. El enlace vence en 24 horas.`,
+    action: { label: 'Confirmar mi correo', url: clientLink('/verificar-correo', token) },
+  });
+}
 
-const loginSchema = z.object({
-  email: emailField,
-  password: z.string().min(8).max(128),
-});
+// ---------- Login ----------
+const loginSchema = z.object({ email: emailField, password: z.string().min(8).max(128) });
 
 // Hash ficticio: compara igual aunque el usuario no exista, para no filtrar qué correos están registrados por timing.
-const DUMMY_HASH = bcrypt.hashSync('dummy-password', 12);
+const DUMMY_HASH = bcrypt.hashSync('dummy-password', BCRYPT_COST);
 
 router.post('/login', loginLimiter, validateBody(loginSchema), async (req, res) => {
   const { email, password } = req.body;
-  const user = findByEmail(email);
-  const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !ok) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
-  res.json(issueTokens(res, user));
+  const user = await findByEmail(email);
+  const locked = user?.locked_until && new Date(user.locked_until) > new Date();
+  const ok = await bcrypt.compare(password, user?.password_hash ?? DUMMY_HASH);
+
+  // Cuenta bloqueada: mismo mensaje que el límite por IP (no confirma que la cuenta exista).
+  if (locked) return res.status(429).json({ error: 'TOO_MANY_LOGIN_ATTEMPTS' });
+
+  if (!user || !ok || user.status !== 'ACTIVE') {
+    if (user && !ok) {
+      const [row] = await query(
+        `update app.users
+            set failed_logins = case when failed_logins + 1 >= $2 then 0 else failed_logins + 1 end,
+                locked_until  = case when failed_logins + 1 >= $2 then now() + make_interval(mins => $3) else locked_until end
+          where id = $1 returning locked_until`,
+        [user.id, env.maxFailedLogins, env.lockMinutes]
+      );
+      if (row.locked_until && new Date(row.locked_until) > new Date()) {
+        await audit({ actorId: user.id, action: 'auth.account_locked', targetType: 'user', targetId: user.id, ip: req.ip });
+      }
+    }
+    return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+  }
+
+  if (user.failed_logins > 0 || user.locked_until) {
+    await query('update app.users set failed_logins = 0, locked_until = null where id = $1', [user.id]);
+  }
+  if (user.role === 'ADMIN')
+    await audit({ actorId: user.id, action: 'auth.admin_login', targetType: 'user', targetId: user.id, ip: req.ip });
+  res.json(await issueTokens(res, user));
 });
 
+// ---------- Registro ----------
 const registerSchema = z.object({
   name: nameField,
   email: emailField,
@@ -110,106 +133,117 @@ const registerSchema = z.object({
 });
 
 router.post('/register', registerLimiter, validateBody(registerSchema), async (req, res) => {
-  if (findByEmail(req.body.email)) return res.status(409).json({ error: 'EMAIL_TAKEN' });
   const { name, email, password } = req.body;
-  const user = await createUser({ name, email, password }); // rol siempre CLIENTE: nunca se acepta del cliente
-  user.termsAcceptedAt = new Date().toISOString();
-  sendVerificationEmail(user);
-  res.status(201).json(issueTokens(res, user));
+  // El rol siempre es CLIENTE: nunca se acepta del cliente.
+  const user = await one(
+    `insert into app.users (name, email, password_hash, terms_accepted_at) values ($1, $2, $3, now())
+     on conflict (email) do nothing returning ${USER_COLUMNS}`,
+    [name, email, await bcrypt.hash(password, BCRYPT_COST)]
+  );
+  if (!user) return res.status(409).json({ error: 'EMAIL_TAKEN' });
+  await sendVerificationEmail(user);
+  res.status(201).json(await issueTokens(res, user));
 });
 
-// Rotación de refresh tokens: cada uso invalida el anterior. Si se reutiliza uno ya usado
-// (señal de robo), se revocan todas las sesiones del usuario.
-router.post('/refresh', requireXhrHeader, (req, res) => {
+// ---------- Refresh con rotación ----------
+// Cada uso invalida el anterior. Si se reutiliza uno ya usado (señal de robo), se revocan todas las sesiones.
+router.post('/refresh', requireXhrHeader, async (req, res) => {
   const token = req.cookies[REFRESH_COOKIE];
   if (!token) return res.status(204).end(); // visitante sin sesión: no es un error
+  let payload;
   try {
-    const payload = jwt.verify(token, env.refreshSecret, { algorithms: ['HS256'], issuer: 'hogar-sol' });
-    const stored = db.refreshTokens.get(payload.jti);
-    if (!stored) {
-      revokeAllFor(payload.sub);
-      throw new Error('REUSED');
-    }
-    db.refreshTokens.delete(payload.jti);
-    const user = db.users.get(payload.sub);
-    if (!user) throw new Error('NO_USER');
-    res.json(issueTokens(res, user));
+    payload = jwt.verify(token, env.refreshSecret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
   } catch {
     res.clearCookie(REFRESH_COOKIE, cookieOptions);
-    res.status(401).json({ error: 'INVALID_SESSION' });
+    return res.status(401).json({ error: 'INVALID_SESSION' });
   }
+  const stored = await one('delete from app.refresh_tokens where jti = $1 and expires_at > now() returning user_id', [payload.jti]);
+  if (!stored || stored.user_id !== payload.sub) {
+    await revokeAllFor(payload.sub);
+    await audit({ actorId: payload.sub, action: 'auth.refresh_reuse_detected', targetType: 'user', targetId: payload.sub, ip: req.ip });
+    res.clearCookie(REFRESH_COOKIE, cookieOptions);
+    return res.status(401).json({ error: 'INVALID_SESSION' });
+  }
+  const user = await findById(payload.sub);
+  if (!user || user.status !== 'ACTIVE') {
+    res.clearCookie(REFRESH_COOKIE, cookieOptions);
+    return res.status(401).json({ error: 'INVALID_SESSION' });
+  }
+  res.json(await issueTokens(res, user));
 });
 
-router.post('/logout', requireXhrHeader, (req, res) => {
+router.post('/logout', requireXhrHeader, async (req, res) => {
   const token = req.cookies[REFRESH_COOKIE];
   if (token) {
-    const payload = jwt.decode(token);
-    if (payload?.jti) db.refreshTokens.delete(payload.jti);
+    try {
+      const payload = jwt.verify(token, env.refreshSecret, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        ignoreExpiration: true,
+      });
+      await query('delete from app.refresh_tokens where jti = $1', [payload.jti]);
+    } catch {
+      // token inválido: no hay nada que revocar
+    }
   }
   res.clearCookie(REFRESH_COOKIE, cookieOptions);
   res.status(204).end();
 });
 
-const currentUser = (req, res, next) => {
-  req.account = db.users.get(req.user.id);
+// ---------- Perfil ----------
+const currentUser = async (req, res, next) => {
+  req.account = await findById(req.user.id);
   return req.account ? next() : res.status(404).json({ error: 'NOT_FOUND' });
 };
 
 router.get('/me', authenticate, currentUser, (req, res) => res.json(publicUser(req.account)));
 
-// ---------- Perfil ----------
-const profileSchema = z.object({
-  name: nameField,
-  phone: z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9\s-]{8,15}$/)
-    .nullable()
-    .or(z.literal('').transform(() => null)),
-});
+const profileSchema = z.object({ name: nameField, phone: phoneField.nullable().or(z.literal('').transform(() => null)) });
 
-router.patch('/me', authenticate, currentUser, validateBody(profileSchema), (req, res) => {
-  Object.assign(req.account, req.body); // solo name y phone: zod descarta cualquier otro campo
-  res.json(publicUser(req.account));
+router.patch('/me', authenticate, validateBody(profileSchema), async (req, res) => {
+  // Solo name y phone: zod descarta cualquier otro campo (rol, correo, etc.).
+  const user = await one(`update app.users set name = $2, phone = $3, updated_at = now() where id = $1 returning ${USER_COLUMNS}`, [
+    req.user.id,
+    req.body.name,
+    req.body.phone,
+  ]);
+  res.json(publicUser(user));
 });
 
 const changePasswordSchema = z.object({ currentPassword: z.string().min(1).max(128), newPassword: newPasswordField });
 
-router.post(
-  '/change-password',
-  emailActionLimiter,
-  authenticate,
-  currentUser,
-  validateBody(changePasswordSchema),
-  async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    if (!(await bcrypt.compare(currentPassword, req.account.passwordHash))) {
-      return res.status(400).json({ error: 'INVALID_PASSWORD' });
-    }
-    req.account.passwordHash = await bcrypt.hash(newPassword, 12);
-    revokeAllFor(req.account.id); // cierra las otras sesiones; esta recibe tokens nuevos
-    res.json(issueTokens(res, req.account));
+router.post('/change-password', emailActionLimiter, authenticate, currentUser, validateBody(changePasswordSchema), async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!(await bcrypt.compare(currentPassword, req.account.password_hash))) {
+    return res.status(400).json({ error: 'INVALID_PASSWORD' });
   }
-);
+  await query('update app.users set password_hash = $2, updated_at = now() where id = $1', [
+    req.account.id,
+    await bcrypt.hash(newPassword, BCRYPT_COST),
+  ]);
+  await revokeAllFor(req.account.id); // cierra las otras sesiones; esta recibe tokens nuevos
+  await audit({ actorId: req.account.id, action: 'auth.password_changed', targetType: 'user', targetId: req.account.id, ip: req.ip });
+  res.json(await issueTokens(res, req.account));
+});
 
-router.post('/logout-all', requireXhrHeader, authenticate, (req, res) => {
-  revokeAllFor(req.user.id);
+router.post('/logout-all', requireXhrHeader, authenticate, async (req, res) => {
+  await revokeAllFor(req.user.id);
   res.clearCookie(REFRESH_COOKIE, cookieOptions);
   res.status(204).end();
 });
 
 // ---------- Recuperar contraseña ----------
 // Siempre responde 204: no revela si el correo está registrado.
-router.post('/forgot-password', emailActionLimiter, validateBody(z.object({ email: emailField })), (req, res) => {
-  const user = findByEmail(req.body.email);
-  if (user) {
-    const token = issueToken(db.passwordResets, user.id, RESET_TTL_MS);
+router.post('/forgot-password', emailActionLimiter, validateBody(z.object({ email: emailField })), async (req, res) => {
+  const user = await findByEmail(req.body.email);
+  if (user && user.status === 'ACTIVE') {
+    const token = await issueToken(user.id, 'RESET_PASSWORD', RESET_TTL_MS);
     sendMail({
       to: user.email,
       subject: 'Restablece tu contraseña · Bingo Hogar Sol',
-      text: `Hola ${user.name}, para crear una contraseña nueva abre este enlace:
-${clientLink('/restablecer', token)}
-Vence en 30 minutos. Si no lo pediste, ignora este correo.`,
+      text: `Hola ${user.name}, para crear una contraseña nueva usa el botón de abajo. Vence en 30 minutos. Si no lo pediste, ignora este correo.`,
+      action: { label: 'Crear contraseña nueva', url: clientLink('/restablecer', token) },
     });
   }
   res.status(204).end();
@@ -220,27 +254,31 @@ router.post(
   emailActionLimiter,
   validateBody(z.object({ token: z.string().max(128), password: newPasswordField })),
   async (req, res) => {
-    const userId = consumeToken(db.passwordResets, req.body.token);
-    const user = userId && db.users.get(userId);
-    if (!user) return res.status(400).json({ error: 'INVALID_TOKEN' });
-    user.passwordHash = await bcrypt.hash(req.body.password, 12);
-    user.emailVerified = true; // abrió un enlace enviado a su correo
-    revokeAllFor(user.id);
+    const userId = await consumeToken(req.body.token, 'RESET_PASSWORD');
+    if (!userId) return res.status(400).json({ error: 'INVALID_TOKEN' });
+    // Abrió un enlace enviado a su correo: queda verificado y se desbloquea.
+    await query(
+      'update app.users set password_hash = $2, email_verified = true, failed_logins = 0, locked_until = null, updated_at = now() where id = $1',
+      [userId, await bcrypt.hash(req.body.password, BCRYPT_COST)]
+    );
+    await revokeAllFor(userId);
+    await audit({ actorId: userId, action: 'auth.password_reset', targetType: 'user', targetId: userId, ip: req.ip });
     res.status(204).end();
   }
 );
 
 // ---------- Verificación de correo ----------
-router.post('/verify-email', validateBody(z.object({ token: z.string().max(128) })), (req, res) => {
-  const userId = consumeToken(db.emailVerifications, req.body.token);
-  const user = userId && db.users.get(userId);
-  if (!user) return res.status(400).json({ error: 'INVALID_TOKEN' });
-  user.emailVerified = true;
+router.post('/verify-email', validateBody(z.object({ token: z.string().max(128) })), async (req, res) => {
+  const userId = await consumeToken(req.body.token, 'VERIFY_EMAIL');
+  if (!userId) return res.status(400).json({ error: 'INVALID_TOKEN' });
+  const user = await one(`update app.users set email_verified = true, updated_at = now() where id = $1 returning ${USER_COLUMNS}`, [
+    userId,
+  ]);
   res.json(publicUser(user));
 });
 
-router.post('/resend-verification', emailActionLimiter, authenticate, currentUser, (req, res) => {
-  if (!req.account.emailVerified) sendVerificationEmail(req.account);
+router.post('/resend-verification', emailActionLimiter, authenticate, currentUser, async (req, res) => {
+  if (!req.account.email_verified) await sendVerificationEmail(req.account);
   res.status(204).end();
 });
 

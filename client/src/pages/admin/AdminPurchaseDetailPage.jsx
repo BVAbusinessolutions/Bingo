@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, Building2, Check, Mail, MailWarning, Phone, Smartphone, X } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Banknote, Building2, Check, Mail, MailWarning, Phone, RotateCcw, Smartphone, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import { ProofPanel } from '../../components/admin/AdminProof';
@@ -36,16 +36,34 @@ function Card({ title, children, className = '' }) {
 /** Lista de verificación: el botón "Aprobar" solo se habilita cuando todo coincide. */
 function VerificationChecklist({ r, checks, setChecks }) {
   const items = [
-    ['amount', <>El monto recibido es <b className="text-fg">{formatCRC(r.total)}</b></>],
-    ['reference', <>El n.º de comprobante <b className="text-fg">{r.reference}</b> coincide con la foto y con el banco</>],
-    ['detail', <>El detalle de la transferencia dice <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? 'BINGO'}</b></>],
+    [
+      'amount',
+      <>
+        El monto recibido es <b className="text-fg">{formatCRC(r.total)}</b>
+      </>,
+    ],
+    [
+      'reference',
+      <>
+        El n.º de comprobante <b className="text-fg">{r.reference}</b> coincide con la foto y con el banco
+      </>,
+    ],
+    [
+      'detail',
+      <>
+        El detalle de la transferencia dice <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? 'BINGO'}</b>
+      </>,
+    ],
     ['received', <>El dinero aparece en la cuenta de la Asociación</>],
   ];
   return (
     <fieldset className="space-y-2">
       <legend className="sr-only">Verificación del pago</legend>
       {items.map(([key, label]) => (
-        <label key={key} className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition ${checks[key] ? 'border-emerald-500 bg-emerald-500/10' : 'border-line hover:border-sol-blue'}`}>
+        <label
+          key={key}
+          className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3 transition ${checks[key] ? 'border-emerald-500 bg-emerald-500/10' : 'border-line hover:border-sol-blue'}`}
+        >
           <input
             type="checkbox"
             checked={Boolean(checks[key])}
@@ -65,7 +83,7 @@ export default function AdminPurchaseDetailPage() {
   const [r, setReservation] = useState(null);
   const [error, setError] = useState('');
   const [checks, setChecks] = useState({});
-  const [confirming, setConfirming] = useState(null); // 'approve' | 'reject'
+  const [confirming, setConfirming] = useState(null); // 'approve' | 'reject' | 'refund'
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(
@@ -84,7 +102,8 @@ export default function AdminPurchaseDetailPage() {
   const decide = async () => {
     setBusy(true);
     try {
-      await adminApi.decide(r.id, confirming === 'approve');
+      if (confirming === 'refund') await adminApi.refund(r.id);
+      else await adminApi.decide(r.id, confirming === 'approve');
       setConfirming(null);
       await load();
       reloadCounters();
@@ -102,11 +121,15 @@ export default function AdminPurchaseDetailPage() {
 
   const reviewable = r.status === 'PROOF_SUBMITTED';
   const allChecked = ['amount', 'reference', 'detail', 'received'].every((k) => checks[k]);
-  const MethodIcon = r.method === 'TRANSFER' ? Building2 : Smartphone;
+  const MethodIcon = { TRANSFER: Building2, CASH: Banknote }[r.method] ?? Smartphone;
+  const METHOD_LABEL = { TRANSFER: 'Transferencia bancaria', SINPE: 'SINPE Móvil', CASH: 'Efectivo' };
 
   return (
     <section className="space-y-5">
-      <Link to="/admin/compras" className="inline-flex min-h-11 items-center gap-2 font-bold text-sol-blue hover:underline dark:text-sol-gold">
+      <Link
+        to="/admin/compras"
+        className="inline-flex min-h-11 items-center gap-2 font-bold text-sol-blue hover:underline dark:text-sol-gold"
+      >
         <ArrowLeft className="h-5 w-5" aria-hidden /> Todas las compras
       </Link>
 
@@ -117,14 +140,18 @@ export default function AdminPurchaseDetailPage() {
             <StatusBadge status={r.status} />
           </div>
           <p className="text-lg text-fg-muted">
-            {r.eventName} · reservada el {formatDate(r.createdAt)}
+            {r.eventName} · {r.channel === 'MANUAL' ? 'venta manual' : 'compra en línea'} del {formatDate(r.createdAt)}
           </p>
         </div>
         <p className="text-4xl font-black tabular-nums text-sol-red dark:text-sol-gold">{formatCRC(r.total)}</p>
       </header>
 
       {error && <Alert tone="error">{error}</Alert>}
-      {r.status === 'PENDING' && <Alert tone="info" title="El cliente aún no envía el comprobante">La reserva vence el {formatDate(r.expiresAt)}.</Alert>}
+      {r.status === 'PENDING' && (
+        <Alert tone="info" title="El cliente aún no envía el comprobante">
+          La reserva vence el {formatDate(r.expiresAt)}.
+        </Alert>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-5">
@@ -141,7 +168,7 @@ export default function AdminPurchaseDetailPage() {
               <InfoRow label="Método">
                 {r.method ? (
                   <span className="inline-flex items-center gap-2">
-                    <MethodIcon className="h-5 w-5 text-brand" aria-hidden /> {r.method === 'TRANSFER' ? 'Transferencia bancaria' : 'SINPE Móvil'}
+                    <MethodIcon className="h-5 w-5 text-brand" aria-hidden /> {METHOD_LABEL[r.method]}
                   </span>
                 ) : (
                   '—'
@@ -210,7 +237,14 @@ export default function AdminPurchaseDetailPage() {
           </h2>
           <VerificationChecklist r={r} checks={checks} setChecks={setChecks} />
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" variant="success" icon={Check} disabled={!allChecked} onClick={() => setConfirming('approve')} className="flex-1">
+            <Button
+              size="lg"
+              variant="success"
+              icon={Check}
+              disabled={!allChecked}
+              onClick={() => setConfirming('approve')}
+              className="flex-1"
+            >
               Aprobar compra
             </Button>
             <Button size="lg" variant="danger" icon={X} onClick={() => setConfirming('reject')} className="flex-1">
@@ -222,23 +256,41 @@ export default function AdminPurchaseDetailPage() {
       )}
 
       {r.decidedAt && (
-        <Alert tone={r.status === 'APPROVED' ? 'success' : 'error'} title={r.status === 'APPROVED' ? 'Compra aprobada' : 'Compra rechazada'}>
-          Decidida el {formatDate(r.decidedAt)}. {r.status === 'APPROVED' ? 'El cliente recibió un correo con el enlace para ver sus cartones.' : 'Los cartones volvieron a estar disponibles.'}
+        <Alert
+          tone={r.status === 'APPROVED' ? 'success' : 'error'}
+          title={
+            { APPROVED: 'Compra aprobada', REJECTED: 'Compra rechazada', REFUNDED: 'Compra reembolsada', CANCELLED: 'Compra cancelada' }[
+              r.status
+            ] ?? 'Compra cerrada'
+          }
+          action={
+            r.status === 'APPROVED' && (
+              <Button variant="outline" size="sm" icon={RotateCcw} onClick={() => setConfirming('refund')}>
+                Registrar reembolso
+              </Button>
+            )
+          }
+        >
+          {r.status === 'REFUNDED'
+            ? `Reembolsada el ${formatDate(r.refundedAt)}. Los cartones volvieron a la venta.`
+            : `Decidida el ${formatDate(r.decidedAt)}. ${r.status === 'APPROVED' ? (r.channel === 'MANUAL' ? 'Venta registrada en persona.' : 'El cliente recibió un correo con el enlace para ver sus cartones.') : 'Los cartones volvieron a estar disponibles.'}`}
         </Alert>
       )}
 
       {confirming && (
         <ConfirmDialog
-          title={confirming === 'approve' ? '¿Aprobar esta compra?' : '¿Rechazar esta compra?'}
-          confirmLabel={confirming === 'approve' ? 'Sí, aprobar' : 'Sí, rechazar'}
+          title={{ approve: '¿Aprobar esta compra?', reject: '¿Rechazar esta compra?', refund: '¿Registrar el reembolso?' }[confirming]}
+          confirmLabel={{ approve: 'Sí, aprobar', reject: 'Sí, rechazar', refund: 'Sí, reembolsar' }[confirming]}
           confirmVariant={confirming === 'approve' ? 'success' : 'danger'}
           loading={busy}
           onConfirm={decide}
           onCancel={() => setConfirming(null)}
         >
-          {confirming === 'approve'
-            ? `Se asignarán ${r.serials.length} cartón(es) a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
-            : 'Los cartones volverán a estar disponibles y el cliente recibirá un correo avisando que el pago no se pudo verificar.'}
+          {confirming === 'refund'
+            ? 'Registra que ya devolviste el dinero. Los cartones dejan de ser del comprador, vuelven a la venta y se le avisa por correo.'
+            : confirming === 'approve'
+              ? `Se asignarán ${r.serials.length} cartón(es) a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
+              : 'Los cartones volverán a estar disponibles y el cliente recibirá un correo avisando que el pago no se pudo verificar.'}
         </ConfirmDialog>
       )}
     </section>

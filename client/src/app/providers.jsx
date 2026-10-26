@@ -7,7 +7,7 @@ import { NotificationsProvider } from '../context/NotificationsContext';
 export default function Providers({ children }) {
   return (
     <ThemeProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter>
         <AuthProvider>
           <NotificationsProvider>{children}</NotificationsProvider>
         </AuthProvider>

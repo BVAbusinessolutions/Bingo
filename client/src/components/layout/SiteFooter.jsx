@@ -24,11 +24,31 @@ export default function SiteFooter() {
         <nav aria-label="Enlaces del sitio">
           <h2 className="mb-2 font-black uppercase tracking-wider text-sol-gold">El bingo</h2>
           <ul className="grid">
-            <li><Link to={PATHS.catalog} className={linkCls}>Comprar cartones</Link></li>
-            <li><Link to={PATHS.results} className={linkCls}>Resultados y ganadores</Link></li>
-            <li><Link to={PATHS.terms} className={linkCls}>Términos y condiciones</Link></li>
-            <li><Link to={PATHS.privacy} className={linkCls}>Política de privacidad</Link></li>
-            <li><Link to={PATHS.contact} className={linkCls}>Contacto</Link></li>
+            <li>
+              <Link to={PATHS.catalog} className={linkCls}>
+                Comprar cartones
+              </Link>
+            </li>
+            <li>
+              <Link to={PATHS.results} className={linkCls}>
+                Resultados y ganadores
+              </Link>
+            </li>
+            <li>
+              <Link to={PATHS.terms} className={linkCls}>
+                Términos y condiciones
+              </Link>
+            </li>
+            <li>
+              <Link to={PATHS.privacy} className={linkCls}>
+                Política de privacidad
+              </Link>
+            </li>
+            <li>
+              <Link to={PATHS.contact} className={linkCls}>
+                Contacto
+              </Link>
+            </li>
           </ul>
         </nav>
 

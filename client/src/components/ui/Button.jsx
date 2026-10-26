@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const VARIANTS = {
-  primary:
-    'bg-sol-blue text-white hover:bg-sol-blue-light dark:bg-sol-gold dark:text-sol-blue dark:hover:bg-sol-gold-dark',
+  primary: 'bg-sol-blue text-white hover:bg-sol-blue-light dark:bg-sol-gold dark:text-sol-blue dark:hover:bg-sol-gold-dark',
   gold: 'bg-sol-gold text-sol-blue shadow-md hover:bg-sol-gold-dark',
   danger: 'bg-sol-red text-white hover:bg-sol-red-dark',
   success: 'bg-emerald-600 text-white hover:bg-emerald-700',
@@ -24,18 +23,7 @@ const SIZES = {
  * Con `to` se renderiza como enlace interno; con `href`, como enlace externo.
  */
 const Button = forwardRef(function Button(
-  {
-    variant = 'primary',
-    size = 'md',
-    loading = false,
-    icon: Icon,
-    to,
-    href,
-    className = '',
-    children,
-    disabled,
-    ...props
-  },
+  { variant = 'primary', size = 'md', loading = false, icon: Icon, to, href, className = '', children, disabled, ...props },
   ref
 ) {
   const cls = `inline-flex items-center justify-center gap-2 rounded-xl font-extrabold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 ${VARIANTS[variant]} ${SIZES[size]} ${className}`;

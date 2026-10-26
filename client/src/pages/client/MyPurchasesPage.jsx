@@ -30,13 +30,24 @@ export default function MyPurchasesPage() {
           eyebrow="Tu historial"
           title="Mis compras"
           description="Toca una compra para ver sus cartones, imprimirlos o revisar el pago."
-          actions={<Button to={PATHS.catalog} variant="gold" icon={Ticket}>Comprar más</Button>}
+          actions={
+            <Button to={PATHS.catalog} variant="gold" icon={Ticket}>
+              Comprar más
+            </Button>
+          }
         />
 
         {error && <Alert tone="error">No pudimos cargar tus compras. Recarga la página.</Alert>}
         {!items && !error && <PageLoader />}
         {items?.length === 0 && (
-          <Alert title="Aún no tienes compras" action={<Button to={PATHS.catalog} variant="gold">Elegir cartones</Button>}>
+          <Alert
+            title="Aún no tienes compras"
+            action={
+              <Button to={PATHS.catalog} variant="gold">
+                Elegir cartones
+              </Button>
+            }
+          >
             Cuando compres cartones aparecerán aquí.
           </Alert>
         )}
@@ -48,7 +59,10 @@ export default function MyPurchasesPage() {
                 to={toPath(PATHS.purchaseDetail, { id: r.id })}
                 className="surface flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:ring-2 hover:ring-sol-gold sm:p-5"
               >
-                <span className="hidden h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sol-red text-xl font-black text-white sm:grid" aria-hidden>
+                <span
+                  className="hidden h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sol-red text-xl font-black text-white sm:grid"
+                  aria-hidden
+                >
                   {r.serials.length}
                 </span>
                 <div className="min-w-0 flex-1">

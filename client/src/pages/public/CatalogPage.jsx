@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
 import { eventsApi, reservationsApi } from '../../api/endpoints';
 import CardSelector from '../../components/cards/CardSelector';
-import BingoCard from '../../components/bingo/BingoCard';
+import CardImage from '../../components/bingo/CardImage';
 import CheckoutSteps from '../../components/checkout/CheckoutSteps';
 import Alert from '../../components/ui/Alert';
 import { PATHS, toPath } from '../../routing/paths';
@@ -14,7 +14,6 @@ import { errorMessage, formatCRC, formatDate } from '../../lib/format';
 const MAX = 20;
 const POLL_MS = 15_000;
 const SELECTION_KEY = 'hs-selected-cards'; // conserva la selección si el invitado debe iniciar sesión
-const EMPTY = new Set();
 
 const loadSelection = () => {
   try {
@@ -75,8 +74,7 @@ export default function CatalogPage() {
   );
 
   const toggle = useCallback(
-    (serial) =>
-      setSelected((sel) => (sel.includes(serial) ? sel.filter((s) => s !== serial) : sel.length < MAX ? [...sel, serial] : sel)),
+    (serial) => setSelected((sel) => (sel.includes(serial) ? sel.filter((s) => s !== serial) : sel.length < MAX ? [...sel, serial] : sel)),
     []
   );
 
@@ -138,7 +136,7 @@ export default function CatalogPage() {
             <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
               {selectedCards.map((card) => (
                 <div key={card.serial} className="relative">
-                  <BingoCard card={card} called={EMPTY} manualMarks={EMPTY} showStatus={false} />
+                  <CardImage card={card} />
                   <button
                     onClick={() => toggle(card.serial)}
                     aria-label={`Quitar cartón #${card.serial}`}
@@ -157,7 +155,7 @@ export default function CatalogPage() {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t-4 border-sol-gold bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-xs text-fg-muted">
+            <p className="font-bold text-fg-muted">
               {selected.length} cartón(es){selected.length >= MAX && ' · máximo alcanzado'}
             </p>
             <p className="text-2xl font-black text-sol-red dark:text-sol-gold">{formatCRC(total)}</p>
@@ -172,7 +170,6 @@ export default function CatalogPage() {
           </button>
         </div>
       </div>
-
     </main>
   );
 }

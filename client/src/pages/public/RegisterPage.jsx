@@ -57,8 +57,21 @@ export default function RegisterPage() {
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <Field label="Nombre completo" autoComplete="name" {...bind('name')} />
-        <Field label="Correo electrónico" type="email" inputMode="email" autoComplete="email" hint="Te enviaremos un enlace para confirmarlo." {...bind('email')} />
-        <Field label="Contraseña" type="password" autoComplete="new-password" hint="Mínimo 8 caracteres, con letras y números." {...bind('password')} />
+        <Field
+          label="Correo electrónico"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          hint="Te enviaremos un enlace para confirmarlo."
+          {...bind('email')}
+        />
+        <Field
+          label="Contraseña"
+          type="password"
+          autoComplete="new-password"
+          hint="Mínimo 8 caracteres, con letras y números."
+          {...bind('password')}
+        />
 
         <div>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-line p-3 hover:border-sol-blue dark:hover:border-sol-gold">

@@ -1,16 +1,16 @@
 import { memo, useMemo } from 'react';
 import { Sun, Trophy } from 'lucide-react';
-import { missingFor, PATTERNS } from '../../constants/patterns';
+import { LETTERS, PATTERNS, isFreeCell, missingFor } from '../../constants/patterns';
 
 /**
- * Cartón de Bingo de 90 balotas (3 filas x 9 columnas).
- *  - card:        { id, serial, grid: (number|null)[][] }
+ * Cartón de bingo de 75 balotas (5x5, centro libre), con el diseño del cartón impreso de la Asociación.
+ *  - card:        { id, serial, grid: (number|null)[5][5] }
  *  - called:      Set<number> con los números cantados
  *  - manualMarks: Set<number> con las marcas del jugador (modo manual)
  *  - autoMark:    true = se marcan solos los números cantados
- *  - pattern:     'LINE' | 'DOUBLE_LINE' | 'FULL'
+ *  - pattern:     'LINE' | 'FOUR_CORNERS' | 'X' | 'FULL'
  *  - onToggle(cardId, number)
- *  - showStatus:  false = vista previa (catálogo), sin progreso del patrón
+ *  - showStatus:  false = vista previa (catálogo, impresión), sin progreso del patrón
  */
 function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL', onToggle, showStatus = true }) {
   const marked = useMemo(() => {
@@ -24,30 +24,39 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
 
   return (
     <article
-      aria-label={`Cartón #${card.serial}`}
-      className={`@container relative overflow-hidden rounded-2xl bg-white shadow-lg ring-4 transition dark:shadow-black/40 ${
-        won ? 'ring-sol-gold motion-safe:animate-pulse' : 'ring-sol-red'
+      aria-label={`Cartón número ${card.serial}`}
+      className={`@container relative overflow-hidden rounded-2xl bg-white shadow-lg ring-4 transition print:shadow-none dark:shadow-black/40 ${
+        won ? 'ring-sol-gold motion-safe:animate-pulse' : 'ring-transparent'
       }`}
     >
-      {/* Marco superior rojo / dorado */}
-      <header className="flex items-center justify-between bg-linear-to-r from-sol-red via-sol-red-dark to-sol-red px-3 py-2 text-white">
-        <div className="flex items-center gap-1.5">
-          <Sun className="h-5 w-5 text-sol-gold" aria-hidden />
-          <span className="text-xs font-bold uppercase tracking-wider">Hogar Sol</span>
-        </div>
-        <span className="rounded-full bg-sol-gold px-2.5 py-0.5 text-xs font-black text-sol-red-dark">
-          #{card.serial}
-        </span>
-      </header>
-      <div className="h-1.5 bg-linear-to-r from-sol-gold via-sol-gold-light to-sol-gold" />
+      {/* Letras B I N G O */}
+      <div className="grid grid-cols-5 px-[3cqw] pt-[3cqw]" aria-hidden>
+        {LETTERS.map((l) => (
+          <span key={l} className="text-center text-[9cqw] font-black leading-none text-black">
+            {l}
+          </span>
+        ))}
+      </div>
 
-      {/* Matriz 3x9 */}
-      <div className="grid grid-cols-9 gap-0.75 bg-sol-blue/10 p-1.5 sm:gap-1 sm:p-2">
+      {/* Cuadrícula azul con casillas blancas */}
+      <div className="m-[3cqw] grid grid-cols-5 gap-[2.2cqw] rounded-[2cqw] bg-[#0f4c9c] p-[2.2cqw]" role="grid">
         {card.grid.flatMap((row, r) =>
           row.map((n, c) => {
             const key = `${r}-${c}`;
-            if (n === null) {
-              return <div key={key} className="aspect-square rounded-md bg-sol-blue/85" aria-hidden />;
+            if (isFreeCell(r, c)) {
+              return (
+                <div
+                  key={key}
+                  role="gridcell"
+                  aria-label="Espacio libre"
+                  className="grid aspect-square place-items-center rounded-[1.6cqw] bg-white"
+                >
+                  <span className="grid place-items-center text-center leading-none">
+                    <Sun className="h-[9cqw] w-[9cqw] text-sol-gold" aria-hidden />
+                    <span className="text-[2.6cqw] font-black uppercase text-sol-red">Hogar Sol</span>
+                  </span>
+                </div>
+              );
             }
             const isMarked = marked.has(n);
             const pendingManual = !autoMark && called.has(n) && !isMarked;
@@ -55,20 +64,19 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
               <button
                 key={key}
                 type="button"
-                disabled={autoMark}
+                role="gridcell"
+                disabled={autoMark || !onToggle}
                 onClick={() => onToggle?.(card.id, n)}
                 aria-pressed={isMarked}
-                aria-label={`Número ${n}${isMarked ? ', marcado' : ''}`}
-                className={`relative grid aspect-square select-none place-items-center rounded-md text-[clamp(0.7rem,5cqw,1.6rem)] font-black tabular-nums transition active:scale-95 ${
-                  isMarked ? 'bg-sol-red text-white shadow-inner' : 'bg-white text-sol-blue'
-                } ${!autoMark ? 'cursor-pointer hover:bg-sol-gold-light' : ''} ${
-                  pendingManual ? 'ring-2 ring-sol-gold' : ''
-                }`}
+                aria-label={`${LETTERS[c]} ${n}${isMarked ? ', marcado' : ''}`}
+                className={`relative grid aspect-square select-none place-items-center rounded-[1.6cqw] bg-white text-[10cqw] font-black tabular-nums leading-none text-black shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)] transition disabled:cursor-default ${
+                  !autoMark && onToggle ? 'cursor-pointer hover:bg-sol-gold-light active:scale-95' : ''
+                } ${pendingManual ? 'ring-[0.8cqw] ring-sol-gold' : ''}`}
               >
                 {n}
                 {isMarked && (
                   <span
-                    className="pointer-events-none absolute inset-1 rounded-full border-2 border-sol-gold/80"
+                    className="pointer-events-none absolute inset-[8%] rounded-full bg-sol-red/55 ring-[0.6cqw] ring-sol-red mix-blend-multiply"
                     aria-hidden
                   />
                 )}
@@ -78,23 +86,26 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
         )}
       </div>
 
-      {/* Marco inferior */}
-      <div className="h-1.5 bg-linear-to-r from-sol-gold via-sol-gold-light to-sol-gold" />
-      <footer className="flex items-center justify-between bg-sol-red px-3 py-1.5 text-xs font-semibold text-white">
-        {showStatus ? (
-          <>
-            <span>{PATTERNS[pattern]?.label}</span>
-            <span>{won ? '¡Completo!' : missing === 1 ? '¡Te falta 1!' : `Faltan ${missing}`}</span>
-          </>
-        ) : (
-          <span className="w-full text-center tracking-wider">Asociación Infantil Hogar Sol</span>
-        )}
+      {/* Pie: estado del patrón y número de serie */}
+      <footer className="flex items-center justify-between gap-2 px-[3cqw] pb-[3cqw]">
+        <span className="text-[3.6cqw] font-bold leading-tight text-[#0f4c9c]">
+          {showStatus
+            ? won
+              ? '¡Completo!'
+              : missing === 1
+                ? '¡Te falta 1!'
+                : `${PATTERNS[pattern]?.label} · faltan ${missing}`
+            : 'Asociación Infantil Hogar Sol'}
+        </span>
+        <span className="rounded-full bg-[#0f4c9c] px-[3.5cqw] py-[0.8cqw] text-[6cqw] font-black tabular-nums leading-none text-white underline decoration-[0.4cqw] underline-offset-[0.8cqw]">
+          {card.serial}
+        </span>
       </footer>
 
       {won && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-sol-gold/25">
-          <div className="flex -rotate-6 items-center gap-2 rounded-2xl border-4 border-white bg-sol-red px-5 py-2 text-3xl font-black text-sol-gold shadow-2xl sm:text-4xl">
-            <Trophy className="h-8 w-8" /> ¡BINGO!
+          <div className="flex -rotate-6 items-center gap-2 rounded-2xl border-4 border-white bg-sol-red px-5 py-2 text-[9cqw] font-black text-sol-gold shadow-2xl">
+            <Trophy className="h-[9cqw] w-[9cqw]" /> ¡BINGO!
           </div>
         </div>
       )}

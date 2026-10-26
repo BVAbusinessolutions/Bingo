@@ -38,7 +38,10 @@ export default function CheckoutPage() {
     <main className="container-page space-y-5 py-6">
       <CheckoutSteps current={paying ? 2 : 3} />
       {paying && (
-        <PageHeader title="Tus datos y pago" description="Completa los 3 pasos antes de que se acabe el tiempo. Tus cartones están apartados solo para ti." />
+        <PageHeader
+          title="Tus datos y pago"
+          description="Completa los 3 pasos antes de que se acabe el tiempo. Tus cartones están apartados solo para ti."
+        />
       )}
       {paying ? <PaymentForm reservation={reservation} onChange={setReservation} /> : <PaymentResult reservation={reservation} />}
     </main>

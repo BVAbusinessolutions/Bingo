@@ -15,7 +15,10 @@ export default function LegalLayout({ title, intro, sections }) {
           <ol className="grid list-decimal gap-1 pl-6 marker:font-bold marker:text-brand sm:grid-cols-2">
             {sections.map((s, i) => (
               <li key={s.title}>
-                <a href={`#seccion-${i + 1}`} className="inline-flex min-h-9 items-center font-semibold text-sol-blue underline-offset-4 hover:underline dark:text-sol-gold">
+                <a
+                  href={`#seccion-${i + 1}`}
+                  className="inline-flex min-h-9 items-center font-semibold text-sol-blue underline-offset-4 hover:underline dark:text-sol-gold"
+                >
                   {s.title}
                 </a>
               </li>
@@ -29,7 +32,9 @@ export default function LegalLayout({ title, intro, sections }) {
               <h2 className="text-2xl font-black text-fg">
                 {i + 1}. {s.title}
               </h2>
-              <div className="mt-2 space-y-3 text-lg leading-relaxed text-fg-muted [&_li]:ml-6 [&_li]:list-disc [&_strong]:text-fg">{s.body}</div>
+              <div className="mt-2 space-y-3 text-lg leading-relaxed text-fg-muted [&_li]:ml-6 [&_li]:list-disc [&_strong]:text-fg">
+                {s.body}
+              </div>
             </section>
           ))}
         </div>

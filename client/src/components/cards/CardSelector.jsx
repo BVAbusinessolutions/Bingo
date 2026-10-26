@@ -31,25 +31,23 @@ const CardTile = memo(function CardTile({ card, selected, remainingMs, onToggle 
       onClick={() => onToggle(card.serial)}
       aria-pressed={selectable ? selected : undefined}
       aria-label={`Cartón ${formatSerial(card.serial)}: ${tooltip}`}
-      className={`group relative flex aspect-square flex-col items-center justify-center rounded-lg border-2 text-sm font-black tabular-nums transition sm:text-base ${
+      className={`group relative flex min-h-14 flex-col items-center justify-center rounded-xl border-2 py-2 text-lg font-black tabular-nums transition ${
         selected
           ? 'scale-105 border-sol-gold bg-sol-blue text-white shadow-lg ring-2 ring-sol-gold dark:bg-sol-gold dark:text-sol-blue'
           : meta.tile
       } ${selectable ? 'cursor-pointer active:scale-95' : 'cursor-not-allowed'}`}
     >
       {card.serial}
-      {selected && (
-        <Check className="absolute right-0.5 top-0.5 h-3.5 w-3.5" aria-hidden />
-      )}
+      {selected && <Check className="absolute right-1 top-1 h-4 w-4" aria-hidden />}
       {card.status === 'RESERVED' && remainingMs != null && (
-        <span className="mt-0.5 flex items-center gap-0.5 text-[9px] font-semibold sm:text-[10px]">
-          <Clock className="h-2.5 w-2.5" aria-hidden /> {mmss(remainingMs)}
+        <span className="mt-0.5 flex items-center gap-1 text-xs font-bold">
+          <Clock className="h-3 w-3" aria-hidden /> {mmss(remainingMs)}
         </span>
       )}
       {/* Tooltip visual (hover / foco de teclado). En táctil se usa el aria-label y la leyenda. */}
       <span
         role="presentation"
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden w-max max-w-44 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium text-white no-underline shadow-lg group-hover:block group-focus-visible:block"
+        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden w-max max-w-44 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-sm font-medium text-white no-underline shadow-lg group-hover:block group-focus-visible:block"
       >
         {formatSerial(card.serial)} · {tooltip}
       </span>
@@ -85,18 +83,18 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
   return (
     <section aria-labelledby="catalog-title" className="surface space-y-4 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="catalog-title" className="text-lg font-black text-brand">
+        <h2 id="catalog-title" className="text-2xl font-black text-brand">
           Catálogo de cartones
         </h2>
-        <label className="flex items-center gap-2 rounded-full border border-line bg-page px-3">
-          <Search className="h-4 w-4 text-fg-subtle" aria-hidden />
+        <label className="flex min-h-12 items-center gap-2 rounded-full border-2 border-line bg-page px-4">
+          <Search className="h-5 w-5 text-fg-subtle" aria-hidden />
           <span className="sr-only">Buscar número de cartón</span>
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            onChange={(e) => setQuery(e.target.value.replace(/\D/g, '').slice(0, 8))}
             inputMode="numeric"
             placeholder="Buscar #"
-            className="w-28 bg-transparent py-2 text-sm text-fg outline-none placeholder:text-fg-subtle"
+            className="w-36 bg-transparent py-2 text-base text-fg outline-none placeholder:text-fg-subtle"
           />
         </label>
       </div>
@@ -108,7 +106,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
             type="button"
             onClick={() => setFilter(key)}
             aria-pressed={filter === key}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+            className={`flex min-h-11 items-center gap-2 rounded-full px-4 font-extrabold transition ${
               filter === key ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'bg-muted text-fg-muted hover:text-fg'
             }`}
           >
@@ -120,7 +118,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
       </div>
 
       {/* Leyenda */}
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-fg-muted">
         {['AVAILABLE', 'RESERVED', 'VERIFYING', 'SOLD'].map((s) => (
           <li key={s} className="flex items-center gap-1">
             <span aria-hidden>{CARD_STATUS[s].emoji}</span> {CARD_STATUS[s].label}
@@ -132,7 +130,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
       {visible.length === 0 ? (
         <p className="py-10 text-center text-fg-muted">No hay cartones con ese filtro.</p>
       ) : (
-        <div className="grid max-h-[60vh] grid-cols-5 gap-1.5 overflow-y-auto p-1 pt-8 -mt-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
+        <div className="grid max-h-[60vh] grid-cols-4 gap-2 overflow-y-auto p-1 pt-8 -mt-6 sm:grid-cols-6 md:grid-cols-8">
           {visible.map((card) => (
             <CardTile
               key={card.serial}

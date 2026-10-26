@@ -10,7 +10,11 @@ const LABELS = {
 export default function TextSizeControl({ className = '' }) {
   const { textSize, setTextSize } = useTheme();
   return (
-    <div role="group" aria-label="Tamaño de letra" className={`inline-flex rounded-full border-2 border-sol-gold/70 bg-white/10 p-0.5 ${className}`}>
+    <div
+      role="group"
+      aria-label="Tamaño de letra"
+      className={`inline-flex rounded-full border-2 border-sol-gold/70 bg-white/10 p-0.5 ${className}`}
+    >
       {TEXT_SIZES.map((size) => {
         const [short, label, cls] = LABELS[size];
         const active = textSize === size;

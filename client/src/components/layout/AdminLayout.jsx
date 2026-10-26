@@ -1,6 +1,20 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { BellRing, CalendarDays, Grid3x3, LayoutDashboard, Mic, ShoppingCart, Trophy, X } from 'lucide-react';
+import {
+  BellRing,
+  CalendarDays,
+  Grid3x3,
+  Landmark,
+  Layers,
+  LayoutDashboard,
+  Mic,
+  ScrollText,
+  ShoppingCart,
+  Trophy,
+  Users,
+  X,
+} from 'lucide-react';
+import { PATHS } from '../../routing/paths';
 import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
 import { formatCRC } from '../../lib/format';
@@ -31,7 +45,11 @@ function AdminToast({ toast, onClose }) {
             Revisar ahora
           </Link>
         </div>
-        <button onClick={onClose} aria-label="Cerrar aviso" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted hover:bg-muted">
+        <button
+          onClick={onClose}
+          aria-label="Cerrar aviso"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted hover:bg-muted"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -77,7 +95,11 @@ export default function AdminLayout() {
       reloadCounters();
     };
     const onProof = (r) => {
-      setToast({ title: '🛒 Nueva compra por verificar', text: `${r.buyer?.fullName} · ${r.serials.length} cartón(es) · ${formatCRC(r.total)}`, to: `compras/${r.id}` });
+      setToast({
+        title: '🛒 Nueva compra por verificar',
+        text: `${r.buyer?.fullName} · ${r.serials.length} cartón(es) · ${formatCRC(r.total)}`,
+        to: `compras/${r.id}`,
+      });
       vibrate();
       refresh();
     };
@@ -102,18 +124,22 @@ export default function AdminLayout() {
 
   const tabs = [
     { to: '', end: true, label: 'Panel', Icon: LayoutDashboard },
-    { to: 'compras', label: 'Compras', Icon: ShoppingCart, badge: pending },
-    { to: 'ganadores', label: 'Ganadores', Icon: Trophy, badge: pendingClaims },
-    { to: 'sorteo', label: 'Bingo Master', Icon: Mic },
-    { to: 'eventos', label: 'Eventos', Icon: CalendarDays },
-    { to: 'cartones', label: 'Cartones', Icon: Grid3x3 },
+    { to: PATHS.adminPurchases, label: 'Compras', Icon: ShoppingCart, badge: pending },
+    { to: PATHS.adminWinners, label: 'Ganadores', Icon: Trophy, badge: pendingClaims },
+    { to: PATHS.adminDraw, label: 'Bingo Master', Icon: Mic },
+    { to: PATHS.adminEvents, label: 'Eventos', Icon: CalendarDays },
+    { to: PATHS.adminSeries, label: 'Series', Icon: Layers },
+    { to: PATHS.adminCards, label: 'Cartones', Icon: Grid3x3 },
+    { to: PATHS.adminUsers, label: 'Usuarios', Icon: Users },
+    { to: PATHS.adminAudit, label: 'Bitácora', Icon: ScrollText },
+    { to: PATHS.adminSettings, label: 'Datos de cobro', Icon: Landmark },
   ];
 
   const event = events.find((e) => e.id === eventId);
 
   return (
-    <div className="container-page grid gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+    <div className="container-page grid gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:py-0">
+      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start print:hidden">
         <div className="surface space-y-2 p-4">
           <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
           <label className="block">
@@ -147,7 +173,10 @@ export default function AdminLayout() {
               <Icon className="h-5 w-5 shrink-0" aria-hidden />
               <span className="flex-1">{label}</span>
               {badge > 0 && (
-                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white" aria-label={`${badge} pendientes`}>
+                <span
+                  className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white"
+                  aria-label={`${badge} pendientes`}
+                >
                   {badge}
                 </span>
               )}

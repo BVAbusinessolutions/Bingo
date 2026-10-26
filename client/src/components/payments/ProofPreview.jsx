@@ -22,7 +22,12 @@ export default function ProofPreview({ reservationId }) {
   if (file === 'error') return <p className="text-fg-muted">No se pudo cargar el comprobante.</p>;
   if (file.isPdf) {
     return (
-      <a href={file.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center gap-2 rounded-xl border-2 border-line px-4 font-bold text-fg hover:border-sol-blue">
+      <a
+        href={file.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex min-h-12 items-center gap-2 rounded-xl border-2 border-line px-4 font-bold text-fg hover:border-sol-blue"
+      >
         <FileText className="h-5 w-5 text-sol-red" aria-hidden /> Abrir comprobante (PDF)
       </a>
     );

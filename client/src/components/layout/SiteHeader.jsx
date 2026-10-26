@@ -132,7 +132,10 @@ export default function SiteHeader() {
               <Link to={PATHS.login} className="rounded-xl px-3 py-2 font-bold hover:bg-white/10">
                 Entrar
               </Link>
-              <Link to={PATHS.register} className="rounded-xl bg-sol-gold px-4 py-2.5 font-black text-sol-blue shadow hover:bg-sol-gold-dark">
+              <Link
+                to={PATHS.register}
+                className="rounded-xl bg-sol-gold px-4 py-2.5 font-black text-sol-blue shadow hover:bg-sol-gold-dark"
+              >
                 Crear cuenta
               </Link>
             </>
@@ -155,13 +158,19 @@ export default function SiteHeader() {
           <div className="container-page space-y-4 pt-4">
             {isAuthenticated && (
               <p className="flex items-center gap-3 font-bold">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-sol-gold font-black text-sol-blue">{initials(user?.name)}</span>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-sol-gold font-black text-sol-blue">
+                  {initials(user?.name)}
+                </span>
                 Hola, {user?.name?.split(' ')[0]}
               </p>
             )}
             <nav aria-label="Principal móvil" className="grid gap-1">
               {mobileLinks.map((l) => (
-                <NavLink key={l.to} to={l.to} className={({ isActive }) => `${navLinkClass({ isActive })} flex min-h-12 items-center text-lg`}>
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  className={({ isActive }) => `${navLinkClass({ isActive })} flex min-h-12 items-center text-lg`}
+                >
                   {l.label}
                 </NavLink>
               ))}
@@ -175,7 +184,10 @@ export default function SiteHeader() {
               <ThemeToggle />
             </div>
             {isAuthenticated ? (
-              <button onClick={logout} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-white/40 font-bold">
+              <button
+                onClick={logout}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-white/40 font-bold"
+              >
                 <LogOut className="h-5 w-5" aria-hidden /> Cerrar sesión
               </button>
             ) : (
@@ -183,7 +195,10 @@ export default function SiteHeader() {
                 <Link to={PATHS.login} className="flex min-h-12 items-center justify-center rounded-xl border-2 border-white/60 font-bold">
                   Entrar
                 </Link>
-                <Link to={PATHS.register} className="flex min-h-12 items-center justify-center rounded-xl bg-sol-gold font-black text-sol-blue">
+                <Link
+                  to={PATHS.register}
+                  className="flex min-h-12 items-center justify-center rounded-xl bg-sol-gold font-black text-sol-blue"
+                >
                   Crear cuenta
                 </Link>
               </div>

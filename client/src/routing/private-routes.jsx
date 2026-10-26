@@ -3,6 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
 import PageLoader from '../components/ui/PageLoader';
 import { PATHS } from './paths';
+import { homeFor, safeRedirect } from './redirects';
+
+export { homeFor, safeRedirect };
 
 /*
  * Seguridad de navegación del frontend.
@@ -17,19 +20,6 @@ export const ACCESS = Object.freeze({
   client: [CLIENTE, ADMIN],
   admin: [ADMIN],
 });
-
-/** Pantalla de inicio de cada rol después de autenticarse. */
-export const homeFor = (role) => (role === ADMIN ? PATHS.admin : PATHS.live);
-
-/**
- * Evita redirecciones abiertas: solo acepta rutas internas ("/algo"),
- * nunca "//dominio.com", "/\dominio.com" ni URLs absolutas.
- */
-export const safeRedirect = (from, fallback) => {
-  const target = typeof from === 'string' ? from : from?.pathname;
-  if (typeof target !== 'string' || !target.startsWith('/') || /^\/[/\\]/.test(target)) return fallback;
-  return `${target}${from?.search ?? ''}`;
-};
 
 /**
  * Requiere sesión y, opcionalmente, uno de los roles indicados:

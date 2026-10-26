@@ -1,114 +1,100 @@
-# Bingo Benéfico · Fundación Hogar Sol
+# Bingo Benéfico · Asociación Infantil Hogar Sol
 
-Monorepo con `client/` (React + Vite + Tailwind v4) y `server/` (Node + Express + Socket.io).
+Plataforma para vender cartones de bingo en línea y jugar el sorteo en vivo. Bingo de **75 balotas**
+(cartón 5×5 B-I-N-G-O con centro libre), pago por SINPE Móvil o transferencia con verificación manual
+del comprobante, transmisión en vivo y validación de ganadores en el servidor.
 
-## 1. Puesta en marcha
+- **client/** — React 18 + Vite 7 + Tailwind v4
+- **server/** — Node 24 + Express 5 + Socket.io + PostgreSQL (Supabase en producción)
 
-Desde la carpeta raíz `Bingo/`:
-
-```bash
-npm run setup   # solo la primera vez: instala todo y crea server/.env con secretos aleatorios
-```
-
-En dos terminales, desde la carpeta raíz `Bingo/`:
+## Puesta en marcha (desarrollo)
 
 ```bash
-npm run server  # terminal 1: API (puerto 4000)
-npm run dev     # terminal 2: web (puerto 5173)
+npm run setup     # solo la primera vez: instala todo y crea server/.env con secretos aleatorios
+npm run server    # terminal 1: API en http://localhost:4000
+npm run dev       # terminal 2: web en http://localhost:5173
 ```
 
-Luego abre <http://localhost:5173>.
+Sin `DATABASE_URL`, el servidor usa una base Postgres **embebida** (PGlite) guardada en `server/.data/`
+y carga datos de demostración. Para trabajar contra Supabase, pega la cadena de conexión en `server/.env`
+(ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)).
 
-Usuarios de prueba (solo en memoria):
+Cuentas de demostración (solo desarrollo, **nunca** se crean en producción):
 
-| Rol   | Correo                   | Contraseña   |
-|-------|--------------------------|--------------|
-| ADMIN | `admin@hogarsol.org`     | `Admin123!`  |
-| USER  | `jugador@hogarsol.org`   | `Jugador123!`|
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@hogarsol.org` | `Admin123!` |
+| Cliente | `cliente@hogarsol.org` | `Cliente123!` |
 
-Abre `/admin/sorteo` como admin en una ventana y `/jugar` como jugador en otra: cada balota que cante el admin aparece al instante en los cartones del jugador.
+## Scripts (desde la raíz)
 
-### Cómo se creó desde cero
+| Comando | Qué hace |
+|---|---|
+| `npm run setup` | Instala dependencias y crea `server/.env` |
+| `npm run server` / `npm run dev` | API y web en modo desarrollo |
+| `npm test` | 53 pruebas del servidor (Postgres en memoria) + 16 del cliente |
+| `npm run lint` | ESLint en servidor y cliente |
+| `npm run build` | Compila la web en `client/dist` |
+| `npm start` | Servidor de producción (sirve también la web compilada) |
+| `npm run create-admin` | Crea o promueve un administrador (pide los datos por consola) |
+| `npm run backup` | Respaldo de toda la base en `server/backups/*.json.gz` |
 
-```bash
-npm create vite@latest client -- --template react
-cd client
-npm i react-router-dom axios socket.io-client lucide-react zod dompurify
-npm i -D tailwindcss @tailwindcss/vite
+## Cómo funciona
 
-mkdir ../server && cd ../server && npm init -y
-npm i express socket.io jsonwebtoken bcryptjs cookie-parser cors helmet express-rate-limit zod
-```
+**Compra (estilo cine):** 1) elegir cartones → 2) datos + número y foto del comprobante (con aviso de que
+el detalle del pago debe decir **BINGO**) → 3) confirmación. Los cartones quedan apartados 15 minutos.
+El admin recibe un correo con el enlace a la compra, verifica con una lista de chequeo y aprueba; el cliente
+recibe un correo con el enlace a sus cartones.
 
-## 2. Estructura
+**Sorteo:** el admin canta balotas en *Bingo Master*; los cartones de los jugadores se marcan al instante.
+El botón **¡Bingo!** envía un reclamo que el **servidor** valida contra las balotas cantadas; el admin
+confirma el premio en *Ganadores* y aparece en *Resultados*.
+
+**Series de cartones:** cada carga es una serie (un ZIP de imágenes PNG, o una serie generada al azar).
+En *Administración → Series* se ven como archivos separados (Nueva / Anterior) y se elige cuál se juega en
+cada evento. Los cartones que el lector no pudo leer quedan "por revisar" y se corrigen junto a su imagen.
+
+## Estructura
 
 ```text
 Bingo/
-├── package.json                  # scripts raíz: setup / dev / build / start
-├── scripts/ensure-env.mjs
-├── client/
-│   ├── index.html
-│   ├── vite.config.js            # Tailwind + proxy /api y /socket.io -> :4000
-│   └── src/
-│       ├── main.jsx              # monta <App /> e importa styles/index.css
-│       ├── app/
-│       │   ├── App.jsx           # Providers + AppRouter
-│       │   └── providers.jsx     # Theme, BrowserRouter, Auth
-│       ├── routing/
-│       │   ├── AppRouter.jsx     # todas las rutas (páginas con carga diferida)
-│       │   ├── private-routes.jsx# seguridad: PrivateRoute, PublicOnlyRoute, ACCESS, safeRedirect
-│       │   └── paths.js          # constantes de URLs
-│       ├── pages/                # una pantalla por ruta
-│       │   ├── public/           # Home, Catálogo, Login, Registro
-│       │   ├── client/           # Checkout, Mis compras, Live
-│       │   ├── admin/            # Dashboard, Pagos, Sorteo, Eventos, Cartones
-│       │   └── errors/           # Unauthorized
-│       ├── components/           # piezas reutilizables
-│       │   ├── ui/               # Field, StatusBadge, ThemeToggle, PageLoader
-│       │   ├── layout/           # SiteHeader, PublicLayout, AdminLayout
-│       │   └── bingo/ cards/ payments/ player/
-│       ├── context/              # AuthContext, ThemeContext
-│       ├── constants/            # roles, cardStatus, patterns
-│       ├── styles/
-│       │   ├── index.css         # entrada: Tailwind + imports
-│       │   ├── tokens.css        # marca (sol-red, sol-gold, sol-blue) + Día/Noche
-│       │   └── global.css        # base, foco visible, reduced-motion
-│       ├── api/
-│       │   ├── tokenStore.js     # access token en memoria
-│       │   ├── httpClient.js     # Axios + interceptores (Bearer + refresh automático)
-│       │   └── endpoints.js
-│       ├── hooks/                # useSocket, useCountdown, useCurrentEvent, useAdmin
-│       └── lib/                  # validation (zod + sanitización), format
+├── render.yaml                    # despliegue en Render (web + API en un servicio)
+├── docs/DESPLIEGUE.md             # guía Supabase + Render + correo
+├── pendientes/TAREAS-PENDIENTES.md
+├── client/src/
+│   ├── app/                       # App + providers (tema, router, sesión, avisos)
+│   ├── routing/                   # AppRouter, private-routes (seguridad), paths, redirects
+│   ├── pages/                     # public/ · client/ · admin/ · errors/
+│   ├── components/                # ui/ · layout/ · bingo/ · cards/ · payments/ · checkout/ · admin/ · player/
+│   ├── context/ · hooks/ · api/ · lib/ · constants/ · config/ · styles/
+│   └── __tests__/                 # Vitest
 └── server/
-    └── src/
-        ├── index.js              # Express + helmet + CORS + Socket.io
-        ├── config/env.js
-        ├── db.js                 # almacén en memoria + datos de prueba (cambiar por BD real)
-        ├── middleware/
-        │   ├── auth.js           # authenticate (JWT) + authorize(rol)
-        │   └── security.js       # rate limits, validación zod, anti-CSRF
-        ├── utils/cardGenerator.js  # cartones 90 balotas 3x9 sin duplicados
-        └── modules/
-            ├── auth/             # login, refresh con rotación, logout, me
-            ├── cards/            # mis cartones, inventario, reservas 10 min, generación y aprobación (admin)
-            └── draw/             # REST para el admin + difusión por Socket.io
+    ├── src/
+    │   ├── app.js                 # Express: seguridad, rutas, web compilada con CSP
+    │   ├── index.js               # arranque: BD, migraciones, sockets, tareas periódicas
+    │   ├── db/                    # conexión (Supabase/PGlite), migrations/*.sql, seed de demo
+    │   ├── domain/bingo.js        # reglas del bingo de 75 balotas
+    │   ├── modules/               # auth · events · reservations · draw · claims · series · admin
+    │   ├── services/              # auditoría, archivos, configuración, tokens de un solo uso
+    │   ├── middleware/            # autenticación, límites, validación
+    │   └── utils/                 # correo, logs JSON, CSV seguro
+    ├── scripts/                   # create-admin, backup
+    └── test/                      # pruebas de integración (node:test + supertest)
 ```
 
-## 3. Seguridad implementada
+## Seguridad (resumen)
 
-- **JWT:** access token de 15 min guardado solo en memoria. El refresh token de 7 días va en una cookie `HttpOnly`, `Secure` (en producción) y `SameSite=Strict`, limitada a `/api/auth`.
-- **Rotación de refresh tokens:** si alguien reutiliza un token ya usado, se revocan todas las sesiones de ese usuario.
-- **Interceptor Axios:** agrega `Bearer` a cada petición. Si varias peticiones reciben 401 a la vez, se hace un solo refresh, todas reintentan una vez y, si falla, se cierra la sesión.
-- **CSRF:** cookie `SameSite=Strict` y la cabecera obligatoria `X-Requested-With` en refresh y logout.
-- **XSS:** React escapa el contenido. Además se usa DOMPurify, helmet (CSP) y el iframe del stream solo acepta proveedores de una lista blanca y un ID validado.
-- **Inyección:** zod valida todas las entradas en cliente y servidor, y el body está limitado a 50 kb. Con BD real, usa solo consultas parametrizadas u ORM.
-- **Fuerza bruta:** 5 intentos de login cada 15 min, 10 reservas cada 10 min y 300 peticiones por minuto por IP. Bcrypt con coste 12 y comparación de tiempo constante.
-- **Autorización:** `ProtectedRoute` solo mejora la experiencia. Cada endpoint vuelve a comprobar el rol en el servidor.
+- Contraseñas con bcrypt; access token en memoria; refresh token en cookie `HttpOnly` + `SameSite=Strict`
+  con rotación y detección de reutilización; bloqueo por cuenta e IP; secretos JWT validados al arrancar.
+- Autorización en el servidor por rol y por dueño **dentro de la consulta** (IDOR probado en los tests).
+- Reservas atómicas en la base de datos; un reclamo activo por cartón garantizado por índice único.
+- Tablas en el esquema privado `app` con RLS activado: la API pública de Supabase no las expone.
+- Comprobantes e imágenes en la base, servidos con `Content-Security-Policy: sandbox`; firma real de archivo
+  verificada; ZIP con límites contra "bombas zip" y rutas maliciosas.
+- Web servida con CSP estricta (sin `unsafe-inline` en scripts), HSTS y `frame-ancestors 'none'`.
+- Bitácora inmutable de acciones administrativas y de seguridad; CSV protegido contra inyección de fórmulas.
+- Retención: comprobantes de compras no concretadas se borran tras 90 días.
 
-## 4. Pendiente para producción
+## Licencia
 
-- Base de datos real (PostgreSQL + Prisma) con transacciones para las reservas.
-- Rate limit en Redis si hay varias instancias.
-- Guardar los comprobantes en almacenamiento privado (S3) en lugar de `server/uploads/`.
-- Cambiar el pago con tarjeta simulado por Stripe Checkout + webhook firmado (el servidor nunca debe recibir números de tarjeta).
-- Notificaciones por correo/WhatsApp al aprobar o rechazar pagos.
+Uso interno de la Asociación Infantil Hogar Sol.

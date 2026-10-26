@@ -59,7 +59,9 @@ export default function VerifyEmailPage() {
         <XCircle className="mx-auto h-16 w-16 text-sol-red" aria-hidden />
         <p className="text-lg text-fg">{error}</p>
         <p className="text-fg-muted">
-          {isAuthenticated ? 'Usa el botón “Reenviar enlace” del aviso amarillo de arriba.' : 'Inicia sesión y pide un enlace nuevo desde el aviso amarillo.'}
+          {isAuthenticated
+            ? 'Usa el botón “Reenviar enlace” del aviso amarillo de arriba.'
+            : 'Inicia sesión y pide un enlace nuevo desde el aviso amarillo.'}
         </p>
         {!isAuthenticated && (
           <Button to={PATHS.login} size="lg" className="w-full">

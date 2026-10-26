@@ -18,12 +18,33 @@ const TONES = {
 /** Traduce los avisos del servidor (canal /user) a mensajes para la persona. */
 const fromServer = {
   'reservation:updated': (r) =>
-    r.status === 'APPROVED'
-      ? { tone: 'success', title: '¡Pago aprobado!', text: `Tus cartones ${r.serials.map((s) => `#${s}`).join(', ')} ya están listos para jugar.`, link: { to: `/mis-compras/${r.id}`, label: 'Ver compra' } }
-      : { tone: 'error', title: 'Pago no verificado', text: 'No pudimos confirmar tu pago y los cartones fueron liberados.', link: { to: `/mis-compras/${r.id}`, label: 'Ver detalle' } },
+    r.status === 'REFUNDED'
+      ? {
+          tone: 'info',
+          title: 'Reembolso registrado',
+          text: `La compra de los cartones ${r.serials.map((s) => `#${s}`).join(', ')} fue reembolsada.`,
+          link: { to: `/mis-compras/${r.id}`, label: 'Ver detalle' },
+        }
+      : r.status === 'APPROVED'
+        ? {
+            tone: 'success',
+            title: '¡Pago aprobado!',
+            text: `Tus cartones ${r.serials.map((s) => `#${s}`).join(', ')} ya están listos para jugar.`,
+            link: { to: `/mis-compras/${r.id}`, label: 'Ver compra' },
+          }
+        : {
+            tone: 'error',
+            title: 'Pago no verificado',
+            text: 'No pudimos confirmar tu pago y los cartones fueron liberados.',
+            link: { to: `/mis-compras/${r.id}`, label: 'Ver detalle' },
+          },
   'claim:updated': (c) =>
     c.status === 'CONFIRMED'
-      ? { tone: 'prize', title: '🏆 ¡Premio confirmado!', text: `Tu bingo con el cartón #${c.serial} fue validado. Te contactaremos para la entrega.` }
+      ? {
+          tone: 'prize',
+          title: '🏆 ¡Premio confirmado!',
+          text: `Tu bingo con el cartón #${c.serial} fue validado. Te contactaremos para la entrega.`,
+        }
       : { tone: 'error', title: 'Reclamo no confirmado', text: `El reclamo del cartón #${c.serial} no pudo validarse.` },
 };
 
@@ -63,7 +84,10 @@ export function NotificationsProvider({ children }) {
   return (
     <NotificationsContext.Provider value={value}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-3 bottom-3 z-60 flex flex-col items-center gap-2 sm:inset-x-auto sm:right-4 sm:items-end print:hidden">
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-3 bottom-3 z-60 flex flex-col items-center gap-2 sm:inset-x-auto sm:right-4 sm:items-end print:hidden"
+      >
         {toasts.map((t) => {
           const Icon = ICONS[t.tone] ?? Info;
           return (
@@ -77,12 +101,20 @@ export function NotificationsProvider({ children }) {
                 <p className="text-lg font-black text-fg">{t.title}</p>
                 {t.text && <p className="text-fg-muted">{t.text}</p>}
                 {t.link && (
-                  <Link to={t.link.to} onClick={() => dismiss(t.id)} className="mt-1 inline-block font-extrabold text-sol-blue underline dark:text-sol-gold">
+                  <Link
+                    to={t.link.to}
+                    onClick={() => dismiss(t.id)}
+                    className="mt-1 inline-block font-extrabold text-sol-blue underline dark:text-sol-gold"
+                  >
                     {t.link.label}
                   </Link>
                 )}
               </div>
-              <button onClick={() => dismiss(t.id)} aria-label="Cerrar aviso" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted hover:bg-muted">
+              <button
+                onClick={() => dismiss(t.id)}
+                aria-label="Cerrar aviso"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted hover:bg-muted"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>

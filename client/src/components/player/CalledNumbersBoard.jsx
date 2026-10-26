@@ -1,9 +1,13 @@
-const ALL = Array.from({ length: 90 }, (_, i) => i + 1);
+import { COLUMN_RANGES, LETTERS, ballLabel, letterFor } from '../../constants/patterns';
 
+const LETTER_COLORS = ['bg-sol-blue', 'bg-sol-red', 'bg-emerald-600', 'bg-amber-500', 'bg-violet-600'];
+const colorFor = (n) => LETTER_COLORS[LETTERS.indexOf(letterFor(n))];
+
+/** Tablero de balotas de 75 agrupadas por letra, con la última balota grande y las anteriores. */
 export default function CalledNumbersBoard({ calledList }) {
   const called = new Set(calledList);
   const last = calledList.at(-1);
-  const previous = calledList.slice(-5, -1).reverse();
+  const previous = calledList.slice(-6, -1).reverse();
 
   return (
     <section aria-label="Balotas cantadas" className="surface p-4 ring-2 ring-sol-gold">
@@ -11,38 +15,59 @@ export default function CalledNumbersBoard({ calledList }) {
         <div
           aria-live="assertive"
           aria-atomic="true"
-          aria-label={last ? `Última balota: ${last}` : 'Aún no se ha cantado ninguna balota'}
-          className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-4 border-sol-gold bg-sol-red text-4xl font-black text-white shadow-lg"
+          aria-label={last ? `Última balota: ${letterFor(last)} ${last}` : 'Aún no se ha cantado ninguna balota'}
+          className={`grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-white text-white shadow-lg ring-4 ring-sol-gold ${last ? colorFor(last) : 'bg-slate-400'}`}
         >
-          {last ?? '–'}
+          {last ? (
+            <span className="text-center leading-none">
+              <span className="block text-xl font-black">{letterFor(last)}</span>
+              <span className="block text-4xl font-black tabular-nums">{last}</span>
+            </span>
+          ) : (
+            <span className="text-3xl font-black">–</span>
+          )}
         </div>
         <div className="min-w-0">
           <p className="font-extrabold uppercase tracking-wide text-fg-muted">
-            Última balota · <span className="text-fg">{calledList.length}</span>/90
+            Última balota · <span className="text-fg">{calledList.length}</span>/75
           </p>
           {previous.length > 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <span className="sr-only">Anteriores:</span>
               {previous.map((n) => (
-                <span key={n} className="grid h-10 w-10 place-items-center rounded-full bg-sol-blue text-lg font-black text-white dark:bg-sol-blue-light">
-                  {n}
+                <span
+                  key={n}
+                  className={`grid h-11 w-11 place-items-center rounded-full text-sm font-black leading-none text-white ${colorFor(n)}`}
+                >
+                  {ballLabel(n)}
                 </span>
               ))}
             </div>
           )}
         </div>
       </div>
-      <div className="grid grid-cols-10 gap-1" aria-hidden>
-        {ALL.map((n) => (
-          <span
-            key={n}
-            className={`grid aspect-square place-items-center rounded-md text-xs font-extrabold tabular-nums sm:text-sm ${
-              called.has(n) ? 'bg-sol-red text-white' : 'bg-muted text-fg-muted'
-            }`}
-          >
-            {n}
-          </span>
-        ))}
+
+      <div className="space-y-1" aria-hidden>
+        {LETTERS.map((letter, i) => {
+          const [min, max] = COLUMN_RANGES[i];
+          return (
+            <div key={letter} className="grid grid-cols-[2rem_repeat(15,minmax(0,1fr))] items-center gap-0.5 sm:gap-1">
+              <span className={`grid aspect-square place-items-center rounded-md text-sm font-black text-white ${LETTER_COLORS[i]}`}>
+                {letter}
+              </span>
+              {Array.from({ length: max - min + 1 }, (_, k) => min + k).map((n) => (
+                <span
+                  key={n}
+                  className={`grid aspect-square place-items-center rounded text-[0.65rem] font-extrabold tabular-nums sm:text-xs ${
+                    called.has(n) ? `${LETTER_COLORS[i]} text-white` : 'bg-muted text-fg-muted'
+                  }`}
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

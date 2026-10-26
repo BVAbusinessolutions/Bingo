@@ -33,6 +33,12 @@ const AdminWinnersPage = lazy(() => import('../pages/admin/AdminWinnersPage'));
 const AdminDrawPage = lazy(() => import('../pages/admin/AdminDrawPage'));
 const AdminEventsPage = lazy(() => import('../pages/admin/AdminEventsPage'));
 const AdminCardsPage = lazy(() => import('../pages/admin/AdminCardsPage'));
+const AdminSeriesPage = lazy(() => import('../pages/admin/AdminSeriesPage'));
+const AdminSeriesDetailPage = lazy(() => import('../pages/admin/AdminSeriesDetailPage'));
+const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
+const AdminAuditPage = lazy(() => import('../pages/admin/AdminAuditPage'));
+const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
+const AdminPrintPage = lazy(() => import('../pages/admin/AdminPrintPage'));
 
 export default function AppRouter() {
   return (
@@ -77,6 +83,12 @@ export default function AppRouter() {
             <Route path={PATHS.adminDraw} element={<AdminDrawPage />} />
             <Route path={PATHS.adminEvents} element={<AdminEventsPage />} />
             <Route path={PATHS.adminCards} element={<AdminCardsPage />} />
+            <Route path={PATHS.adminSeries} element={<AdminSeriesPage />} />
+            <Route path={PATHS.adminSeriesDetail} element={<AdminSeriesDetailPage />} />
+            <Route path={PATHS.adminUsers} element={<AdminUsersPage />} />
+            <Route path={PATHS.adminAudit} element={<AdminAuditPage />} />
+            <Route path={PATHS.adminSettings} element={<AdminSettingsPage />} />
+            <Route path={PATHS.adminPrint} element={<AdminPrintPage />} />
           </Route>
         </Route>
 

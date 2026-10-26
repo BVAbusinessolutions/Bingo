@@ -10,10 +10,25 @@ const RESULT = {
     title: '¡Compra enviada!',
     text: 'Recibimos tus datos y tu comprobante. La Asociación verificará el pago y te enviaremos un correo con el enlace para ver tus cartones.',
   },
-  APPROVED: { Icon: CheckCircle2, color: 'text-emerald-500', title: '¡Pago confirmado!', text: 'Tus cartones ya están asignados a tu cuenta.' },
-  EXPIRED: { Icon: XCircle, color: 'text-fg-subtle', title: 'Se acabó el tiempo', text: 'La reserva venció y los cartones volvieron a estar disponibles. Puedes elegirlos de nuevo.' },
+  APPROVED: {
+    Icon: CheckCircle2,
+    color: 'text-emerald-500',
+    title: '¡Pago confirmado!',
+    text: 'Tus cartones ya están asignados a tu cuenta.',
+  },
+  EXPIRED: {
+    Icon: XCircle,
+    color: 'text-fg-subtle',
+    title: 'Se acabó el tiempo',
+    text: 'La reserva venció y los cartones volvieron a estar disponibles. Puedes elegirlos de nuevo.',
+  },
   CANCELLED: { Icon: XCircle, color: 'text-fg-subtle', title: 'Compra cancelada', text: 'Los cartones volvieron a estar disponibles.' },
-  REJECTED: { Icon: XCircle, color: 'text-sol-red', title: 'Pago rechazado', text: 'No pudimos verificar el pago. Contáctanos si crees que es un error.' },
+  REJECTED: {
+    Icon: XCircle,
+    color: 'text-sol-red',
+    title: 'Pago rechazado',
+    text: 'No pudimos verificar el pago. Contáctanos si crees que es un error.',
+  },
 };
 
 /** Paso 3 de la compra: resultado y siguientes acciones. */

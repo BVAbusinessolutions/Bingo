@@ -1,0 +1,41 @@
+# Despliegue en Render (https://render.com) como un solo servicio: la API sirve también la web compilada.
+# Render da HTTPS automático. La base de datos es Supabase (DATABASE_URL). Ver docs/DESPLIEGUE.md
+services:
+  - type: web
+    name: bingo-hogar-sol
+    runtime: node
+    plan: starter # el plan gratis se duerme y corta el sorteo en vivo; usa uno de pago para el evento
+    region: ohio
+    buildCommand: npm run build:prod
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24.13.0
+      - key: TRUST_PROXY
+        value: '1'
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # pegar la cadena del "Session pooler" de Supabase
+      - key: CLIENT_ORIGIN
+        sync: false # https://tu-dominio (o la URL .onrender.com)
+      - key: ADMIN_NOTIFY_EMAILS
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: '465'
+      - key: SMTP_SECURE
+        value: 'true'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false

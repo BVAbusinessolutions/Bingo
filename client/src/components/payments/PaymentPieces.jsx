@@ -46,7 +46,9 @@ export function CopyButton({ value, label, className = '' }) {
       aria-label={`Copiar ${label}`}
       className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-muted px-3 text-sm font-bold text-fg hover:bg-line ${className}`}
     >
-      {copied ? '¡Copiado!' : (
+      {copied ? (
+        '¡Copiado!'
+      ) : (
         <>
           <Copy className="h-4 w-4" aria-hidden /> Copiar
         </>

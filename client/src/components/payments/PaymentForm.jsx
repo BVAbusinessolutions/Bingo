@@ -13,7 +13,9 @@ function StepSection({ number, title, children }) {
   return (
     <section className="surface space-y-4 p-5 sm:p-6">
       <h2 className="flex items-center gap-3 text-2xl font-black text-fg">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sol-blue text-lg text-white dark:bg-sol-gold dark:text-sol-blue">{number}</span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sol-blue text-lg text-white dark:bg-sol-gold dark:text-sol-blue">
+          {number}
+        </span>
         {title}
       </h2>
       {children}
@@ -44,7 +46,11 @@ function OrderSummary({ reservation, onExpire, busy, onCancel }) {
         <Button type="submit" form="payment-form" variant="gold" size="lg" icon={Send} loading={busy} className="w-full">
           Enviar compra
         </Button>
-        <button type="button" onClick={onCancel} className="flex min-h-11 w-full items-center justify-center gap-2 font-bold text-fg-muted hover:text-sol-red hover:underline">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex min-h-11 w-full items-center justify-center gap-2 font-bold text-fg-muted hover:text-sol-red hover:underline"
+        >
           <Trash2 className="h-4 w-4" aria-hidden /> Cancelar y liberar cartones
         </button>
       </div>
@@ -59,7 +65,13 @@ function OrderSummary({ reservation, onExpire, busy, onCancel }) {
 export default function PaymentForm({ reservation, onChange }) {
   const { user } = useAuth();
   const [method, setMethod] = useState('SINPE');
-  const [form, setForm] = useState({ fullName: user?.name ?? '', nationalId: '', phone: user?.phone ?? '', email: user?.email ?? '', reference: '' });
+  const [form, setForm] = useState({
+    fullName: user?.name ?? '',
+    nationalId: '',
+    phone: user?.phone ?? '',
+    email: user?.email ?? '',
+    reference: '',
+  });
   const [file, setFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -112,7 +124,14 @@ export default function PaymentForm({ reservation, onChange }) {
             <Field label="Cédula o identificación" hint="Ej.: 1-2345-6789" {...bind('nationalId')} />
             <Field label="Teléfono" type="tel" inputMode="tel" autoComplete="tel" hint="Ej.: 8888-8888" {...bind('phone')} />
           </div>
-          <Field label="Correo electrónico" type="email" inputMode="email" autoComplete="email" hint="Aquí te avisaremos cuando se apruebe tu compra." {...bind('email')} />
+          <Field
+            label="Correo electrónico"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            hint="Aquí te avisaremos cuando se apruebe tu compra."
+            {...bind('email')}
+          />
         </StepSection>
 
         <StepSection number="3" title="Comprobante de pago">

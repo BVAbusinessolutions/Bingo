@@ -1,4 +1,15 @@
-import { CalendarDays, CreditCard, HeartHandshake, MousePointerClick, PartyPopper, Radio, Sun, Ticket, Trophy, UserPlus } from 'lucide-react';
+import {
+  CalendarDays,
+  CreditCard,
+  HeartHandshake,
+  MousePointerClick,
+  PartyPopper,
+  Radio,
+  Sun,
+  Ticket,
+  Trophy,
+  UserPlus,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCountdown } from '../../hooks/useCountdown';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
@@ -29,7 +40,11 @@ function Countdown({ date }) {
     ['Seg', t.seconds],
   ];
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-3" role="timer" aria-label={`Faltan ${t.days} días, ${t.hours} horas y ${t.minutes} minutos`}>
+    <div
+      className="grid grid-cols-4 gap-2 sm:gap-3"
+      role="timer"
+      aria-label={`Faltan ${t.days} días, ${t.hours} horas y ${t.minutes} minutos`}
+    >
       {units.map(([label, v]) => (
         <div key={label} className="rounded-2xl bg-sol-blue p-2 text-center sm:p-3 dark:bg-[#0a1628]">
           <div className="text-3xl font-black tabular-nums text-sol-gold sm:text-4xl">{String(v).padStart(2, '0')}</div>

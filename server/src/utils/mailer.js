@@ -1,8 +1,10 @@
 // Envío de correos. Con SMTP_HOST configurado se envían de verdad (nodemailer); si no, se imprimen
-// en consola (modo desarrollo). En ambos casos se guardan en db.outbox para depurar.
+// en consola (modo desarrollo). Los últimos envíos quedan en `outbox` (memoria) para pruebas.
 import nodemailer from 'nodemailer';
-import { db } from '../db.js';
 import { env } from '../config/env.js';
+import { logger } from './logger.js';
+
+export const outbox = [];
 
 const transport = env.smtp.host
   ? nodemailer.createTransport({
@@ -43,16 +45,18 @@ export function sendMail({ to, subject, text, action }) {
   if (recipients.length === 0) return null;
   const body = action ? `${text}\n\n${action.label}: ${action.url}` : text;
   const mail = { to: recipients, subject, text: body, sentAt: new Date().toISOString() };
-  db.outbox.push(mail);
+  outbox.push(mail);
+  if (outbox.length > 200) outbox.shift();
 
   if (!transport) {
+    if (env.isTest) return mail;
     console.log(`\n📧 Correo a ${recipients.join(', ')}\n   Asunto: ${subject}\n   ${body.replace(/\n/g, '\n   ')}\n`);
     return mail;
   }
 
   transport
     .sendMail({ from: env.smtp.from, to: recipients, subject, text: body, html: toHtml({ subject, text, action }) })
-    .catch((err) => console.error(`No se pudo enviar el correo "${subject}" a ${recipients.join(', ')}:`, err.message));
+    .catch((err) => logger.error('mail.send_failed', { subject, message: err.message }));
   return mail;
 }
 

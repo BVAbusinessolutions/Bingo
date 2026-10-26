@@ -6,7 +6,10 @@ export default function NotFoundPage() {
   return (
     <main className="container-page grid min-h-[70vh] place-items-center py-12 text-center">
       <div className="max-w-lg space-y-5">
-        <div className="mx-auto grid h-28 w-28 place-items-center rounded-full border-8 border-sol-gold bg-sol-red text-4xl font-black text-white shadow-xl" aria-hidden>
+        <div
+          className="mx-auto grid h-28 w-28 place-items-center rounded-full border-8 border-sol-gold bg-sol-red text-4xl font-black text-white shadow-xl"
+          aria-hidden
+        >
           404
         </div>
         <h1 className="text-3xl font-black text-brand sm:text-4xl">Esta balota no salió</h1>

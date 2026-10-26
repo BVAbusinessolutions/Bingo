@@ -15,7 +15,13 @@ export default function ConfirmDialog({ title, children, confirmLabel, confirmVa
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onCancel}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="surface w-full max-w-md space-y-4 p-6" onClick={(e) => e.stopPropagation()}>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="surface w-full max-w-md space-y-4 p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 id={titleId} className="text-2xl font-black text-fg">
           {title}
         </h2>

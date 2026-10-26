@@ -1,108 +1,148 @@
 import { Router } from 'express';
-import { db } from '../../db.js';
+import { z } from 'zod';
+import { one, query } from '../../db/index.js';
 import { authenticate } from '../../middleware/auth.js';
+import { getFile, sendFile } from '../../services/files.js';
 import { releaseExpiredReservations } from '../reservations/reservations.service.js';
 import { publicWinnerName } from '../claims/claims.service.js';
 
 const router = Router();
+export const cardImagesRouter = Router();
 
-export const cardsOf = (eventId) => [...db.cards.values()].filter((c) => c.eventId === eventId);
+/** Evento con conteo de cartones. */
+export const EVENT_SELECT = `
+  select e.*,
+         (select count(*)::int from app.cards c where c.event_id = e.id) as total_cards,
+         (select count(*)::int from app.cards c where c.event_id = e.id and c.status = 'AVAILABLE') as available_cards,
+         s.name as series_name
+    from app.events e
+    left join app.card_series s on s.id = e.series_id`;
 
 export function publicEvent(e) {
-  const cards = cardsOf(e.id);
   return {
     id: e.id,
     name: e.name,
     description: e.description,
     pattern: e.pattern,
     price: e.price,
-    startsAt: e.startsAt,
+    startsAt: new Date(e.starts_at).toISOString(),
     status: e.status,
-    stream: e.stream,
-    available: cards.filter((c) => c.status === 'AVAILABLE').length,
-    total: cards.length,
+    stream: e.stream_provider ? { provider: e.stream_provider, videoId: e.stream_video_id } : null,
+    available: e.available_cards ?? 0,
+    total: e.total_cards ?? 0,
   };
 }
 
 /** Evento "actual": el que está en vivo, o el próximo programado. */
-export function currentEvent() {
-  const events = [...db.events.values()];
-  return (
-    events.find((e) => e.status === 'LIVE') ??
-    events
-      .filter((e) => e.status === 'SCHEDULED')
-      .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0] ??
-    null
-  );
-}
+export const currentEvent = () =>
+  one(`${EVENT_SELECT}
+        where e.status in ('LIVE', 'SCHEDULED')
+        order by (e.status = 'LIVE') desc, e.starts_at asc
+        limit 1`);
 
-router.get('/current', (req, res) => {
-  releaseExpiredReservations();
-  const e = currentEvent();
+const eventIdParam = z.string().regex(/^[a-z0-9-]{3,64}$/);
+
+router.get('/current', async (req, res) => {
+  await releaseExpiredReservations();
+  const e = await currentEvent();
   if (!e) return res.status(404).json({ error: 'NO_EVENT' });
   res.json(publicEvent(e));
 });
 
-router.get('/', (req, res) => {
-  res.json(
-    [...db.events.values()]
-      .filter((e) => e.status !== 'CANCELLED')
-      .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
-      .map(publicEvent)
-  );
+router.get('/', async (req, res) => {
+  const rows = await query(`${EVENT_SELECT} where e.status <> 'CANCELLED' order by e.starts_at asc limit 50`);
+  res.json(rows.map(publicEvent));
 });
 
 /** Resultados públicos: eventos en vivo o finalizados con sus ganadores confirmados. */
-router.get('/results', (req, res) => {
-  const results = [...db.events.values()]
-    .filter((e) => e.status === 'LIVE' || e.status === 'FINISHED')
-    .sort((a, b) => new Date(b.startsAt) - new Date(a.startsAt))
-    .map((e) => ({
+router.get('/results', async (req, res) => {
+  const events = await query(
+    `select e.id, e.name, e.description, e.pattern, e.starts_at, e.status,
+            (select count(*)::int from app.draws d where d.event_id = e.id) as called_count
+       from app.events e
+      where e.status in ('LIVE', 'FINISHED')
+      order by e.starts_at desc
+      limit 30`
+  );
+  const winners = events.length
+    ? await query(
+        `select cl.event_id, u.name, c.serial, cl.called_count
+           from app.claims cl
+           join app.users u on u.id = cl.user_id
+           join app.cards c on c.id = cl.card_id
+          where cl.status = 'CONFIRMED' and cl.event_id = any($1::text[])
+          order by cl.created_at`,
+        [events.map((e) => e.id)]
+      )
+    : [];
+  res.json(
+    events.map((e) => ({
       id: e.id,
       name: e.name,
       description: e.description,
       pattern: e.pattern,
-      startsAt: e.startsAt,
+      startsAt: new Date(e.starts_at).toISOString(),
       status: e.status,
-      calledCount: db.draws.get(e.id)?.length ?? 0,
-      winners: [...db.claims.values()]
-        .filter((c) => c.eventId === e.id && c.status === 'CONFIRMED')
-        .sort((a, b) => a.createdAt - b.createdAt)
-        .map((c) => ({
-          name: publicWinnerName(db.users.get(c.userId)?.name),
-          serial: db.cards.get(c.cardId)?.serial,
-          calledCount: c.calledCount,
-        })),
-    }));
-  res.json(results);
+      calledCount: e.called_count,
+      winners: winners
+        .filter((w) => w.event_id === e.id)
+        .map((w) => ({ name: publicWinnerName(w.name), serial: w.serial, calledCount: w.called_count })),
+    }))
+  );
 });
 
-router.get('/:eventId/cards/mine', authenticate, (req, res) => {
-  const cards = cardsOf(req.params.eventId).filter((c) => c.ownerId === req.user.id && c.status === 'SOLD');
-  res.json({ cards: cards.map(({ id, serial, grid }) => ({ id, serial, grid })) });
+const imageUrl = (c) => (c.image_id ? `/api/card-images/${c.series_card_id}` : null);
+
+router.get('/:eventId/cards/mine', authenticate, async (req, res) => {
+  if (!eventIdParam.safeParse(req.params.eventId).success) return res.status(404).json({ error: 'NOT_FOUND' });
+  const cards = await query(
+    `select c.id, c.serial, c.grid, c.series_card_id, sc.image_id
+       from app.cards c left join app.series_cards sc on sc.id = c.series_card_id
+      where c.event_id = $1 and c.owner_id = $2 and c.status = 'SOLD'
+      order by c.serial`,
+    [req.params.eventId, req.user.id]
+  );
+  res.json({ cards: cards.map((c) => ({ id: c.id, serial: c.serial, grid: c.grid, imageUrl: imageUrl(c) })) });
 });
 
 /**
  * Catálogo público del evento. Nunca expone quién compró/reservó.
  * status: AVAILABLE | RESERVED (esperando pago, con reservedUntil) | VERIFYING (comprobante enviado) | SOLD
  */
-router.get('/:eventId/cards/catalog', (req, res) => {
-  if (!db.events.has(req.params.eventId)) return res.status(404).json({ error: 'NOT_FOUND' });
-  releaseExpiredReservations();
+router.get('/:eventId/cards/catalog', async (req, res) => {
+  if (!eventIdParam.safeParse(req.params.eventId).success) return res.status(404).json({ error: 'NOT_FOUND' });
+  const event = await one('select id from app.events where id = $1', [req.params.eventId]);
+  if (!event) return res.status(404).json({ error: 'NOT_FOUND' });
+  await releaseExpiredReservations();
+  const cards = await query(
+    `select c.serial, c.grid, c.status, c.series_card_id, sc.image_id, r.status as reservation_status, r.expires_at
+       from app.cards c
+       left join app.reservations r on r.id = c.reservation_id
+       left join app.series_cards sc on sc.id = c.series_card_id
+      where c.event_id = $1
+      order by c.serial`,
+    [req.params.eventId]
+  );
   res.json({
     serverTime: new Date().toISOString(),
-    cards: cardsOf(req.params.eventId).map((c) => {
-      const r = c.reservationId ? db.reservations.get(c.reservationId) : null;
-      let status = c.status;
-      if (c.status === 'RESERVED' && r?.status === 'PROOF_SUBMITTED') status = 'VERIFYING';
+    cards: cards.map((c) => {
+      const status = c.status === 'RESERVED' && c.reservation_status === 'PROOF_SUBMITTED' ? 'VERIFYING' : c.status;
       return {
         serial: c.serial,
         grid: c.grid,
         status,
-        reservedUntil: status === 'RESERVED' && r ? new Date(r.expiresAt).toISOString() : null,
+        imageUrl: imageUrl(c),
+        reservedUntil: status === 'RESERVED' && c.expires_at ? new Date(c.expires_at).toISOString() : null,
       };
     }),
   });
+});
+
+/** Imagen original del cartón (PNG importado). Pública: es la misma que se muestra en el catálogo. */
+cardImagesRouter.get('/:seriesCardId', async (req, res) => {
+  if (!z.string().uuid().safeParse(req.params.seriesCardId).success) return res.status(404).json({ error: 'NOT_FOUND' });
+  const row = await one('select image_id from app.series_cards where id = $1', [req.params.seriesCardId]);
+  sendFile(res, await getFile(row?.image_id), { cache: true });
 });
 
 export default router;

@@ -39,10 +39,34 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat Icon={Ticket} label="Cartones vendidos" value={`${stats.sold} / ${stats.total}`} sub={`${soldPct}% del inventario`} accent="bg-sol-blue/10 text-sol-blue dark:bg-sol-blue-light/25 dark:text-brand" />
-        <Stat Icon={Coins} label="Recaudación" value={formatCRC(stats.revenue)} sub={`${formatCRC(event?.price)} por cartón`} accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" />
-        <Stat Icon={Hourglass} label="Por verificar" value={stats.pendingReview} sub="comprobantes recibidos" accent="bg-sol-gold/25 text-sol-gold-dark" />
-        <Stat Icon={Clock} label="Esperando pago" value={stats.awaitingPayment} sub={`${stats.reserved} cartones apartados`} accent="bg-orange-500/15 text-orange-600 dark:text-orange-400" />
+        <Stat
+          Icon={Ticket}
+          label="Cartones vendidos"
+          value={`${stats.sold} / ${stats.total}`}
+          sub={`${soldPct}% del inventario`}
+          accent="bg-sol-blue/10 text-sol-blue dark:bg-sol-blue-light/25 dark:text-brand"
+        />
+        <Stat
+          Icon={Coins}
+          label="Recaudación"
+          value={formatCRC(stats.revenue)}
+          sub={`${formatCRC(event?.price)} por cartón`}
+          accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+        />
+        <Stat
+          Icon={Hourglass}
+          label="Por verificar"
+          value={stats.pendingReview}
+          sub="comprobantes recibidos"
+          accent="bg-sol-gold/25 text-sol-gold-dark"
+        />
+        <Stat
+          Icon={Clock}
+          label="Esperando pago"
+          value={stats.awaitingPayment}
+          sub={`${stats.reserved} cartones apartados`}
+          accent="bg-orange-500/15 text-orange-600 dark:text-orange-400"
+        />
       </div>
 
       {/* Inventario */}
@@ -51,7 +75,11 @@ export default function AdminDashboard() {
           <span className="font-bold text-fg">Inventario</span>
           <span className="text-fg-muted">{stats.available} disponibles</span>
         </div>
-        <div className="flex h-4 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${stats.sold} vendidos, ${stats.reserved} reservados, ${stats.available} disponibles`}>
+        <div
+          className="flex h-4 overflow-hidden rounded-full bg-muted"
+          role="img"
+          aria-label={`${stats.sold} vendidos, ${stats.reserved} reservados, ${stats.available} disponibles`}
+        >
           <div className="bg-sol-red" style={{ width: `${(stats.sold / stats.total) * 100}%` }} />
           <div className="bg-orange-400" style={{ width: `${(stats.reserved / stats.total) * 100}%` }} />
           <div className="bg-emerald-500" style={{ width: `${(stats.available / stats.total) * 100}%` }} />
@@ -60,7 +88,7 @@ export default function AdminDashboard() {
           <li>🟥 Vendidos {stats.sold}</li>
           <li>🟧 Reservados {stats.reserved}</li>
           <li>🟩 Disponibles {stats.available}</li>
-          <li className="ml-auto">Balotas cantadas: {stats.called}/90</li>
+          <li className="ml-auto">Balotas cantadas: {stats.called}/75</li>
         </ul>
       </section>
 
@@ -78,17 +106,20 @@ export default function AdminDashboard() {
           <ul className="divide-y divide-line">
             {queue.map((r) => (
               <li key={r.id}>
-                <Link to={`compras/${r.id}`} className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 hover:bg-muted">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-fg">{r.buyer?.fullName}</p>
-                  <p className="truncate text-xs text-fg-muted">
-                    {r.serials.map((s) => `#${s}`).join(', ')} · {formatDate(r.createdAt)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="font-black tabular-nums text-fg">{formatCRC(r.total)}</span>
-                  <StatusBadge status={r.status} />
-                </div>
+                <Link
+                  to={`compras/${r.id}`}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 hover:bg-muted"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-fg">{r.buyer?.fullName}</p>
+                    <p className="truncate text-xs text-fg-muted">
+                      {r.serials.map((s) => `#${s}`).join(', ')} · {formatDate(r.createdAt)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-black tabular-nums text-fg">{formatCRC(r.total)}</span>
+                    <StatusBadge status={r.status} />
+                  </div>
                 </Link>
               </li>
             ))}

@@ -58,7 +58,13 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell title="Nueva contraseña" subtitle="Elige una contraseña que no uses en otros sitios." footer={requestNew}>
       <form onSubmit={onSubmit} noValidate className="space-y-4">
-        <Field label="Contraseña nueva" type="password" autoComplete="new-password" hint="Mínimo 8 caracteres, con letras y números." {...bind('password')} />
+        <Field
+          label="Contraseña nueva"
+          type="password"
+          autoComplete="new-password"
+          hint="Mínimo 8 caracteres, con letras y números."
+          {...bind('password')}
+        />
         <Field label="Repite la contraseña" type="password" autoComplete="new-password" {...bind('confirmPassword')} />
         {serverError && <Alert tone="error">{serverError}</Alert>}
         <Button type="submit" size="lg" loading={loading} className="w-full">

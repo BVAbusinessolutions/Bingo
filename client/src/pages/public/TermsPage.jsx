@@ -8,8 +8,7 @@ const SECTIONS = [
     title: 'Quiénes somos',
     body: (
       <p>
-        El Bingo Benéfico es organizado por la <strong>{SITE.name}</strong>. Todo lo recaudado se destina a los programas de la
-        Asociación.
+        El Bingo Benéfico es organizado por la <strong>{SITE.name}</strong>. Todo lo recaudado se destina a los programas de la Asociación.
       </p>
     ),
   },
@@ -37,9 +36,17 @@ const SECTIONS = [
     title: 'Cómo se juega',
     body: (
       <ul>
-        <li>Las balotas se cantan en vivo durante la transmisión. El patrón ganador (línea, doble línea o cartón lleno) se indica en cada evento.</li>
-        <li>Cuando completes el patrón, pulsa el botón <strong>“¡Bingo!”</strong>. El sistema verifica tu cartón con las balotas cantadas.</li>
-        <li>La Asociación confirma cada premio antes de entregarlo. Si hay varios ganadores con la misma balota, se aplicarán las reglas anunciadas para ese evento.</li>
+        <li>
+          Se juega con 75 balotas (B 1-15, I 16-30, N 31-45, G 46-60, O 61-75) y el centro del cartón es libre. El patrón ganador (línea,
+          cuatro esquinas, letra X o cartón lleno) se indica en cada evento.
+        </li>
+        <li>
+          Cuando completes el patrón, pulsa el botón <strong>“¡Bingo!”</strong>. El sistema verifica tu cartón con las balotas cantadas.
+        </li>
+        <li>
+          La Asociación confirma cada premio antes de entregarlo. Si hay varios ganadores con la misma balota, se aplicarán las reglas
+          anunciadas para ese evento.
+        </li>
       </ul>
     ),
   },
@@ -47,8 +54,8 @@ const SECTIONS = [
     title: 'Premios',
     body: (
       <p>
-        Los premios se anuncian en cada evento. Te contactaremos al correo o teléfono registrados para coordinar la entrega. El premio
-        no es transferible ni canjeable por dinero salvo que se indique lo contrario.
+        Los premios se anuncian en cada evento. Te contactaremos al correo o teléfono registrados para coordinar la entrega. El premio no es
+        transferible ni canjeable por dinero salvo que se indique lo contrario.
       </p>
     ),
   },
@@ -56,8 +63,8 @@ const SECTIONS = [
     title: 'Cancelaciones y reembolsos',
     body: (
       <p>
-        Por tratarse de una actividad benéfica, las compras confirmadas no son reembolsables, excepto si el evento se cancela. En ese
-        caso, la Asociación te contactará para devolver el dinero o trasladar tus cartones a un nuevo evento.
+        Por tratarse de una actividad benéfica, las compras confirmadas no son reembolsables, excepto si el evento se cancela. En ese caso,
+        la Asociación te contactará para devolver el dinero o trasladar tus cartones a un nuevo evento.
       </p>
     ),
   },
@@ -74,12 +81,22 @@ const SECTIONS = [
     title: 'Contacto',
     body: (
       <p>
-        Para dudas sobre estos términos escríbenos a <a className="font-bold text-sol-blue underline dark:text-sol-gold" href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>.
+        Para dudas sobre estos términos escríbenos a{' '}
+        <a className="font-bold text-sol-blue underline dark:text-sol-gold" href={`mailto:${SITE.contactEmail}`}>
+          {SITE.contactEmail}
+        </a>
+        .
       </p>
     ),
   },
 ];
 
 export default function TermsPage() {
-  return <LegalLayout title="Términos y condiciones" intro="Estas son las reglas para comprar cartones y participar en el Bingo Benéfico." sections={SECTIONS} />;
+  return (
+    <LegalLayout
+      title="Términos y condiciones"
+      intro="Estas son las reglas para comprar cartones y participar en el Bingo Benéfico."
+      sections={SECTIONS}
+    />
+  );
 }

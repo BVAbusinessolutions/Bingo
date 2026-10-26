@@ -3,8 +3,7 @@ import DOMPurify from 'dompurify';
 
 // Quita cualquier HTML. React ya escapa al renderizar; esto es defensa en profundidad
 // para datos que viajan a otros sistemas (correos, PDFs, panel admin).
-export const clean = (value) =>
-  DOMPurify.sanitize(String(value ?? ''), { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+export const clean = (value) => DOMPurify.sanitize(String(value ?? ''), { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
 
 const personName = z
   .string()
@@ -25,7 +24,10 @@ const newPassword = z
   .max(128)
   .regex(/[A-Za-z]/, 'Debe incluir letras')
   .regex(/\d/, 'Debe incluir números');
-const phone = z.string().trim().regex(/^\+?[0-9\s-]{8,15}$/, 'Teléfono inválido');
+const phone = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9\s-]{8,15}$/, 'Teléfono inválido');
 
 const matchingPasswords = (schema, field) =>
   schema.refine((d) => d[field] === d.confirmPassword, { message: 'Las contraseñas no coinciden', path: ['confirmPassword'] });
@@ -34,7 +36,7 @@ export const registerSchema = z.object({
   name: personName,
   email,
   password: newPassword,
-  acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Debes aceptar para continuar' }) }),
+  acceptTerms: z.literal(true, { error: 'Debes aceptar para continuar' }),
 });
 
 export const forgotPasswordSchema = z.object({ email });
@@ -50,7 +52,10 @@ export const changePasswordSchema = matchingPasswords(
 
 export const buyerSchema = z.object({
   fullName: personName,
-  nationalId: z.string().trim().regex(/^[0-9A-Za-z-]{5,20}$/, 'Cédula inválida'),
+  nationalId: z
+    .string()
+    .trim()
+    .regex(/^[0-9A-Za-z-]{5,20}$/, 'Cédula inválida'),
   phone,
   email,
 });

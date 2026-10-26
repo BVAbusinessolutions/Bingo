@@ -19,7 +19,18 @@ export function useSocket(namespace = '/draw', { enabled = true } = {}) {
       transports: ['websocket'],
     });
     s.on('connect', () => setConnected(true));
-    s.on('disconnect', () => setConnected(false));
+    s.on('disconnect', async (reason) => {
+      setConnected(false);
+      // El servidor corta la conexión cuando vence el token: se renueva y se vuelve a conectar.
+      // Si la sesión fue revocada, el refresh falla y el interceptor HTTP cierra la sesión.
+      if (reason !== 'io server disconnect') return;
+      try {
+        await refreshAccessToken();
+        s.connect();
+      } catch {
+        // sesión cerrada: no se reconecta
+      }
+    });
     s.on('connect_error', async (err) => {
       if (err.message !== 'UNAUTHORIZED') return;
       try {

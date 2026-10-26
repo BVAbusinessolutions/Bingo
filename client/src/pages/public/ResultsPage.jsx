@@ -31,7 +31,7 @@ function EventResult({ event }) {
           </div>
           <div className="rounded-2xl bg-muted p-4 text-center">
             <dt className="text-sm font-bold text-fg-muted">Balotas cantadas</dt>
-            <dd className="text-xl font-black text-brand">{event.calledCount} / 90</dd>
+            <dd className="text-xl font-black text-brand">{event.calledCount} / 75</dd>
           </div>
         </dl>
         <div>
@@ -46,7 +46,9 @@ function EventResult({ event }) {
             <ol className="grid gap-2">
               {event.winners.map((w, i) => (
                 <li key={`${w.serial}-${i}`} className="flex items-center gap-3 rounded-2xl bg-sol-gold/15 p-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sol-gold text-lg font-black text-sol-blue">{i + 1}</span>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sol-gold text-lg font-black text-sol-blue">
+                    {i + 1}
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg font-black text-fg">{w.name}</span>
                     <span className="text-fg-muted">
@@ -82,12 +84,25 @@ export default function ResultsPage() {
         eyebrow="Transparencia"
         title="Resultados y ganadores"
         description="Consulta los eventos en vivo y finalizados, y quiénes ganaron."
-        actions={hasLive && <Button to={PATHS.live} variant="danger" icon={Radio}>Ver sorteo en vivo</Button>}
+        actions={
+          hasLive && (
+            <Button to={PATHS.live} variant="danger" icon={Radio}>
+              Ver sorteo en vivo
+            </Button>
+          )
+        }
       />
       {error && <Alert tone="error">No pudimos cargar los resultados. Intenta de nuevo más tarde.</Alert>}
       {!results && !error && <PageLoader />}
       {results?.length === 0 && (
-        <Alert title="Todavía no hay resultados" action={<Button to={PATHS.catalog} variant="gold">Comprar cartones</Button>}>
+        <Alert
+          title="Todavía no hay resultados"
+          action={
+            <Button to={PATHS.catalog} variant="gold">
+              Comprar cartones
+            </Button>
+          }
+        >
           Los resultados aparecerán aquí cuando empiece el primer sorteo.
         </Alert>
       )}

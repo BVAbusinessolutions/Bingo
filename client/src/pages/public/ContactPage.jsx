@@ -9,15 +9,25 @@ const CHANNELS = [
 ];
 
 const FAQ = [
-  ['Pagué y mis cartones no aparecen', 'Verificamos los pagos lo antes posible. Cuando se apruebe, verás un aviso y tus cartones aparecerán en “Mis compras” y en “Jugar en vivo”.'],
-  ['No me llegó el correo de confirmación', 'Revisa la carpeta de correo no deseado. También puedes pedir un enlace nuevo desde el aviso amarillo al iniciar sesión.'],
+  [
+    'Pagué y mis cartones no aparecen',
+    'Verificamos los pagos lo antes posible. Cuando se apruebe, verás un aviso y tus cartones aparecerán en “Mis compras” y en “Jugar en vivo”.',
+  ],
+  [
+    'No me llegó el correo de confirmación',
+    'Revisa la carpeta de correo no deseado. También puedes pedir un enlace nuevo desde el aviso amarillo al iniciar sesión.',
+  ],
   ['¿Cómo sé si gané?', 'Tu cartón se ilumina cuando completas el patrón. Pulsa “¡Bingo!” y la Asociación confirmará tu premio.'],
 ];
 
 export default function ContactPage() {
   return (
     <main className="container-page space-y-10 py-10">
-      <PageHeader eyebrow="Estamos para ayudarte" title="Contacto" description="¿Tienes dudas sobre tu compra o el sorteo? Escríbenos o llámanos." />
+      <PageHeader
+        eyebrow="Estamos para ayudarte"
+        title="Contacto"
+        description="¿Tienes dudas sobre tu compra o el sorteo? Escríbenos o llámanos."
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {CHANNELS.map(({ icon: Icon, label, value, href, external }) => (
@@ -53,7 +63,9 @@ export default function ContactPage() {
           <details key={q} className="surface group p-5 open:ring-2 open:ring-sol-gold">
             <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 text-lg font-extrabold text-fg">
               {q}
-              <span aria-hidden className="text-2xl text-brand transition group-open:rotate-45">+</span>
+              <span aria-hidden className="text-2xl text-brand transition group-open:rotate-45">
+                +
+              </span>
             </summary>
             <p className="mt-3 text-lg text-fg-muted">{a}</p>
           </details>

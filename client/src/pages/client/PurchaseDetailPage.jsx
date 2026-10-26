@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Circle, CreditCard, Printer, Radio, XCircle } from 'lucide-react';
 import { reservationsApi } from '../../api/endpoints';
 import { useNotifications } from '../../context/NotificationsContext';
-import BingoCard from '../../components/bingo/BingoCard';
+import CardImage from '../../components/bingo/CardImage';
 import ProofPreview from '../../components/payments/ProofPreview';
 import StatusBadge from '../../components/ui/StatusBadge';
 import PageLoader from '../../components/ui/PageLoader';
@@ -13,7 +13,6 @@ import { formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
 import { SITE } from '../../config/site';
 
-const EMPTY = new Set();
 const METHODS = { SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia bancaria' };
 const CLOSED = { REJECTED: 'Pago rechazado', EXPIRED: 'Reserva vencida', CANCELLED: 'Reserva cancelada' };
 
@@ -26,8 +25,15 @@ function Progress({ status }) {
       {steps.map((label, i) => {
         const done = !CLOSED[status] && i < reached;
         return (
-          <li key={label} className={`flex items-center gap-2 rounded-2xl p-3 font-bold ${done ? 'bg-emerald-500/10 text-fg' : 'bg-muted text-fg-muted'}`}>
-            {done ? <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden /> : <Circle className="h-6 w-6 shrink-0" aria-hidden />}
+          <li
+            key={label}
+            className={`flex items-center gap-2 rounded-2xl p-3 font-bold ${done ? 'bg-emerald-500/10 text-fg' : 'bg-muted text-fg-muted'}`}
+          >
+            {done ? (
+              <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+            ) : (
+              <Circle className="h-6 w-6 shrink-0" aria-hidden />
+            )}
             {label}
           </li>
         );
@@ -77,7 +83,10 @@ export default function PurchaseDetailPage() {
   return (
     <main className="container-page py-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        <Link to={PATHS.myPurchases} className="inline-flex min-h-11 items-center gap-2 font-bold text-sol-blue hover:underline dark:text-sol-gold print:hidden">
+        <Link
+          to={PATHS.myPurchases}
+          className="inline-flex min-h-11 items-center gap-2 font-bold text-sol-blue hover:underline dark:text-sol-gold print:hidden"
+        >
           <ArrowLeft className="h-5 w-5" aria-hidden /> Mis compras
         </Link>
 
@@ -144,12 +153,10 @@ export default function PurchaseDetailPage() {
           <h2 id="cards-title" className="text-2xl font-black text-fg print:hidden">
             Tus cartones
           </h2>
-          {!approved && (
-            <p className="text-fg-muted print:hidden">Podrás imprimirlos cuando el pago esté aprobado.</p>
-          )}
+          {!approved && <p className="text-fg-muted print:hidden">Podrás imprimirlos cuando el pago esté aprobado.</p>}
           <div className="print-cards grid gap-4 sm:grid-cols-2">
             {r.cards.map((card) => (
-              <BingoCard key={card.id} card={card} called={EMPTY} manualMarks={EMPTY} showStatus={false} />
+              <CardImage key={card.id} card={card} />
             ))}
           </div>
         </section>

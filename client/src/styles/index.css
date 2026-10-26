@@ -1,7 +1,7 @@
 /* Punto de entrada de estilos (Tailwind v4). */
-@import "tailwindcss";
-@import "./tokens.css";
-@import "./global.css";
+@import 'tailwindcss';
+@import './tokens.css';
+@import './global.css';
 
 /* El modo oscuro se activa con la clase .dark en <html> (la pone ThemeContext). */
 @custom-variant dark (&:where(.dark, .dark *));

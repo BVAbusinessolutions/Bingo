@@ -72,7 +72,14 @@ function PersonalDataForm() {
   return (
     <form onSubmit={form.onSubmit} noValidate className="grid gap-4 sm:grid-cols-2">
       <Field label="Nombre completo" autoComplete="name" {...form.bind('name')} />
-      <Field label="Teléfono (opcional)" type="tel" inputMode="tel" autoComplete="tel" hint="Para avisarte si ganas." {...form.bind('phone')} />
+      <Field
+        label="Teléfono (opcional)"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        hint="Para avisarte si ganas."
+        {...form.bind('phone')}
+      />
       <div className="sm:col-span-2">
         <p className="font-bold text-fg">Correo electrónico</p>
         <p className="mt-1.5 flex flex-wrap items-center gap-2 rounded-xl bg-muted px-4 py-3 text-fg">
@@ -88,7 +95,11 @@ function PersonalDataForm() {
           )}
         </p>
       </div>
-      {form.serverError && <Alert tone="error" className="sm:col-span-2">{form.serverError}</Alert>}
+      {form.serverError && (
+        <Alert tone="error" className="sm:col-span-2">
+          {form.serverError}
+        </Alert>
+      )}
       <div className="sm:col-span-2">
         <Button type="submit" loading={form.loading}>
           Guardar cambios
@@ -111,9 +122,19 @@ function ChangePasswordForm() {
   return (
     <form onSubmit={form.onSubmit} noValidate className="grid gap-4 sm:grid-cols-3">
       <Field label="Contraseña actual" type="password" autoComplete="current-password" {...form.bind('currentPassword')} />
-      <Field label="Contraseña nueva" type="password" autoComplete="new-password" hint="8+ caracteres, letras y números." {...form.bind('newPassword')} />
+      <Field
+        label="Contraseña nueva"
+        type="password"
+        autoComplete="new-password"
+        hint="8+ caracteres, letras y números."
+        {...form.bind('newPassword')}
+      />
       <Field label="Repite la nueva" type="password" autoComplete="new-password" {...form.bind('confirmPassword')} />
-      {form.serverError && <Alert tone="error" className="sm:col-span-3">{form.serverError}</Alert>}
+      {form.serverError && (
+        <Alert tone="error" className="sm:col-span-3">
+          {form.serverError}
+        </Alert>
+      )}
       <div className="sm:col-span-3">
         <Button type="submit" loading={form.loading}>
           Cambiar contraseña

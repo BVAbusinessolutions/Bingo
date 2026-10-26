@@ -58,12 +58,34 @@ export const adminApi = {
   events: () => http.get('/admin/events').then(data),
   createEvent: (body) => http.post('/admin/events', body).then(data),
   updateEvent: (id, body) => http.patch(`/admin/events/${id}`, body).then(data),
+  assignSeries: (eventId, seriesId) => http.post(`/admin/events/${eventId}/series`, { seriesId }).then(data),
   cards: (eventId, params) => http.get(`/admin/events/${eventId}/cards`, { params }).then(data),
-  generateCards: (eventId, count) => http.post(`/admin/events/${eventId}/cards/generate`, { count }).then(data),
-  reservations: (status) => http.get('/admin/reservations', { params: { status } }).then(data),
+  printCards: (eventId, from, to) => http.get(`/admin/events/${eventId}/cards/print`, { params: { from, to } }).then(data),
+  reservations: (status, eventId) => http.get('/admin/reservations', { params: { status, eventId } }).then(data),
   reservation: (id) => http.get(`/admin/reservations/${id}`).then(data),
   proofBlob: (id) => http.get(`/admin/reservations/${id}/proof`, { responseType: 'blob' }).then(data),
   decide: (id, approve) => http.post(`/admin/reservations/${id}/decision`, { approve }).then(data),
+  refund: (id) => http.post(`/admin/reservations/${id}/refund`).then(data),
+  manualSale: (body) => http.post('/admin/manual-sales', body).then(data),
+  exportReservations: (params) => http.get('/admin/reservations/export.csv', { params, responseType: 'blob' }).then(data),
   claims: (eventId) => http.get('/admin/claims', { params: { eventId } }).then(data),
   decideClaim: (id, approve) => http.post(`/admin/claims/${id}/decision`, { approve }).then(data),
+  users: (params) => http.get('/admin/users', { params }).then(data),
+  createUser: (body) => http.post('/admin/users', body).then(data),
+  updateUser: (id, body) => http.patch(`/admin/users/${id}`, body).then(data),
+  audit: (params) => http.get('/admin/audit', { params }).then(data),
+  payment: () => http.get('/admin/settings/payment').then(data),
+  updatePayment: (body) => http.put('/admin/settings/payment', body).then(data),
+  series: () => http.get('/admin/series').then(data),
+  seriesOne: (id) => http.get(`/admin/series/${id}`).then(data),
+  seriesCards: (id, params) => http.get(`/admin/series/${id}/cards`, { params }).then(data),
+  generateSeries: (body) => http.post('/admin/series/generate', body).then(data),
+  importSeries: (file, name, onUploadProgress) => {
+    const form = new FormData();
+    form.append('name', name);
+    form.append('file', file);
+    return http.post('/admin/series/import', form, { timeout: 10 * 60_000, onUploadProgress }).then(data);
+  },
+  updateSeriesCard: (id, body) => http.put(`/admin/series-cards/${id}`, body).then(data),
+  deleteSeries: (id) => http.delete(`/admin/series/${id}`).then(data),
 };

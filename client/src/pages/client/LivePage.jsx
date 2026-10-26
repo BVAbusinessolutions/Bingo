@@ -71,7 +71,11 @@ function LiveHeader({ connected, onLogout }) {
             <span className="hidden sm:inline">{connected ? 'En línea' : 'Reconectando…'}</span>
           </span>
           <ThemeToggle />
-          <button onClick={onLogout} aria-label="Cerrar sesión" className="grid h-11 w-11 place-items-center rounded-full hover:bg-white/10">
+          <button
+            onClick={onLogout}
+            aria-label="Cerrar sesión"
+            className="grid h-11 w-11 place-items-center rounded-full hover:bg-white/10"
+          >
             <LogOut className="h-6 w-6" />
           </button>
         </div>
@@ -184,7 +188,10 @@ export default function LivePage() {
           </div>
 
           {unclaimedWinners.length > 0 && (
-            <div role="alert" className="flex items-center gap-3 rounded-2xl border-4 border-white bg-sol-gold p-4 font-black text-sol-blue shadow-lg print:hidden">
+            <div
+              role="alert"
+              className="flex items-center gap-3 rounded-2xl border-4 border-white bg-sol-gold p-4 font-black text-sol-blue shadow-lg print:hidden"
+            >
               <Trophy className="h-10 w-10 shrink-0" aria-hidden />
               <p className="text-xl">
                 ¡Tienes BINGO en {unclaimedWinners.map((c) => `#${c.serial}`).join(', ')}! Pulsa “¡Bingo!” debajo del cartón.
@@ -194,7 +201,14 @@ export default function LivePage() {
           {error && <Alert tone="error">{error}</Alert>}
           {!loading && !currentEvent && <Alert>No hay ningún bingo programado por ahora.</Alert>}
           {eventId && !error && cards.length === 0 && (
-            <Alert title="Aún no tienes cartones aprobados para este bingo" action={<Button to={PATHS.catalog} variant="gold">Comprar cartones</Button>}>
+            <Alert
+              title="Aún no tienes cartones aprobados para este bingo"
+              action={
+                <Button to={PATHS.catalog} variant="gold">
+                  Comprar cartones
+                </Button>
+              }
+            >
               Si ya pagaste, te avisaremos aquí cuando se apruebe.
             </Alert>
           )}

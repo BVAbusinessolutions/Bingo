@@ -55,7 +55,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell title="¿Olvidaste tu contraseña?" subtitle="Escribe tu correo y te enviaremos un enlace para cambiarla." footer={backToLogin}>
+    <AuthShell
+      title="¿Olvidaste tu contraseña?"
+      subtitle="Escribe tu correo y te enviaremos un enlace para cambiarla."
+      footer={backToLogin}
+    >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <Field
           label="Correo electrónico"

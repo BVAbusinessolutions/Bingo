@@ -32,7 +32,13 @@ export function ProofViewer({ file, onClose }) {
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="Comprobante de pago" className="surface max-h-full w-full max-w-3xl overflow-auto p-3" onClick={(e) => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Comprobante de pago"
+        className="surface max-h-full w-full max-w-3xl overflow-auto p-3"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-2 flex justify-end">
           <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full text-fg hover:bg-muted" aria-label="Cerrar">
             <X />

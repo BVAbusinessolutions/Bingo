@@ -28,7 +28,15 @@ export default function ClaimButton({ claim, canClaim, loading, error, onClaim }
           <XCircle className="h-6 w-6 shrink-0 text-sol-red" aria-hidden /> El reclamo anterior no se confirmó.
         </p>
       )}
-      <Button variant="gold" size="lg" icon={PartyPopper} loading={loading} disabled={!canClaim} onClick={onClaim} className="w-full text-xl">
+      <Button
+        variant="gold"
+        size="lg"
+        icon={PartyPopper}
+        loading={loading}
+        disabled={!canClaim}
+        onClick={onClaim}
+        className="w-full text-xl"
+      >
         ¡Bingo! Reclamar premio
       </Button>
       {!canClaim && <p className="text-center text-sm text-fg-muted">Podrás reclamar cuando el sorteo esté en vivo.</p>}

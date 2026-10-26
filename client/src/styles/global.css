@@ -37,10 +37,19 @@ html[data-text-size='xlarge'] {
 body {
   background-color: var(--page);
   color: var(--fg);
-  font-family: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Nunito',
+    ui-rounded,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   line-height: 1.55;
   text-rendering: optimizeLegibility;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 h1,

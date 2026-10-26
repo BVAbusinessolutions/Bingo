@@ -8,9 +8,15 @@ const SECTIONS = [
     title: 'Qué datos recopilamos',
     body: (
       <ul>
-        <li><strong>Cuenta:</strong> nombre, correo electrónico y, si lo agregas, teléfono.</li>
-        <li><strong>Compra:</strong> nombre completo, número de identificación, teléfono, correo y el comprobante de pago que adjuntes.</li>
-        <li><strong>Juego:</strong> cartones comprados y reclamos de bingo.</li>
+        <li>
+          <strong>Cuenta:</strong> nombre, correo electrónico y, si lo agregas, teléfono.
+        </li>
+        <li>
+          <strong>Compra:</strong> nombre completo, número de identificación, teléfono, correo y el comprobante de pago que adjuntes.
+        </li>
+        <li>
+          <strong>Juego:</strong> cartones comprados y reclamos de bingo.
+        </li>
       </ul>
     ),
   },
@@ -45,15 +51,21 @@ const SECTIONS = [
   },
   {
     title: 'Cuánto tiempo los guardamos',
-    body: <p>Conservamos los datos de compra el tiempo necesario para cumplir obligaciones contables y legales. Luego se eliminan o anonimizan.</p>,
+    body: (
+      <p>
+        Conservamos los datos de compra el tiempo necesario para cumplir obligaciones contables y legales. Luego se eliminan o anonimizan.
+      </p>
+    ),
   },
   {
     title: 'Tus derechos',
     body: (
       <p>
         Puedes pedir acceso, corrección o eliminación de tus datos, o retirar tu consentimiento, escribiendo a{' '}
-        <a className="font-bold text-sol-blue underline dark:text-sol-gold" href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>. Tu nombre y
-        teléfono también puedes editarlos desde “Mi perfil”.
+        <a className="font-bold text-sol-blue underline dark:text-sol-gold" href={`mailto:${SITE.contactEmail}`}>
+          {SITE.contactEmail}
+        </a>
+        . Tu nombre y teléfono también puedes editarlos desde “Mi perfil”.
       </p>
     ),
   },

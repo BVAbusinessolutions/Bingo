@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, RefreshCw, Search } from 'lucide-react';
+import { ChevronRight, Download, HandCoins, RefreshCw, Search } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import { ProofThumb } from '../../components/admin/AdminProof';
+import ManualSaleDialog from '../../components/admin/ManualSaleDialog';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
 import StatusBadge from '../../components/ui/StatusBadge';
 import PageLoader from '../../components/ui/PageLoader';
-import { formatCRC, formatDate } from '../../lib/format';
+import { errorMessage, formatCRC, formatDate } from '../../lib/format';
 
 const FILTERS = [
   ['PROOF_SUBMITTED', 'Por verificar'],
   ['APPROVED', 'Aprobadas'],
   ['PENDING', 'Sin pagar aún'],
   ['REJECTED', 'Rechazadas'],
+  ['REFUNDED', 'Reembolsadas'],
   ['', 'Todas'],
 ];
 
@@ -28,7 +32,10 @@ const matches = (r, q) =>
   normalize([r.buyer?.fullName, r.buyer?.nationalId, r.buyer?.phone, r.buyer?.email, r.reference, ...r.serials].join(' ')).includes(q);
 
 export default function AdminPurchasesPage() {
-  const { revision, eventId, event } = useAdmin();
+  const { revision, eventId, event, reloadCounters } = useAdmin();
+  const [selling, setSelling] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState('');
   const [status, setStatus] = useState('PROOF_SUBMITTED');
   const [items, setItems] = useState(null);
   const [query, setQuery] = useState('');
@@ -38,6 +45,25 @@ export default function AdminPurchasesPage() {
   useEffect(() => {
     load();
   }, [load, revision]);
+
+  /** Descarga el CSV con los filtros actuales (abre en Excel). */
+  const exportCsv = async () => {
+    setExporting(true);
+    setError('');
+    try {
+      const blob = await adminApi.exportReservations({ status: status || undefined, eventId: eventId || undefined });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compras-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const q = normalize(query.trim());
   const visible = useMemo(() => (items ?? []).filter((r) => (!eventId || r.eventId === eventId) && matches(r, q)), [items, eventId, q]);
@@ -49,9 +75,19 @@ export default function AdminPurchasesPage() {
           <h1 className="text-3xl font-black text-brand">Compras</h1>
           <p className="text-lg text-fg-muted">{event?.name ?? 'Todas las compras'} · revisa los comprobantes y aprueba los pagos.</p>
         </div>
-        <button onClick={load} className="surface grid h-12 w-12 place-items-center text-fg" aria-label="Actualizar lista">
-          <RefreshCw className="h-5 w-5" />
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {event && ['SCHEDULED', 'LIVE'].includes(event.status) && (
+            <Button variant="gold" icon={HandCoins} onClick={() => setSelling(true)}>
+              Venta manual
+            </Button>
+          )}
+          <Button variant="outline" icon={Download} loading={exporting} onClick={exportCsv}>
+            Exportar a Excel
+          </Button>
+          <button onClick={load} className="surface grid h-12 w-12 place-items-center text-fg" aria-label="Actualizar lista">
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -85,6 +121,7 @@ export default function AdminPurchasesPage() {
         </label>
       </div>
 
+      {error && <Alert tone="error">{error}</Alert>}
       {!items ? (
         <PageLoader />
       ) : visible.length === 0 ? (
@@ -98,7 +135,9 @@ export default function AdminPurchasesPage() {
                 <div className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
                   <div className="min-w-0">
                     <p className="truncate text-lg font-black text-fg">{r.buyer?.fullName ?? 'Sin datos todavía'}</p>
-                    <p className="truncate text-fg-muted">{r.buyer ? `Céd. ${r.buyer.nationalId} · ${r.buyer.phone}` : formatDate(r.createdAt)}</p>
+                    <p className="truncate text-fg-muted">
+                      {r.buyer ? `Céd. ${r.buyer.nationalId} · ${r.buyer.phone}` : formatDate(r.createdAt)}
+                    </p>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate font-bold text-fg">{r.serials.map((s) => `#${s}`).join(', ')}</p>
@@ -114,6 +153,18 @@ export default function AdminPurchasesPage() {
             </li>
           ))}
         </ul>
+      )}
+      {selling && (
+        <ManualSaleDialog
+          event={event}
+          onClose={() => setSelling(false)}
+          onDone={() => {
+            setSelling(false);
+            setStatus('APPROVED');
+            load();
+            reloadCounters();
+          }}
+        />
       )}
     </section>
   );

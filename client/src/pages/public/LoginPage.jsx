@@ -117,7 +117,10 @@ export default function LoginPage() {
         <Field label="Correo electrónico" type="email" autoComplete="email" inputMode="email" {...bind('email')} />
         <Field label="Contraseña" type="password" autoComplete="current-password" {...bind('password')} />
         <div className="text-right">
-          <Link to={PATHS.forgotPassword} className="inline-flex min-h-10 items-center font-bold text-sol-blue underline dark:text-sol-gold">
+          <Link
+            to={PATHS.forgotPassword}
+            className="inline-flex min-h-10 items-center font-bold text-sol-blue underline dark:text-sol-gold"
+          >
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
