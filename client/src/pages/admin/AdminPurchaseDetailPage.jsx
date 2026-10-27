@@ -33,9 +33,36 @@ function Card({ title, children, className = '' }) {
   );
 }
 
+/** Aviso de posible pago reutilizado: el mismo n.º de comprobante o la misma foto en otras compras. */
+function DuplicateAlert({ duplicates }) {
+  if (!duplicates?.length) return null;
+  return (
+    <Alert tone="error" title={`⚠ Este comprobante ya aparece en ${duplicates.length === 1 ? 'otra compra' : `${duplicates.length} compras más`}`}>
+      <p className="mb-2">Puede ser un mismo pago usado dos veces. Revisa en el banco que haya un depósito por cada compra antes de aprobar.</p>
+      <ul className="space-y-1.5">
+        {duplicates.map((d) => (
+          <li key={d.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link to={`/admin/compras/${d.id}`} className="font-bold text-fg underline">
+              {d.buyerName ?? 'Sin nombre'} · {formatCRC(d.total)}
+            </Link>
+            <StatusBadge status={d.status} />
+            <span className="text-sm">
+              {[d.sameReference && 'mismo n.º de comprobante', d.sameImage && 'misma foto'].filter(Boolean).join(' y ')} · {d.eventName}
+              {d.at && ` · ${formatDate(d.at)}`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Alert>
+  );
+}
+
 /** Lista de verificación: el botón "Aprobar" solo se habilita cuando todo coincide. */
 function VerificationChecklist({ r, checks, setChecks }) {
   const items = [
+    ...(r.duplicates?.length
+      ? [['duplicate', <>Revisé las otras compras con este comprobante y este pago es distinto</>]]
+      : []),
     [
       'amount',
       <>
@@ -120,7 +147,8 @@ export default function AdminPurchaseDetailPage() {
   if (!r) return <PageLoader />;
 
   const reviewable = r.status === 'PROOF_SUBMITTED';
-  const allChecked = ['amount', 'reference', 'detail', 'received'].every((k) => checks[k]);
+  const required = ['amount', 'reference', 'detail', 'received', ...(r.duplicates?.length ? ['duplicate'] : [])];
+  const allChecked = required.every((k) => checks[k]);
   const MethodIcon = { TRANSFER: Building2, CASH: Banknote }[r.method] ?? Smartphone;
   const METHOD_LABEL = { TRANSFER: 'Transferencia bancaria', SINPE: 'SINPE Móvil', CASH: 'Efectivo' };
 
@@ -235,6 +263,7 @@ export default function AdminPurchaseDetailPage() {
           <h2 id="verify-title" className="text-2xl font-black text-fg">
             Verifica antes de aprobar
           </h2>
+          <DuplicateAlert duplicates={r.duplicates} />
           <VerificationChecklist r={r} checks={checks} setChecks={setChecks} />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
@@ -251,7 +280,7 @@ export default function AdminPurchaseDetailPage() {
               Rechazar
             </Button>
           </div>
-          {!allChecked && <p className="text-fg-muted">Marca las 4 casillas para habilitar la aprobación.</p>}
+          {!allChecked && <p className="text-fg-muted">Marca las {required.length} casillas para habilitar la aprobación.</p>}
         </section>
       )}
 

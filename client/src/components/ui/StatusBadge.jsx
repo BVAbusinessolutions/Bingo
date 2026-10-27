@@ -5,6 +5,7 @@ const STYLES = {
   REJECTED: ['bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300', 'Rechazada'],
   EXPIRED: ['bg-muted text-fg-muted', 'Vencida'],
   CANCELLED: ['bg-muted text-fg-muted', 'Cancelada'],
+  REFUNDED: ['bg-muted text-fg-muted', 'Reembolsada'],
   VERIFYING: ['bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300', 'En verificación'],
   AVAILABLE: ['bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300', 'Disponible'],
   RESERVED: ['bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300', 'Reservado'],

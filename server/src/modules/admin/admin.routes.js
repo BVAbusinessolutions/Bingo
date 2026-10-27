@@ -21,6 +21,7 @@ import {
   approveReservation,
   closeReservation,
   findReservation,
+  paymentDuplicates,
   releaseExpiredReservations,
   reservationDetailView,
   reservationView,
@@ -348,6 +349,7 @@ router.get('/reservations/:id', requireUuid('id'), async (req, res) => {
   res.json({
     ...(await reservationDetailView(r)),
     account: account && { name: account.name, email: account.email, phone: account.phone, emailVerified: account.email_verified },
+    duplicates: await paymentDuplicates(r),
   });
 });
 
