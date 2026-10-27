@@ -32,8 +32,8 @@ try {
     [name, email, await bcrypt.hash(password, 12)]
   );
   await one(
-    "insert into app.audit_log (actor_id, action, target_type, target_id) values ($1, 'user.admin_created_cli', 'user', $1) returning id",
-    [user.id]
+    "insert into app.audit_log (actor_id, action, target_type, target_id) values ($1, 'user.admin_created_cli', 'user', $2) returning id",
+    [user.id, String(user.id)]
   );
   console.log(`✔ Administrador listo: ${email}`);
 } catch (err) {
