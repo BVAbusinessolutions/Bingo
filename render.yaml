@@ -5,7 +5,7 @@ services:
     name: bingo-hogar-sol
     runtime: node
     plan: starter # el plan gratis se duerme y corta el sorteo en vivo; usa uno de pago para el evento
-    region: ohio
+    region: virginia # misma zona que Supabase (us-east-1)
     buildCommand: npm run build:prod
     startCommand: npm start
     healthCheckPath: /api/health
@@ -23,6 +23,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false # pegar la cadena del "Session pooler" de Supabase
+      - key: DATABASE_CA_CERT
+        value: supabase-ca.crt # certificado público de Supabase (server/supabase-ca.crt), verifica el TLS
       - key: CLIENT_ORIGIN
         sync: false # https://tu-dominio (o la URL .onrender.com)
       - key: ADMIN_NOTIFY_EMAILS
@@ -38,4 +40,15 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: MAIL_FROM
+        sync: false
+      # Datos públicos de contacto: Vite los incrusta en la web al compilar (client/.env no se sube a git)
+      - key: VITE_CONTACT_EMAIL
+        sync: false
+      - key: VITE_CONTACT_PHONE
+        sync: false
+      - key: VITE_CONTACT_WHATSAPP
+        sync: false # solo dígitos, con código de país (506...)
+      - key: VITE_CONTACT_ADDRESS
+        sync: false
+      - key: VITE_CONTACT_SCHEDULE
         sync: false
