@@ -7,3 +7,7 @@ importar/
 server/.data/
 server/backups/
 *.json.gz
+
+# Datos del OCR (se descargan solos al leer cartones)
+*.traineddata
+*.traineddata.gz

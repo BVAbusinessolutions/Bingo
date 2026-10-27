@@ -5,6 +5,7 @@ import { connect, migrate, close, query, one } from '../src/db/index.js';
 import { seedDemoData, DEMO_EVENT_ID } from '../src/db/seed.js';
 import { createApp } from '../src/app.js';
 import { outbox } from '../src/utils/mailer.js';
+import { closeRecognizer } from '../src/modules/series/cardRecognizer.js';
 
 export { DEMO_EVENT_ID, outbox, query, one };
 
@@ -19,7 +20,10 @@ export async function startApp() {
   return app;
 }
 
-export const stopApp = () => close();
+export const stopApp = async () => {
+  await closeRecognizer();
+  await close();
+};
 
 export const api = () => request(app);
 
