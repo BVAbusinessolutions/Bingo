@@ -37,6 +37,8 @@ No hace falta crear tablas a mano: al arrancar, el servidor aplica las migracion
    - `CLIENT_ORIGIN`: la URL pública, p. ej. `https://bingo-hogar-sol.onrender.com` o tu dominio.
    - `ADMIN_NOTIFY_EMAILS`: correo(s) que reciben el aviso de cada compra.
    - `SMTP_*` y `MAIL_FROM`: ver paso 4.
+   - `VITE_CONTACT_*`: correo, teléfono, WhatsApp, dirección y horario públicos (se incrustan en la web al compilar;
+     si se cambian hay que volver a desplegar).
    Los secretos JWT los genera Render automáticamente.
 4. **Deploy**. Cuando termine, abre `https://TU-URL/api/health` → debe responder `{"status":"ok"}`.
 5. Abre la consola del servicio (**Shell**) y ejecuta `npm run create-admin` para crear el administrador.
