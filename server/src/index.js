@@ -7,6 +7,7 @@ import { createApp } from './app.js';
 import { registerAdminSocket, registerUserSocket } from './realtime.js';
 import { registerDrawSocket } from './modules/draw/draw.js';
 import { failInterruptedImports } from './modules/series/series.service.js';
+import { closeRecognizer } from './modules/series/cardRecognizer.js';
 import { releaseExpiredReservations } from './modules/reservations/reservations.service.js';
 import { startJobs } from './jobs.js';
 import { logger } from './utils/logger.js';
@@ -32,6 +33,7 @@ const shutdown = (signal) => {
   logger.info('server.shutdown', { signal });
   io.close();
   server.close(async () => {
+    await closeRecognizer();
     await close();
     process.exit(0);
   });
