@@ -1,5 +1,6 @@
 // Archivos (comprobantes e imágenes de cartones) guardados en la base de datos (bytea).
 // En Supabase quedan dentro de la misma base, con sus respaldos, y nunca en el disco del servidor.
+import { createHash } from 'node:crypto';
 import { one } from '../db/index.js';
 
 export const ALLOWED_FILES = {
@@ -17,11 +18,13 @@ export const hasValidSignature = (mime, buffer) => {
 
 /** Guarda un archivo. `q` permite hacerlo dentro de una transacción. */
 export async function saveFile(q, { kind, mime, data }) {
-  const [row] = await q('insert into app.files (kind, mime, size, data) values ($1, $2, $3, $4) returning id', [
+  const sha256 = createHash('sha256').update(data).digest('hex');
+  const [row] = await q('insert into app.files (kind, mime, size, data, sha256) values ($1, $2, $3, $4, $5) returning id', [
     kind,
     mime,
     data.length,
     data,
+    sha256,
   ]);
   return row.id;
 }

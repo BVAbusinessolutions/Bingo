@@ -14,6 +14,7 @@ import {
   RESERVATION_TTL_MS,
   closeReservation,
   findOwnReservation,
+  paymentDuplicates,
   releaseExpiredReservations,
   reservationDetailView,
   RESERVATION_SELECT,
@@ -183,17 +184,23 @@ router.post(
     });
     if (!ok) return res.status(409).json({ error: 'RESERVATION_NOT_PENDING' });
 
-    const view = await reservationView(await findOwnReservation(req.reservation.id, req.user.id));
+    const row = await findOwnReservation(req.reservation.id, req.user.id);
+    const view = await reservationView(row);
+    const duplicates = await paymentDuplicates(row);
     notifyAdmins('reservation:proof', view);
     const serials = view.serials.map((s) => `#${s}`).join(', ');
+    const duplicateWarning = duplicates.length
+      ? [`⚠ ATENCIÓN: este comprobante ya aparece en ${duplicates.length} compra(s) más. Revísalo antes de aprobar.`, '']
+      : [];
     sendMail({
       to: email,
       subject: 'Recibimos tu comprobante · Bingo Hogar Sol',
       text: `Hola ${fullName}, recibimos tu comprobante. Tus cartones (${serials}) están en verificación; te avisaremos por este medio cuando se apruebe el pago.`,
     });
     notifyAdminsByMail({
-      subject: `🛒 Nueva compra por verificar · ${formatCRC(view.total)}`,
+      subject: `${duplicates.length ? '⚠ Comprobante repetido' : '🛒 Nueva compra por verificar'} · ${formatCRC(view.total)}`,
       text: [
+        ...duplicateWarning,
         `${fullName} envió un comprobante de pago para ${view.eventName}.`,
         '',
         `Monto: ${formatCRC(view.total)}`,

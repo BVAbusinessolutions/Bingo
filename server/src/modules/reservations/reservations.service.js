@@ -47,6 +47,48 @@ export async function reservationView(r) {
 
 export const findReservation = (id) => one(`${RESERVATION_SELECT} where r.id = $1`, [id]);
 
+/** N.º de comprobante normalizado en SQL (igual que el índice de 002_payment_duplicates.sql). */
+const normRef = (col) => `upper(regexp_replace(${col}, '[^0-9A-Za-z]', '', 'g'))`;
+
+/**
+ * Otras compras que usan el mismo n.º de comprobante o la misma foto (posible reutilización de un pago).
+ * El admin lo ve antes de aprobar; no bloquea nada por sí solo.
+ */
+export async function paymentDuplicates(r) {
+  if (!r.payment_reference && !r.proof_file_id) return [];
+  const rows = await query(
+    `with me as (
+       select ${normRef('$2::text')} as ref, (select sha256 from app.files where id = $3) as sha256
+     ),
+     same_img as (
+       select f.id from app.files f, me
+        where f.kind = 'PROOF' and me.sha256 is not null and f.sha256 = me.sha256
+     )
+     select o.id, o.status, o.buyer_full_name, o.total, o.proof_uploaded_at, o.created_at, e.name as event_name,
+            (me.ref <> '' and ${normRef('o.payment_reference')} = me.ref) as same_reference,
+            (o.proof_file_id in (select id from same_img)) as same_image
+       from app.reservations o
+       join app.events e on e.id = o.event_id
+       cross join me
+      where o.id <> $1
+        and ((me.ref <> '' and o.payment_reference is not null and ${normRef('o.payment_reference')} = me.ref)
+          or o.proof_file_id in (select id from same_img))
+      order by coalesce(o.proof_uploaded_at, o.created_at) desc
+      limit 10`,
+    [r.id, r.payment_reference ?? '', r.proof_file_id ?? null]
+  );
+  return rows.map((o) => ({
+    id: o.id,
+    status: o.status,
+    buyerName: o.buyer_full_name,
+    eventName: o.event_name,
+    total: o.total,
+    at: iso(o.proof_uploaded_at ?? o.created_at),
+    sameReference: o.same_reference,
+    sameImage: o.same_image,
+  }));
+}
+
 /** Reserva del usuario: la propiedad va en la consulta misma (un id ajeno simplemente no existe). */
 export const findOwnReservation = (id, userId) => one(`${RESERVATION_SELECT} where r.id = $1 and r.user_id = $2`, [id, userId]);
 
