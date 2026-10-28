@@ -117,7 +117,7 @@ async function processImport(seriesId, pngs) {
     }
     usedSerials.add(serial);
     const grid = result.grid ?? EMPTY_GRID;
-    const needsReview = !result.grid || gridProblems(grid).length > 0 || !result.serial;
+    const needsReview = !result.grid || gridProblems(grid).length > 0;
     await tx(async (q) => {
       const imageId = await saveFile(q, { kind: 'CARD_IMAGE', mime: 'image/png', data: png.data });
       await q('insert into app.series_cards (series_id, serial, grid, image_id, needs_review) values ($1, $2, $3, $4, $5)', [
