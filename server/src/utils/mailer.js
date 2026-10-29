@@ -39,12 +39,13 @@ function toHtml({ subject, text, action }) {
 /**
  * Envía un correo sin bloquear ni romper la petición que lo origina: si el SMTP falla, se registra el error.
  * - action: { label, url } botón opcional
+ * - replyTo: a quién responde el destinatario (p. ej. la persona que escribió por el formulario de contacto)
  */
-export function sendMail({ to, subject, text, action }) {
+export function sendMail({ to, subject, text, action, replyTo }) {
   const recipients = [to].flat().filter(Boolean);
   if (recipients.length === 0) return null;
   const body = action ? `${text}\n\n${action.label}: ${action.url}` : text;
-  const mail = { to: recipients, subject, text: body, sentAt: new Date().toISOString() };
+  const mail = { to: recipients, subject, text: body, replyTo, sentAt: new Date().toISOString() };
   outbox.push(mail);
   if (outbox.length > 200) outbox.shift();
 
@@ -55,7 +56,7 @@ export function sendMail({ to, subject, text, action }) {
   }
 
   transport
-    .sendMail({ from: env.smtp.from, to: recipients, subject, text: body, html: toHtml({ subject, text, action }) })
+    .sendMail({ from: env.smtp.from, to: recipients, replyTo, subject, text: body, html: toHtml({ subject, text, action }) })
     .catch((err) => logger.error('mail.send_failed', { subject, message: err.message }));
   return mail;
 }

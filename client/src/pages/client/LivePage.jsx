@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Hand, LogOut, Printer, Sparkles, Trophy, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Hand, LogOut, PartyPopper, Printer, Sparkles, Trophy, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationsContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
@@ -10,8 +10,8 @@ import BingoCard from '../../components/bingo/BingoCard';
 import ClaimButton from '../../components/bingo/ClaimButton';
 import LiveStream from '../../components/player/LiveStream';
 import CalledNumbersBoard from '../../components/player/CalledNumbersBoard';
-import ThemeToggle from '../../components/ui/ThemeToggle';
-import TextSizeControl from '../../components/ui/TextSizeControl';
+import { BrandBadge } from '../../components/brand/BrandLogo';
+import AccessibilityButton from '../../components/accessibility/AccessibilityButton';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { hasWon, PATTERNS } from '../../constants/patterns';
@@ -56,10 +56,11 @@ function useClaims(eventId) {
 
 function LiveHeader({ connected, onLogout }) {
   return (
-    <header className="sticky top-0 z-20 border-b-4 border-sol-gold bg-sol-blue text-white shadow-md dark:bg-[#0a1628] print:hidden">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/90 text-white shadow-md backdrop-blur-xl print:hidden">
       <div className="container-page flex h-16 items-center justify-between gap-2">
         <Link to={PATHS.home} className="flex min-w-0 items-center gap-2 font-black" aria-label="Volver al inicio">
           <ArrowLeft className="h-6 w-6 shrink-0" aria-hidden />
+          <BrandBadge className="h-11 w-11 rounded-xl" />
           <span className="truncate text-lg">Bingo Hogar Sol</span>
         </Link>
         <div className="flex items-center gap-2">
@@ -70,8 +71,9 @@ function LiveHeader({ connected, onLogout }) {
             {connected ? <Wifi className="h-4 w-4" aria-hidden /> : <WifiOff className="h-4 w-4" aria-hidden />}
             <span className="hidden sm:inline">{connected ? 'En línea' : 'Reconectando…'}</span>
           </span>
-          <ThemeToggle />
+          <AccessibilityButton />
           <button
+            type="button"
             onClick={onLogout}
             aria-label="Cerrar sesión"
             className="grid h-11 w-11 place-items-center rounded-full hover:bg-white/10"
@@ -150,7 +152,7 @@ export default function LivePage() {
       <main id="contenido" className="container-page grid gap-5 pt-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* Stream + tablero (fijo al hacer scroll en escritorio) */}
         <div className="space-y-4 lg:sticky lg:top-20 lg:self-start print:hidden">
-          <LiveStream provider={event?.stream?.provider} videoId={event?.stream?.videoId} title={event?.name} />
+          <LiveStream provider={event?.stream?.provider} videoId={event?.stream?.videoId} url={event?.stream?.url} title={event?.name} />
           <CalledNumbersBoard calledList={calledList} />
         </div>
 
@@ -166,12 +168,10 @@ export default function LivePage() {
                   Se juega: <b className="text-fg">{PATTERNS[pattern]?.label}</b>
                 </p>
               </div>
-              <div className="rounded-full bg-sol-blue p-1 text-white dark:bg-[#0a1628]">
-                <TextSizeControl />
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
+                type="button"
                 onClick={() => setAutoMark((v) => !v)}
                 aria-pressed={autoMark}
                 className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 font-extrabold transition ${
@@ -190,7 +190,7 @@ export default function LivePage() {
           {unclaimedWinners.length > 0 && (
             <div
               role="alert"
-              className="flex items-center gap-3 rounded-2xl border-4 border-white bg-sol-gold p-4 font-black text-sol-blue shadow-lg print:hidden"
+              className="flex animate-pop items-center gap-3 rounded-2xl border-4 border-white bg-sol-gold p-4 font-black text-sol-blue shadow-lg print:hidden"
             >
               <Trophy className="h-10 w-10 shrink-0" aria-hidden />
               <p className="text-xl">
@@ -243,6 +243,23 @@ export default function LivePage() {
           </div>
         </section>
       </main>
+
+      {/* Botón ¡BINGO! siempre a mano: aparece solo cuando un cartón completa el patrón con las balotas cantadas. */}
+      {isLive && unclaimedWinners.length > 0 && (
+        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-20 print:hidden">
+          <Button
+            variant="gold"
+            size="lg"
+            icon={PartyPopper}
+            loading={pending[unclaimedWinners[0].id]}
+            onClick={() => claim(unclaimedWinners[0])}
+            className="w-full max-w-md animate-pop border-4 border-white text-2xl shadow-2xl"
+            aria-label={`¡Bingo! Reclamar premio con el cartón número ${unclaimedWinners[0].serial}`}
+          >
+            ¡BINGO! · #{unclaimedWinners[0].serial}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

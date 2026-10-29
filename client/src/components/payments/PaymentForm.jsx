@@ -8,6 +8,7 @@ import Alert from '../ui/Alert';
 import { DetailTextAlert, FileInput, MAX_FILE, PaymentInstructions, ReservationTimer } from './PaymentPieces';
 import { paymentConfirmSchema, validate } from '../../lib/validation';
 import { errorMessage, formatCRC } from '../../lib/format';
+import { PAYMENT_DETAIL } from '../../config/site';
 
 function StepSection({ number, title, children }) {
   return (
@@ -142,7 +143,7 @@ export default function PaymentForm({ reservation, onChange }) {
             {...bind('reference')}
           />
           <FileInput file={file} setFile={setFile} error={errors.file} />
-          <DetailTextAlert text={reservation.payment.detail ?? 'BINGO'} compact />
+          <DetailTextAlert text={reservation.payment.detail ?? PAYMENT_DETAIL} compact />
           {errors.server && <Alert tone="error">{errors.server}</Alert>}
         </StepSection>
       </form>

@@ -5,6 +5,7 @@ import { drawApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
+import WinningCardsPanel from '../../components/admin/WinningCardsPanel';
 import { COLUMN_RANGES, LETTERS, PATTERNS, letterFor } from '../../constants/patterns';
 import { errorMessage } from '../../lib/format';
 
@@ -91,6 +92,7 @@ export default function AdminDrawPage() {
                 return (
                   <button
                     key={n}
+                    type="button"
                     disabled={busy || done || !eventId || closed}
                     onClick={() => run(() => drawApi.call(eventId, n))}
                     aria-label={`Cantar ${letter} ${n}`}
@@ -108,6 +110,8 @@ export default function AdminDrawPage() {
           );
         })}
       </div>
+
+      <WinningCardsPanel eventId={eventId} calledCount={called.length} />
     </section>
   );
 }

@@ -26,7 +26,10 @@ function ClaimCard({ claim, pattern, onDecide }) {
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-2xl font-black text-fg">#{claim.serial}</p>
+          <p className="flex items-center gap-2 text-2xl font-black text-fg">
+            #{claim.serial}
+            {claim.channel === 'SALON' && <span className="rounded-full bg-navy-950 px-2 py-0.5 text-sm text-accent">Salón</span>}
+          </p>
           <span className="[&>span]:text-sm">
             <StatusBadge status={CLAIM_LABELS[claim.status]} />
           </span>

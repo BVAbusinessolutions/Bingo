@@ -32,7 +32,7 @@ Cuentas de demostración (solo desarrollo, **nunca** se crean en producción):
 |---|---|
 | `npm run setup` | Instala dependencias y crea `server/.env` |
 | `npm run server` / `npm run dev` | API y web en modo desarrollo |
-| `npm test` | 53 pruebas del servidor (Postgres en memoria) + 16 del cliente |
+| `npm test` | 77 pruebas del servidor (Postgres en memoria) + 26 del cliente |
 | `npm run lint` | ESLint en servidor y cliente |
 | `npm run build` | Compila la web en `client/dist` |
 | `npm start` | Servidor de producción (sirve también la web compilada) |
@@ -54,12 +54,25 @@ confirma el premio en *Ganadores* y aparece en *Resultados*.
 En *Administración → Series* se ven como archivos separados (Nueva / Anterior) y se elige cuál se juega en
 cada evento. Los cartones que el lector no pudo leer quedan "por revisar" y se corrigen junto a su imagen.
 
+## Accesibilidad, SEO y legal
+
+- **Menú de accesibilidad** flotante (abajo a la izquierda en todas las páginas): tamaño de letra, modo día/noche,
+  alto contraste, reducir animaciones y lectura en voz alta.
+- **Portada** con cuenta regresiva al evento del domingo 15 de noviembre de 2026, 1:00 p. m. (Salón de Eventos
+  de Tinamaste, Higuito), configurable en `client/src/config/site.js`; premios en `client/src/config/prizes.js`.
+- **Legal (Costa Rica):** términos y aviso legal, privacidad (Ley 8968), reglamento (KYC, +18, motocicleta,
+  impuestos), contingencias y antifraude, propiedad intelectual y cookies. Ver `docs/LEGAL-REVISION.md`.
+- **SEO:** Open Graph, datos estructurados del evento, `robots.txt` y `sitemap.xml` generados con `CLIENT_ORIGIN`.
+- **Cookies y analítica:** aviso de consentimiento; GA4 o Cloudflare Web Analytics solo con consentimiento.
+
 ## Estructura
 
 ```text
 Bingo/
 ├── render.yaml                    # despliegue en Render (web + API en un servicio)
 ├── docs/DESPLIEGUE.md             # guía Supabase + Render + correo
+├── docs/SEGURIDAD.md              # HTTPS, cifrado, rate limit/DDoS, antifraude
+├── docs/LEGAL-REVISION.md         # decisiones legales a confirmar antes del evento
 ├── pendientes/TAREAS-PENDIENTES.md
 ├── client/src/
 │   ├── app/                       # App + providers (tema, router, sesión, avisos)

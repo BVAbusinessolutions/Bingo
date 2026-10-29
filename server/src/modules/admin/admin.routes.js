@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import { z } from 'zod';
 import { one, query, tx } from '../../db/index.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
+import { authenticate, authorize, USABLE_ACCOUNT_SQL } from '../../middleware/auth.js';
 import { validateBody, validateQuery, zipUploadLimiter } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
 import { sendMail } from '../../utils/mailer.js';
@@ -11,6 +11,7 @@ import { audit, actorFrom } from '../../services/audit.js';
 import { getFile, sendFile } from '../../services/files.js';
 import { getPayment, updatePayment } from '../../services/settings.js';
 import { HttpError } from '../../utils/httpError.js';
+import { env } from '../../config/env.js';
 import { toCsv } from '../../utils/csv.js';
 import { EVENT_SELECT, publicEvent } from '../events/events.routes.js';
 import { broadcast } from '../draw/draw.js';
@@ -21,6 +22,7 @@ import {
   approveReservation,
   closeReservation,
   findReservation,
+  identityDuplicates,
   paymentDuplicates,
   releaseExpiredReservations,
   reservationDetailView,
@@ -77,7 +79,10 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
        count(*) filter (where status = 'RESERVED')::int as reserved,
        (select count(*)::int from app.reservations where event_id = $1 and status = 'PROOF_SUBMITTED') as pending_review,
        (select count(*)::int from app.reservations where event_id = $1 and status = 'PENDING') as awaiting_payment,
-       (select coalesce(sum(total), 0)::int from app.reservations where event_id = $1 and status = 'APPROVED') as revenue,
+       -- Solo dinero real: compras aprobadas por una persona administradora con el método de cobro registrado.
+       -- Las reservas pendientes, con comprobante sin revisar, rechazadas o reembolsadas no suman.
+       (select coalesce(sum(total), 0)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method is not null) as revenue,
        (select count(*)::int from app.draws where event_id = $1) as called
      from app.cards where event_id = $1`,
     [req.event.id]
@@ -95,17 +100,45 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
 });
 
 // ---------------------------------------------------------------- Eventos
-const streamSchema = z.object({
-  provider: z.enum(['youtube', 'twitch', 'vimeo']),
-  videoId: z.string().regex(/^[A-Za-z0-9_-]{2,64}$/),
-});
-const eventSchema = z.object({
+// Transmisión: por id de video (YouTube/Twitch/Vimeo) o por URL https de baja latencia (LL-HLS / WebRTC-WHEP).
+// Las URL solo pueden apuntar a orígenes de STREAM_ORIGINS: son los únicos que la CSP de la web permite.
+const allowedStreamUrl = (url) => {
+  try {
+    return env.streamOrigins.includes(new URL(url).origin);
+  } catch {
+    return false;
+  }
+};
+const streamSchema = z.discriminatedUnion('provider', [
+  z.object({ provider: z.enum(['youtube', 'twitch', 'vimeo']), videoId: z.string().regex(/^[A-Za-z0-9_-]{2,64}$/) }),
+  z.object({
+    provider: z.enum(['hls', 'whep']),
+    url: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(/^https:\/\/\S+$/)
+      .refine(allowedStreamUrl, 'El origen de la transmisión no está en STREAM_ORIGINS'),
+  }),
+]);
+// Sin valores por defecto: en una edición parcial, un campo ausente debe quedar como está
+// (antes, cambiar solo el estado borraba la descripción porque el default '' se aplicaba también al editar).
+const eventFields = z.object({
   name: z.string().trim().min(3).max(80),
-  description: z.string().trim().max(300).optional().default(''),
+  description: z.string().trim().max(300),
   pattern: z.enum(['LINE', 'FOUR_CORNERS', 'X', 'FULL']),
   price: z.number().int().min(0).max(1_000_000),
   startsAt: z.string().datetime({ offset: true }),
-  stream: streamSchema.nullable().optional(),
+  // Lugar del evento presencial: se muestra en la portada, el reglamento y la cuenta regresiva.
+  venue: z.string().trim().max(120),
+  venueArea: z.string().trim().max(120),
+  stream: streamSchema.nullable(),
+});
+const eventSchema = eventFields.extend({
+  description: eventFields.shape.description.optional().default(''),
+  venue: eventFields.shape.venue.optional().default(''),
+  venueArea: eventFields.shape.venueArea.optional().default(''),
+  stream: eventFields.shape.stream.optional(),
 });
 
 router.get('/events', async (req, res) => {
@@ -115,11 +148,11 @@ router.get('/events', async (req, res) => {
 });
 
 router.post('/events', validateBody(eventSchema), async (req, res) => {
-  const { name, description, pattern, price, startsAt, stream } = req.body;
+  const { name, description, pattern, price, startsAt, venue, venueArea, stream } = req.body;
   const e = await one(
-    `insert into app.events (name, description, pattern, price, starts_at, stream_provider, stream_video_id)
-     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
-    [name, description, pattern, price, startsAt, stream?.provider ?? null, stream?.videoId ?? null]
+    `insert into app.events (name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id, stream_url)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+    [name, description, pattern, price, startsAt, venue, venueArea, stream?.provider ?? null, stream?.videoId ?? null, stream?.url ?? null]
   );
   await audit({ ...actorFrom(req), action: 'event.created', targetType: 'event', targetId: e.id, details: { name } });
   res.status(201).json(adminEvent(await one(`${EVENT_SELECT} where e.id = $1`, [e.id])));
@@ -131,7 +164,7 @@ const TRANSITIONS = { SCHEDULED: ['LIVE', 'CANCELLED'], LIVE: ['FINISHED', 'CANC
 router.patch(
   '/events/:eventId',
   findEvent,
-  validateBody(eventSchema.partial().extend({ status: z.enum(['SCHEDULED', 'LIVE', 'FINISHED', 'CANCELLED']).optional() })),
+  validateBody(eventFields.partial().extend({ status: z.enum(['SCHEDULED', 'LIVE', 'FINISHED', 'CANCELLED']).optional() })),
   send(async (req, res) => {
     const e = req.event;
     const b = req.body;
@@ -153,6 +186,8 @@ router.patch(
          price = coalesce($5, price), starts_at = coalesce($6, starts_at), status = coalesce($7, status),
          stream_provider = case when $8 then $9 else stream_provider end,
          stream_video_id = case when $8 then $10 else stream_video_id end,
+         stream_url = case when $8 then $11 else stream_url end,
+         venue = coalesce($12, venue), venue_area = coalesce($13, venue_area),
          updated_at = now()
        where id = $1`,
       [
@@ -166,6 +201,9 @@ router.patch(
         stream !== undefined,
         stream?.provider ?? null,
         stream?.videoId ?? null,
+        stream?.url ?? null,
+        b.venue ?? null,
+        b.venueArea ?? null,
       ]
     );
     // Cancelar un evento cierra las compras sin aprobar y avisa a quienes ya enviaron comprobante.
@@ -350,6 +388,7 @@ router.get('/reservations/:id', requireUuid('id'), async (req, res) => {
     ...(await reservationDetailView(r)),
     account: account && { name: account.name, email: account.email, phone: account.phone, emailVerified: account.email_verified },
     duplicates: await paymentDuplicates(r),
+    sameIdentity: await identityDuplicates(r),
   });
 });
 
@@ -359,10 +398,12 @@ router.get('/reservations/:id/proof', requireUuid('id'), async (req, res) => {
 });
 
 // Solo se decide sobre compras con comprobante enviado (y que no hayan vencido).
-router.post('/reservations/:id/decision', requireUuid('id'), validateBody(z.object({ approve: z.boolean() })), async (req, res) => {
+// `method`: cómo llegó realmente el dinero (SINPE Móvil o transferencia u otro medio), confirmado al aprobar.
+const decisionSchema = z.object({ approve: z.boolean(), method: z.enum(['SINPE', 'TRANSFER']).optional() });
+router.post('/reservations/:id/decision', requireUuid('id'), validateBody(decisionSchema), async (req, res) => {
   await releaseExpiredReservations();
   const view = req.body.approve
-    ? await approveReservation(req.params.id, actorFrom(req))
+    ? await approveReservation(req.params.id, actorFrom(req), req.body.method)
     : await closeReservation(req.params.id, 'REJECTED', actorFrom(req), { from: ['PROOF_SUBMITTED'] });
   if (!view) return res.status(409).json({ error: 'NOT_DECIDABLE' });
   res.json(view);
@@ -420,7 +461,7 @@ router.post(
       const [event] = await q("select id, price from app.events where id = $1 and status in ('SCHEDULED', 'LIVE')", [b.eventId]);
       if (!event) throw new HttpError(409, 'EVENT_NOT_ON_SALE');
       // Si el comprador tiene cuenta con ese correo, los cartones aparecen en su sesión para jugar en línea.
-      const [owner] = b.email ? await q("select id from app.users where email = $1 and status = 'ACTIVE'", [b.email]) : [];
+      const [owner] = b.email ? await q(`select id from app.users where email = $1 and ${USABLE_ACCOUNT_SQL}`, [b.email]) : [];
       const serials = [...new Set(b.serials)];
       const [r] = await q(
         `insert into app.reservations
@@ -483,9 +524,13 @@ router.post('/claims/:id/decision', requireUuid('id'), validateBody(z.object({ a
 });
 
 // ---------------------------------------------------------------- Usuarios
+/** Cédula normalizada en SQL (igual que el índice de 003_sanctions_streaming.sql). */
+const normId = (col) => `upper(regexp_replace(${col}, '[^0-9A-Za-z]', '', 'g'))`;
+
 const usersQuery = z.object({
   q: z.string().trim().max(80).optional().default(''),
   role: z.enum(['ADMIN', 'CLIENTE', '']).optional().default(''),
+  status: z.enum(['ACTIVE', 'DISABLED', 'SUSPENDED', 'BANNED', '']).optional().default(''),
   page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
 });
 
@@ -496,6 +541,8 @@ const adminUserView = (u) => ({
   phone: u.phone,
   role: u.role,
   status: u.status,
+  suspendedUntil: u.suspended_until ? new Date(u.suspended_until).toISOString() : null,
+  sanctionReason: u.sanction_reason ?? null,
   emailVerified: u.email_verified,
   lockedUntil: u.locked_until && new Date(u.locked_until) > new Date() ? new Date(u.locked_until).toISOString() : null,
   createdAt: new Date(u.created_at).toISOString(),
@@ -503,14 +550,16 @@ const adminUserView = (u) => ({
 });
 
 router.get('/users', validateQuery(usersQuery), async (req, res) => {
-  const { q, role, page } = req.validQuery;
+  const { q, role, status, page } = req.validQuery;
   const pageSize = 25;
-  const params = [q ? `%${q.toLowerCase()}%` : null, role || null];
-  const where = '($1::text is null or lower(u.name) like $1 or u.email like $1 or u.phone like $1) and ($2::text is null or u.role = $2)';
+  const params = [q ? `%${q.toLowerCase()}%` : null, role || null, status || null];
+  const where = `($1::text is null or lower(u.name) like $1 or u.email like $1 or u.phone like $1
+      or exists (select 1 from app.reservations r where r.user_id = u.id and ${normId('r.buyer_national_id')} = ${normId('$1')}))
+    and ($2::text is null or u.role = $2) and ($3::text is null or u.status = $3)`;
   const [{ total }] = await query(`select count(*)::int as total from app.users u where ${where}`, params);
   const rows = await query(
     `select u.*, (select count(*)::int from app.reservations r where r.user_id = u.id and r.status = 'APPROVED') as purchases
-       from app.users u where ${where} order by u.created_at desc limit ${pageSize} offset $3`,
+       from app.users u where ${where} order by u.created_at desc limit ${pageSize} offset $4`,
     [...params, (page - 1) * pageSize]
   );
   res.json({ total, page, pageSize, users: rows.map(adminUserView) });
@@ -546,8 +595,11 @@ router.patch(
     if (req.params.id === req.user.id && (req.body.role === 'CLIENTE' || req.body.status === 'DISABLED')) {
       return res.status(409).json({ error: 'CANNOT_CHANGE_SELF' }); // evita quedarse sin acceso por error
     }
+    // Reactivar (status ACTIVE) también levanta cualquier suspensión o baneo.
     const u = await one(
       `update app.users set role = coalesce($2, role), status = coalesce($3, status),
+              suspended_until = case when $3 is not null then null else suspended_until end,
+              sanction_reason = case when $3 is not null then null else sanction_reason end,
               failed_logins = case when $4 then 0 else failed_logins end,
               locked_until = case when $4 then null else locked_until end, updated_at = now()
         where id = $1 returning *`,
@@ -559,6 +611,63 @@ router.patch(
     res.json(adminUserView(u));
   }
 );
+
+// Sanciones por fraude o incumplimiento de los términos: suspensión temporal (vence sola) o baneo permanente.
+const sanctionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('SUSPEND'), days: z.number().int().min(1).max(365), reason: z.string().trim().min(5).max(300) }),
+  z.object({ type: z.literal('BAN'), reason: z.string().trim().min(5).max(300) }),
+  z.object({ type: z.literal('LIFT') }),
+]);
+
+router.post('/users/:id/sanction', requireUuid('id'), validateBody(sanctionSchema), async (req, res) => {
+  const b = req.body;
+  if (req.params.id === req.user.id) return res.status(409).json({ error: 'CANNOT_CHANGE_SELF' });
+  const target = await one('select role, status from app.users where id = $1', [req.params.id]);
+  if (!target) return res.status(404).json({ error: 'NOT_FOUND' });
+  if (b.type !== 'LIFT' && target.role === 'ADMIN') return res.status(409).json({ error: 'CANNOT_SANCTION_ADMIN' }); // primero quitar el rol
+  if (b.type === 'LIFT' && !['SUSPENDED', 'BANNED'].includes(target.status)) return res.status(409).json({ error: 'NOT_SANCTIONED' });
+
+  const u = await tx(async (q) => {
+    const [row] =
+      b.type === 'LIFT'
+        ? await q(
+            `update app.users set status = 'ACTIVE', suspended_until = null, sanction_reason = null, updated_at = now()
+              where id = $1 returning *`,
+            [req.params.id]
+          )
+        : await q(
+            `update app.users set status = $2, sanction_reason = $3, updated_at = now(),
+                    suspended_until = case when $2 = 'SUSPENDED' then now() + make_interval(days => $4) else null end
+              where id = $1 returning *`,
+            [req.params.id, b.type === 'BAN' ? 'BANNED' : 'SUSPENDED', b.reason, b.days ?? 0]
+          );
+    if (b.type !== 'LIFT') {
+      // Libera los cartones apartados sin comprobante; las compras con comprobante quedan para revisión del admin.
+      await q(
+        `with closed as (
+           update app.reservations set status = 'CANCELLED', decided_at = now(), decided_by = $2
+            where user_id = $1 and status = 'PENDING' returning id
+         )
+         update app.cards set status = 'AVAILABLE', reservation_id = null, owner_id = null
+          where reservation_id in (select id from closed) and status = 'RESERVED'`,
+        [req.params.id, req.user.id]
+      );
+    }
+    await audit(
+      {
+        ...actorFrom(req),
+        action: `user.${b.type === 'LIFT' ? 'sanction_lifted' : b.type === 'BAN' ? 'banned' : 'suspended'}`,
+        targetType: 'user',
+        targetId: req.params.id,
+        details: b.type === 'LIFT' ? { previous: target.status } : { reason: b.reason, days: b.days ?? null },
+      },
+      q
+    );
+    return row;
+  });
+  if (b.type !== 'LIFT') await revokeAllFor(u.id); // cierra sesiones y desconecta sockets de inmediato
+  res.json(adminUserView(u));
+});
 
 // ---------------------------------------------------------------- Bitácora
 const auditQuery = z.object({

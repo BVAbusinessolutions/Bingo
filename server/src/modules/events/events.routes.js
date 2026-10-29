@@ -26,8 +26,12 @@ export function publicEvent(e) {
     pattern: e.pattern,
     price: e.price,
     startsAt: new Date(e.starts_at).toISOString(),
+    venue: e.venue ?? '',
+    venueArea: e.venue_area ?? '',
     status: e.status,
-    stream: e.stream_provider ? { provider: e.stream_provider, videoId: e.stream_video_id } : null,
+    stream: e.stream_provider
+      ? { provider: e.stream_provider, ...(e.stream_url ? { url: e.stream_url } : { videoId: e.stream_video_id }) }
+      : null,
     available: e.available_cards ?? 0,
     total: e.total_cards ?? 0,
   };
@@ -66,10 +70,11 @@ router.get('/results', async (req, res) => {
   );
   const winners = events.length
     ? await query(
-        `select cl.event_id, u.name, c.serial, cl.called_count
+        `select cl.event_id, coalesce(u.name, r.buyer_full_name) as name, c.serial, cl.called_count, cl.channel
            from app.claims cl
-           join app.users u on u.id = cl.user_id
            join app.cards c on c.id = cl.card_id
+           left join app.users u on u.id = cl.user_id
+           left join app.reservations r on r.id = c.reservation_id
           where cl.status = 'CONFIRMED' and cl.event_id = any($1::text[])
           order by cl.created_at`,
         [events.map((e) => e.id)]
@@ -86,7 +91,7 @@ router.get('/results', async (req, res) => {
       calledCount: e.called_count,
       winners: winners
         .filter((w) => w.event_id === e.id)
-        .map((w) => ({ name: publicWinnerName(w.name), serial: w.serial, calledCount: w.called_count })),
+        .map((w) => ({ name: publicWinnerName(w.name ?? ''), serial: w.serial, calledCount: w.called_count, channel: w.channel })),
     }))
   );
 });

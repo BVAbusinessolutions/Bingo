@@ -43,6 +43,17 @@ const ERRORS = {
   TOO_MANY_REQUESTS: 'Demasiados intentos. Espera unos minutos.',
   NOT_A_WINNER: 'Ese cartón todavía no completa el patrón con las balotas cantadas.',
   EVENT_NOT_LIVE: 'El sorteo no está en vivo en este momento.',
+  ACCOUNT_SUSPENDED: (d) =>
+    `Tu cuenta está suspendida${d.until ? ` hasta el ${formatDate(d.until)}` : ''}. Si crees que es un error, contáctanos.`,
+  ACCOUNT_BANNED: 'Tu cuenta fue suspendida de forma permanente por incumplir el reglamento. Si crees que es un error, contáctanos.',
+  ALREADY_CLAIMED: 'Ese cartón ya tiene un reclamo registrado.',
+  CANNOT_SANCTION_ADMIN: 'Primero quítale el rol de administrador para poder sancionar la cuenta.',
+  NOT_SANCTIONED: 'La cuenta no tiene ninguna sanción activa.',
 };
 
-export const errorMessage = (err, fallback = 'Ocurrió un error. Intenta de nuevo.') => ERRORS[err?.response?.data?.error] ?? fallback;
+/** Mensaje en español para un error de la API; algunos usan datos de la respuesta (p. ej. la fecha de una suspensión). */
+export const errorMessage = (err, fallback = 'Ocurrió un error. Intenta de nuevo.') => {
+  const body = err?.response?.data ?? {};
+  const msg = ERRORS[body.error];
+  return (typeof msg === 'function' ? msg(body) : msg) ?? fallback;
+};

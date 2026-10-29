@@ -1,4 +1,5 @@
-import { Radio } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Radio, RefreshCw, Volume2 } from 'lucide-react';
 
 // Solo proveedores conocidos: nunca se inyecta una URL arbitraria en el iframe.
 const PROVIDERS = {
@@ -7,18 +8,144 @@ const PROVIDERS = {
   vimeo: (id) => `https://player.vimeo.com/video/${id}?autoplay=1&muted=1`,
 };
 const SAFE_ID = /^[A-Za-z0-9_-]{2,64}$/;
+// Las URL de LL-HLS / WHEP ya fueron validadas por el servidor contra STREAM_ORIGINS; aquí solo se exige https.
+const SAFE_URL = /^https:\/\/\S+$/;
 
-export default function LiveStream({ provider = 'youtube', videoId, title = 'Sorteo en vivo' }) {
-  const build = PROVIDERS[provider];
-  const src = build && SAFE_ID.test(videoId ?? '') ? build(videoId) : null;
+/**
+ * WebRTC por WHEP (WebRTC-HTTP Egress Protocol): latencia por debajo de 1 segundo.
+ * Compatible con Cloudflare Stream, OvenMediaEngine, MediaMTX, Dolby/Millicast, Ant Media, etc.
+ */
+async function startWhep(url, video) {
+  const pc = new RTCPeerConnection({ bundlePolicy: 'max-bundle' });
+  pc.addTransceiver('video', { direction: 'recvonly' });
+  pc.addTransceiver('audio', { direction: 'recvonly' });
+  const stream = new MediaStream();
+  pc.ontrack = (e) => {
+    stream.addTrack(e.track);
+    video.srcObject = stream;
+  };
+  await pc.setLocalDescription(await pc.createOffer());
+  // Se espera a reunir los candidatos ICE (máx. 2 s) para enviar una sola oferta completa.
+  await new Promise((resolve) => {
+    if (pc.iceGatheringState === 'complete') return resolve();
+    const done = () => pc.iceGatheringState === 'complete' && resolve();
+    pc.addEventListener('icegatheringstatechange', done);
+    setTimeout(resolve, 2000);
+  });
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
+  if (!res.ok) throw new Error(`WHEP ${res.status}`);
+  await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+  const location = res.headers.get('Location');
+  return () => {
+    pc.close();
+    // Avisar al servidor que la sesión terminó (si lo permite); un fallo aquí no importa.
+    if (location) fetch(new URL(location, url), { method: 'DELETE' }).catch(() => {});
+  };
+}
+
+/** LL-HLS: nativo en Safari/iOS; en el resto, hls.js se descarga solo cuando hace falta. */
+async function startHls(url, video) {
+  if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    return () => video.removeAttribute('src');
+  }
+  const { default: Hls } = await import('hls.js');
+  if (!Hls.isSupported()) throw new Error('HLS no soportado');
+  const hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 2, backBufferLength: 30 });
+  hls.loadSource(url);
+  hls.attachMedia(video);
+  return () => hls.destroy();
+}
+
+/** Reproductor propio para LL-HLS y WebRTC: arranca en silencio (los navegadores bloquean el autoplay con sonido). */
+function LowLatencyPlayer({ provider, url, title }) {
+  const videoRef = useRef(null);
+  const [state, setState] = useState('loading'); // loading | playing | error
+  const [muted, setMuted] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+    let cleanup = () => {};
+    let alive = true;
+    (provider === 'whep' ? startWhep : startHls)(url, video)
+      .then((stop) => {
+        if (!alive) return stop();
+        cleanup = stop;
+        return video.play().catch(() => {}); // si el navegador lo bloquea, quedan los controles nativos
+      })
+      .catch(() => alive && setState('error'));
+    return () => {
+      alive = false;
+      cleanup();
+    };
+  }, [provider, url, attempt]);
+
+  if (state === 'error') {
+    return (
+      <div className="absolute inset-0 grid place-items-center gap-3 px-4 text-center text-slate-300">
+        <div className="space-y-3">
+          <p>No pudimos conectar con la transmisión.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setState('loading');
+              setAttempt((n) => n + 1);
+            }}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-sol-gold px-4 font-black text-sol-blue"
+          >
+            <RefreshCw className="h-5 w-5" aria-hidden /> Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-black shadow-xl ring-4 ring-sol-red">
+    <>
+      <video
+        ref={videoRef}
+        title={title}
+        className="absolute inset-0 h-full w-full bg-black object-contain"
+        playsInline
+        autoPlay
+        muted={muted}
+        controls
+        onPlaying={() => setState('playing')}
+        onError={() => setState('error')}
+      />
+      {state === 'loading' && (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center text-slate-300">Conectando con la transmisión…</div>
+      )}
+      {muted && state === 'playing' && (
+        <button
+          type="button"
+          onClick={() => setMuted(false)}
+          className="absolute left-3 top-3 inline-flex min-h-11 animate-pop items-center gap-2 rounded-xl bg-sol-gold px-3 font-black text-sol-blue shadow-lg"
+        >
+          <Volume2 className="h-5 w-5" aria-hidden /> Activar sonido
+        </button>
+      )}
+    </>
+  );
+}
+
+export default function LiveStream({ provider = 'youtube', videoId, url, title = 'Sorteo en vivo' }) {
+  const lowLatency = (provider === 'hls' || provider === 'whep') && SAFE_URL.test(url ?? '');
+  const build = PROVIDERS[provider];
+  const src = !lowLatency && build && SAFE_ID.test(videoId ?? '') ? build(videoId) : null;
+
+  return (
+    <section aria-label={`Transmisión: ${title}`} className="overflow-hidden rounded-2xl bg-black shadow-xl ring-4 ring-sol-red">
       <div className="flex items-center gap-2 bg-sol-red px-3 py-2 text-sm font-bold text-white">
-        <Radio className="h-4 w-4 animate-pulse text-sol-gold" /> EN VIVO · {title}
+        <Radio className="h-4 w-4 animate-pulse text-sol-gold" aria-hidden /> EN VIVO · {title}
+        {lowLatency && <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-xs">Baja latencia</span>}
       </div>
       <div className="relative aspect-video">
-        {src ? (
+        {lowLatency ? (
+          <LowLatencyPlayer key={`${provider}:${url}`} provider={provider} url={url} title={title} />
+        ) : src ? (
           <iframe
             src={src}
             title={title}

@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
-import { Sun, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+import BrandLogo from '../brand/BrandLogo';
 import { LETTERS, PATTERNS, isFreeCell, missingFor } from '../../constants/patterns';
 
 /**
@@ -51,10 +52,7 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
                   aria-label="Espacio libre"
                   className="grid aspect-square place-items-center rounded-[1.6cqw] bg-white"
                 >
-                  <span className="grid place-items-center text-center leading-none">
-                    <Sun className="h-[9cqw] w-[9cqw] text-sol-gold" aria-hidden />
-                    <span className="text-[2.6cqw] font-black uppercase text-sol-red">Hogar Sol</span>
-                  </span>
+                  <BrandLogo decorative className="h-[13cqw] w-auto" />
                 </div>
               );
             }

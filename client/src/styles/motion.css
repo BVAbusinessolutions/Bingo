@@ -1,0 +1,174 @@
+/*
+ * Movimiento: animaciones de entrada, revelado al hacer scroll, esqueletos de carga y microinteracciones.
+ * Todo se apaga con "Reducir animaciones" (menú de accesibilidad) o con la preferencia del sistema.
+ */
+
+@theme {
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-float: float 5s ease-in-out infinite;
+  --animate-spin-slow: spin 40s linear infinite;
+  --animate-marquee: marquee 35s linear infinite;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-tick: tick 0.45s ease-out;
+  --animate-slide-in: slide-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-modal-in: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  /* Usa `translate` (no `transform`) para no chocar con la elevación al pasar el mouse (.lift). */
+  @keyframes reveal-up {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+    to {
+      opacity: 1;
+      translate: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-0.6rem);
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes tick {
+    0% {
+      transform: translateY(-0.35rem);
+      opacity: 0.4;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
+
+/* Escalonado para listas: style={{ '--delay': '120ms' }} junto con animate-fade-up. */
+[style*='--delay'] {
+  animation-delay: var(--delay);
+}
+
+/* Tarjeta que se eleva al pasar el mouse (catálogo, pasos, premios). */
+@utility lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 10px 25px rgb(15 23 42 / 0.14),
+      var(--card-glow);
+  }
+}
+
+/* Bloque de carga tipo "esqueleto": ocupa el lugar del contenido mientras llega. */
+@utility skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, var(--muted) 25%, var(--card) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/*
+ * Revelado al hacer scroll sin JavaScript (scroll-driven animations). Los navegadores que no lo
+ * soportan muestran el contenido directamente: nunca queda nada oculto.
+ */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 22%;
+  }
+}
+
+/* Reducir animaciones: preferencia del sistema o elegida en el menú de accesibilidad. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none !important;
+  }
+}
+html[data-motion='reduce'] *,
+html[data-motion='reduce'] *::before,
+html[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-motion='reduce'] .reveal {
+  animation: none !important;
+}
+
+/* Al imprimir (p. ej. los textos legales) todo debe verse, aunque no se haya hecho scroll. */
+@media print {
+  .reveal {
+    animation: none !important;
+  }
+}

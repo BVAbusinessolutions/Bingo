@@ -30,7 +30,7 @@ export default function CheckoutPage() {
       </main>
     );
   }
-  if (!reservation) return <PageLoader />;
+  if (!reservation) return <PageLoader page />;
 
   const paying = reservation.status === 'PENDING';
 

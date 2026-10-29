@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { adminApi } from '../../api/endpoints';
+import { useBackdropClose } from '../../hooks/useBackdropClose';
 import Field from '../ui/Field';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -23,6 +24,7 @@ export function parseSerials(text) {
 
 /** Registrar una venta en efectivo o en persona: queda aprobada al instante y los cartones se marcan vendidos. */
 export default function ManualSaleDialog({ event, onClose, onDone }) {
+  const backdrop = useBackdropClose(onClose);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +53,7 @@ export default function ManualSaleDialog({ event, onClose, onDone }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/60 p-4" {...backdrop}>
       <form
         role="dialog"
         aria-modal="true"
@@ -103,7 +105,7 @@ export default function ManualSaleDialog({ event, onClose, onDone }) {
             >
               <option value="CASH">Efectivo</option>
               <option value="SINPE">SINPE Móvil</option>
-              <option value="TRANSFER">Transferencia</option>
+              <option value="TRANSFER">Transferencia bancaria u otro</option>
             </select>
           </label>
           <Field label="N.º de comprobante (opcional)" value={form.reference} onChange={set('reference')} />

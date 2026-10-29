@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { one, query } from '../../db/index.js';
 import { env } from '../../config/env.js';
-import { authenticate, JWT_AUDIENCE, JWT_ISSUER } from '../../middleware/auth.js';
+import { authenticate, isUsableAccount, JWT_AUDIENCE, JWT_ISSUER } from '../../middleware/auth.js';
 import { emailActionLimiter, loginLimiter, registerLimiter, requireXhrHeader, validateBody } from '../../middleware/security.js';
 import { sendMail } from '../../utils/mailer.js';
 import { consumeToken, issueToken } from '../../services/oneTimeTokens.js';
@@ -27,7 +27,8 @@ const cookieOptions = {
   path: '/api/auth', // solo viaja a las rutas de auth
 };
 
-const USER_COLUMNS = 'id, name, email, phone, role, status, email_verified, password_hash, failed_logins, locked_until';
+const USER_COLUMNS =
+  'id, name, email, phone, role, status, suspended_until, email_verified, password_hash, failed_logins, locked_until';
 
 /** Lo único que se devuelve de un usuario: nunca el hash ni contadores internos. */
 export const publicUser = (u) => ({
@@ -100,7 +101,16 @@ router.post('/login', loginLimiter, validateBody(loginSchema), async (req, res) 
   // Cuenta bloqueada: mismo mensaje que el límite por IP (no confirma que la cuenta exista).
   if (locked) return res.status(429).json({ error: 'TOO_MANY_LOGIN_ATTEMPTS' });
 
-  if (!user || !ok || user.status !== 'ACTIVE') {
+  // Sanción vigente: solo se informa a quien ya demostró conocer la contraseña.
+  if (user && ok && !isUsableAccount(user) && user.status !== 'DISABLED') {
+    return res.status(403).json(
+      user.status === 'BANNED'
+        ? { error: 'ACCOUNT_BANNED' }
+        : { error: 'ACCOUNT_SUSPENDED', until: new Date(user.suspended_until).toISOString() }
+    );
+  }
+
+  if (!user || !ok || !isUsableAccount(user)) {
     if (user && !ok) {
       const [row] = await query(
         `update app.users
@@ -118,6 +128,12 @@ router.post('/login', loginLimiter, validateBody(loginSchema), async (req, res) 
 
   if (user.failed_logins > 0 || user.locked_until) {
     await query('update app.users set failed_logins = 0, locked_until = null where id = $1', [user.id]);
+  }
+  if (user.status === 'SUSPENDED') {
+    // La suspensión ya venció: la cuenta vuelve a quedar activa.
+    await query("update app.users set status = 'ACTIVE', suspended_until = null, updated_at = now() where id = $1 and status = 'SUSPENDED'", [
+      user.id,
+    ]);
   }
   if (user.role === 'ADMIN')
     await audit({ actorId: user.id, action: 'auth.admin_login', targetType: 'user', targetId: user.id, ip: req.ip });
@@ -165,7 +181,7 @@ router.post('/refresh', requireXhrHeader, async (req, res) => {
     return res.status(401).json({ error: 'INVALID_SESSION' });
   }
   const user = await findById(payload.sub);
-  if (!user || user.status !== 'ACTIVE') {
+  if (!user || !isUsableAccount(user)) {
     res.clearCookie(REFRESH_COOKIE, cookieOptions);
     return res.status(401).json({ error: 'INVALID_SESSION' });
   }
@@ -237,7 +253,7 @@ router.post('/logout-all', requireXhrHeader, authenticate, async (req, res) => {
 // Siempre responde 204: no revela si el correo está registrado.
 router.post('/forgot-password', emailActionLimiter, validateBody(z.object({ email: emailField })), async (req, res) => {
   const user = await findByEmail(req.body.email);
-  if (user && user.status === 'ACTIVE') {
+  if (user && isUsableAccount(user)) {
     const token = await issueToken(user.id, 'RESET_PASSWORD', RESET_TTL_MS);
     sendMail({
       to: user.email,

@@ -262,7 +262,7 @@ describe('usuarios, bitácora y configuración', () => {
     assert.equal(res.body.sinpePhone, '6027-1658');
     const [any] = (await api().get('/api/admin/reservations').set(auth(admin))).body;
     assert.equal(any.payment.bank, 'Banco de Costa Rica');
-    assert.equal(any.payment.detail, 'BINGO');
+    assert.equal(any.payment.detail, 'Bingo');
   });
 
   it('las tablas tienen RLS activado (Supabase no las expone)', async () => {

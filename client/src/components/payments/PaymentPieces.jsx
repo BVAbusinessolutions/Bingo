@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { AlertTriangle, Building2, Clock, Copy, FileText, Smartphone, Upload, X } from 'lucide-react';
 import { useCountdown } from '../../hooks/useCountdown';
 import { formatCRC } from '../../lib/format';
+import { PAYMENT_DETAIL } from '../../config/site';
 
 export const MAX_FILE = 5 * 1024 * 1024;
 const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
@@ -69,7 +70,7 @@ function CopyRow({ label, value }) {
   );
 }
 
-/** Aviso grande y obligatorio: el detalle del SINPE / transferencia debe decir BINGO. */
+/** Aviso grande y obligatorio: el detalle del SINPE / transferencia debe decir "Bingo" (o "Bingo - cédula"). */
 export function DetailTextAlert({ text, compact = false }) {
   if (compact) {
     return (
@@ -91,7 +92,10 @@ export function DetailTextAlert({ text, compact = false }) {
         </span>
         <CopyButton value={text} label={`la palabra ${text}`} className="bg-sol-blue text-white hover:bg-sol-blue-light" />
       </div>
-      <p className="mt-3 font-semibold">Sin esta palabra no podremos identificar tu pago.</p>
+      <p className="mt-3 font-semibold">
+        También puedes agregar tu cédula: <span className="whitespace-nowrap rounded-md bg-white px-2 font-black text-sol-red">{text} - 1-2345-6789</span>
+      </p>
+      <p className="mt-1 font-semibold">Sin esta palabra no podremos identificar tu pago.</p>
     </div>
   );
 }
@@ -103,7 +107,7 @@ export function PaymentInstructions({ method, setMethod, reservation }) {
       <div role="tablist" aria-label="Método de pago" className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1.5">
         {[
           ['SINPE', Smartphone, 'SINPE Móvil'],
-          ['TRANSFER', Building2, 'Transferencia'],
+          ['TRANSFER', Building2, 'Transferencia u otro'],
         ].map(([m, Icon, label]) => (
           <button
             key={m}
@@ -140,7 +144,7 @@ export function PaymentInstructions({ method, setMethod, reservation }) {
         </div>
       </div>
 
-      <DetailTextAlert text={p.detail ?? 'BINGO'} />
+      <DetailTextAlert text={p.detail ?? PAYMENT_DETAIL} />
     </div>
   );
 }

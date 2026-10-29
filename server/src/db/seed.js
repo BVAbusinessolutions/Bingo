@@ -14,6 +14,7 @@ const DEMO_USERS = [
 
 export const DEMO_EVENT_ID = 'evt-2026-hogar-sol';
 
+// Sin decided_by: son cartones de prueba, no dinero recibido, y no suman a la recaudación.
 async function demoPurchase(userId, eventId, serials, buyer) {
   await tx(async (q) => {
     const [event] = await q('select price from app.events where id = $1', [eventId]);
@@ -47,9 +48,10 @@ export async function seedDemoData() {
   const actor = { actorId: users['admin@hogarsol.org'].id, ip: null };
 
   await query(
-    `insert into app.events (id, name, description, pattern, price, starts_at, stream_provider, stream_video_id)
+    `insert into app.events (id, name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id)
      values ($1, 'Gran Bingo Hogar Sol', '¡Gana 1 moto y muchos premios más! Lo recaudado apoya a la niñez de la Asociación.',
-             'FULL', 2000, '2026-11-15T13:00:00-06:00', 'youtube', 'jfKfPfyJRdk')`,
+             'FULL', 2000, '2026-11-15T13:00:00-06:00', 'Salón de Eventos de Tinamaste', 'Higuito, San José',
+             'youtube', 'jfKfPfyJRdk')`,
     [DEMO_EVENT_ID]
   );
   const seriesId = await createGeneratedSeries({ name: 'Serie de prueba (generada)', count: 300, startSerial: 1001 }, actor);

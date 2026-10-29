@@ -2,6 +2,7 @@
 @import 'tailwindcss';
 @import './tokens.css';
 @import './global.css';
+@import './motion.css';
 
 /* El modo oscuro se activa con la clase .dark en <html> (la pone ThemeContext). */
 @custom-variant dark (&:where(.dark, .dark *));

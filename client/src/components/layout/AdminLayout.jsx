@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   BellRing,
   CalendarDays,
@@ -19,6 +19,7 @@ import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
 import { formatCRC } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
+import ErrorBoundary from './ErrorBoundary';
 
 const vibrate = () => {
   try {
@@ -35,7 +36,7 @@ function AdminToast({ toast, onClose }) {
   }, [toast, onClose]);
 
   return (
-    <div role="status" aria-live="polite" className="fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:right-4 sm:w-[26rem]">
+    <div role="status" aria-live="polite" className="fixed inset-x-3 bottom-3 z-55 sm:inset-x-auto sm:right-4 sm:w-[26rem]">
       <div className="surface flex items-start gap-3 border-l-8 border-sol-gold p-4">
         <BellRing className="mt-0.5 h-7 w-7 shrink-0 text-amber-500 motion-safe:animate-bounce" aria-hidden />
         <div className="min-w-0 flex-1">
@@ -58,6 +59,7 @@ function AdminToast({ toast, onClose }) {
 }
 
 export default function AdminLayout() {
+  const { pathname } = useLocation();
   const [events, setEvents] = useState([]);
   const [eventId, setEventId] = useState('');
   const [pending, setPending] = useState(0);
@@ -138,7 +140,7 @@ export default function AdminLayout() {
   const event = events.find((e) => e.id === eventId);
 
   return (
-    <div className="container-page grid gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:py-0">
+    <div className="container-page grid min-h-[calc(100dvh-4.5rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
       <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start print:hidden">
         <div className="surface space-y-2 p-4">
           <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
@@ -186,9 +188,11 @@ export default function AdminLayout() {
       </aside>
 
       <div className="min-w-0">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet context={{ events, event, eventId, setEventId, reloadEvents, reloadCounters, revision, pending }} />
-        </Suspense>
+        <ErrorBoundary resetKey={pathname}>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet context={{ events, event, eventId, setEventId, reloadEvents, reloadCounters, revision, pending }} />
+          </Suspense>
+        </ErrorBoundary>
       </div>
 
       {toast && <AdminToast toast={toast} onClose={closeToast} />}

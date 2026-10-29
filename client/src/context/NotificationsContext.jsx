@@ -86,7 +86,7 @@ export function NotificationsProvider({ children }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-3 bottom-3 z-60 flex flex-col items-center gap-2 sm:inset-x-auto sm:right-4 sm:items-end print:hidden"
+        className="pointer-events-none fixed inset-x-3 bottom-3 z-55 flex flex-col items-center gap-2 sm:inset-x-auto sm:right-4 sm:items-end print:hidden"
       >
         {toasts.map((t) => {
           const Icon = ICONS[t.tone] ?? Info;

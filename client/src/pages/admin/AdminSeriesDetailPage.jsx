@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Search, TriangleAlert, X } from 'lucide-react';
 import { adminApi } from '../../api/endpoints';
+import { useBackdropClose } from '../../hooks/useBackdropClose';
 import CardImage from '../../components/bingo/CardImage';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
@@ -27,6 +28,7 @@ function localProblems(grid) {
 }
 
 function CardEditor({ card, onClose, onSaved }) {
+  const backdrop = useBackdropClose(onClose);
   const [serial, setSerial] = useState(card.serial);
   const [grid, setGrid] = useState(() => card.grid.map((row) => row.map((n) => (n === null ? '' : String(n)))));
   const [busy, setBusy] = useState(false);
@@ -55,7 +57,7 @@ function CardEditor({ card, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-4" {...backdrop}>
       <div
         role="dialog"
         aria-modal="true"
@@ -65,7 +67,7 @@ function CardEditor({ card, onClose, onSaved }) {
       >
         <header className="flex items-center justify-between gap-3">
           <h2 className="text-2xl font-black text-fg">Corregir cartón</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="grid h-11 w-11 place-items-center rounded-full hover:bg-muted">
+          <button type="button" onClick={onClose} aria-label="Cerrar" className="grid h-11 w-11 place-items-center rounded-full hover:bg-muted">
             <X />
           </button>
         </header>

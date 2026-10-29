@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, Ticket, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LogIn, Loader2, Ticket, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
 import { eventsApi, reservationsApi } from '../../api/endpoints';
@@ -8,12 +8,15 @@ import CardSelector from '../../components/cards/CardSelector';
 import CardImage from '../../components/bingo/CardImage';
 import CheckoutSteps from '../../components/checkout/CheckoutSteps';
 import Alert from '../../components/ui/Alert';
+import Button from '../../components/ui/Button';
+import LoginRequiredDialog, { LOGIN_REQUIRED_TEXT } from '../../components/auth/LoginRequiredDialog';
 import { PATHS, toPath } from '../../routing/paths';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const MAX = 20;
 const POLL_MS = 15_000;
-const SELECTION_KEY = 'hs-selected-cards'; // conserva la selección si el invitado debe iniciar sesión
+const SELECTION_KEY = 'hs-selected-cards'; // conserva la selección al recargar o volver del pago
 
 const loadSelection = () => {
   try {
@@ -24,9 +27,12 @@ const loadSelection = () => {
 };
 
 export default function CatalogPage() {
+  usePageMeta({
+    title: 'Comprar cartones',
+    description: 'Elige tus cartones del Bingo Benéfico Hogar Sol y paga por SINPE Móvil o transferencia. Juega en el salón o en línea.',
+  });
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const { event, loading } = useCurrentEvent();
 
   const [cards, setCards] = useState(null);
@@ -35,6 +41,7 @@ export default function CatalogPage() {
   const [selected, setSelected] = useState(loadSelection);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [askLogin, setAskLogin] = useState(false); // invitado que intentó elegir o comprar
 
   const loadCatalog = useCallback(async () => {
     if (!event) return;
@@ -73,14 +80,22 @@ export default function CatalogPage() {
     [cards, selectedSet]
   );
 
+  // Elegir y comprar exige sesión: el invitado ve el catálogo, pero al tocar un cartón se le pide entrar.
   const toggle = useCallback(
-    (serial) => setSelected((sel) => (sel.includes(serial) ? sel.filter((s) => s !== serial) : sel.length < MAX ? [...sel, serial] : sel)),
-    []
+    (serial) => {
+      if (!isAuthenticated) {
+        setAskLogin(true);
+        return;
+      }
+      setSelected((sel) => (sel.includes(serial) ? sel.filter((s) => s !== serial) : sel.length < MAX ? [...sel, serial] : sel));
+    },
+    [isAuthenticated]
   );
+  const closeLogin = useCallback(() => setAskLogin(false), []);
 
   const reserve = async () => {
     if (!isAuthenticated) {
-      navigate(PATHS.login, { state: { from: location } });
+      setAskLogin(true);
       return;
     }
     setBusy(true);
@@ -115,6 +130,19 @@ export default function CatalogPage() {
       </div>
 
       {error && <Alert tone="error">{error}</Alert>}
+      {!isAuthenticated && (
+        <Alert
+          tone="info"
+          title="Necesitas una cuenta para comprar"
+          action={
+            <Button size="sm" icon={LogIn} onClick={() => setAskLogin(true)}>
+              Entrar
+            </Button>
+          }
+        >
+          {LOGIN_REQUIRED_TEXT}.
+        </Alert>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {cards ? (
@@ -162,14 +190,15 @@ export default function CatalogPage() {
           </div>
           <button
             onClick={reserve}
-            disabled={busy || selected.length === 0}
+            disabled={busy || (isAuthenticated && selected.length === 0)}
             className="flex items-center gap-2 rounded-xl bg-sol-gold px-5 py-3.5 font-black text-sol-blue shadow-lg hover:bg-sol-gold-dark disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Ticket className="h-5 w-5" />}
-            {isAuthenticated ? 'Continuar al pago' : 'Entrar para continuar'}
+            {isAuthenticated ? 'Continuar al pago' : 'Iniciar sesión para comprar'}
           </button>
         </div>
       </div>
+      {askLogin && <LoginRequiredDialog onClose={closeLogin} />}
     </main>
   );
 }

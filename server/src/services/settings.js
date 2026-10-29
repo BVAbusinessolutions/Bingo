@@ -2,7 +2,7 @@ import { one, query } from '../db/index.js';
 import { env } from '../config/env.js';
 
 /** Texto que el cliente debe escribir en el detalle del SINPE o la transferencia. */
-export const PAYMENT_DETAIL_TEXT = 'BINGO';
+export const PAYMENT_DETAIL_TEXT = 'Bingo';
 
 let cache = null; // los datos de cobro se leen en cada vista de reserva: se cachean en memoria
 

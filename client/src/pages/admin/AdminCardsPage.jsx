@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Layers, Printer, Search, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
+import { useBackdropClose } from '../../hooks/useBackdropClose';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
@@ -22,6 +23,7 @@ export default function AdminCardsPage() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [preview, setPreview] = useState(null);
+  const previewBackdrop = useBackdropClose(() => setPreview(null));
 
   const load = useCallback(() => {
     if (!eventId) return;
@@ -144,7 +146,7 @@ export default function AdminCardsPage() {
       )}
 
       {preview && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={() => setPreview(null)}>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" {...previewBackdrop}>
           <div
             role="dialog"
             aria-modal="true"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BadgeCheck, Lock, Search, ShieldCheck, UserPlus } from 'lucide-react';
+import { Ban, BadgeCheck, Lock, Search, ShieldCheck, Timer, UserPlus } from 'lucide-react';
 import { adminApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
@@ -8,6 +8,7 @@ import Field from '../../components/ui/Field';
 import PageLoader from '../../components/ui/PageLoader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { errorMessage, formatDate } from '../../lib/format';
+import SanctionDialog from '../../components/admin/SanctionDialog';
 
 function CreateUserForm({ onCreated }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' });
@@ -68,7 +69,17 @@ function CreateUserForm({ onCreated }) {
   );
 }
 
-function UserRow({ u, isSelf, onAction }) {
+const STATUS_FILTERS = [
+  ['', 'Todos los estados'],
+  ['ACTIVE', 'Activas'],
+  ['SUSPENDED', 'Suspendidas'],
+  ['BANNED', 'Baneadas'],
+  ['DISABLED', 'Desactivadas'],
+];
+
+const isSanctioned = (u) => u.status === 'SUSPENDED' || u.status === 'BANNED';
+
+function UserRow({ u, isSelf, onAction, onSanction }) {
   return (
     <li className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
@@ -80,6 +91,16 @@ function UserRow({ u, isSelf, onAction }) {
             </span>
           )}
           {u.status === 'DISABLED' && <span className="rounded-full bg-sol-red px-2 py-0.5 text-sm text-white">Desactivada</span>}
+          {u.status === 'SUSPENDED' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-600 px-2 py-0.5 text-sm text-white">
+              <Timer className="h-4 w-4" aria-hidden /> Suspendida
+            </span>
+          )}
+          {u.status === 'BANNED' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-black px-2 py-0.5 text-sm text-white">
+              <Ban className="h-4 w-4" aria-hidden /> Baneada
+            </span>
+          )}
           {u.lockedUntil && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-sm text-white">
               <Lock className="h-4 w-4" aria-hidden /> Bloqueada
@@ -93,6 +114,12 @@ function UserRow({ u, isSelf, onAction }) {
         <p className="text-sm text-fg-muted">
           Desde {formatDate(u.createdAt)} · {u.purchases} compra(s) aprobada(s)
         </p>
+        {isSanctioned(u) && (
+          <p className="mt-1 rounded-lg bg-sol-red/10 px-2 py-1 text-sm text-fg">
+            <b>Motivo:</b> {u.sanctionReason}
+            {u.suspendedUntil && <> · hasta el {formatDate(u.suspendedUntil)}</>}
+          </p>
+        )}
       </div>
       {!isSelf && (
         <div className="flex flex-wrap gap-2">
@@ -114,9 +141,26 @@ function UserRow({ u, isSelf, onAction }) {
           >
             {u.role === 'ADMIN' ? 'Quitar admin' : 'Hacer admin'}
           </Button>
+          {isSanctioned(u) ? (
+            <Button size="sm" variant="success" onClick={() => onSanction(u, 'LIFT')}>
+              Levantar sanción
+            </Button>
+          ) : (
+            u.status === 'ACTIVE' &&
+            u.role !== 'ADMIN' && (
+              <>
+                <Button size="sm" variant="outline" icon={Timer} onClick={() => onSanction(u, 'SUSPEND')}>
+                  Suspender
+                </Button>
+                <Button size="sm" variant="danger" icon={Ban} onClick={() => onSanction(u, 'BAN')}>
+                  Banear
+                </Button>
+              </>
+            )
+          )}
           <Button
             size="sm"
-            variant={u.status === 'ACTIVE' ? 'danger' : 'success'}
+            variant={u.status === 'ACTIVE' ? 'outline' : 'success'}
             onClick={() =>
               onAction(
                 u,
@@ -140,15 +184,17 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [pending, setPending] = useState(null); // { u, body, label }
+  const [sanction, setSanction] = useState(null); // { u, type }
+  const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(() => {
     adminApi
-      .users({ q: q || undefined, role: role || undefined, page })
+      .users({ q: q || undefined, role: role || undefined, status: status || undefined, page })
       .then(setData)
       .catch((err) => setError(errorMessage(err)));
-  }, [q, role, page]);
+  }, [q, role, status, page]);
 
   useEffect(() => {
     const t = setTimeout(load, 250); // espera a que termine de escribir
@@ -175,7 +221,9 @@ export default function AdminUsersPage() {
     <section className="space-y-5">
       <header>
         <h1 className="text-3xl font-black text-brand">Usuarios</h1>
-        <p className="text-lg text-fg-muted">Busca cuentas, crea administradores y desactiva accesos al instante.</p>
+        <p className="text-lg text-fg-muted">
+          Busca cuentas (también por cédula), crea administradores y suspende o banea cuentas sospechosas de fraude.
+        </p>
       </header>
 
       <CreateUserForm onCreated={load} />
@@ -190,7 +238,7 @@ export default function AdminUsersPage() {
               setQ(e.target.value);
               setPage(1);
             }}
-            placeholder="Nombre, correo o teléfono"
+            placeholder="Nombre, correo, teléfono o cédula"
             className="min-h-12 w-full rounded-xl border-2 border-line bg-card pl-10 pr-3 text-fg"
           />
         </label>
@@ -207,6 +255,21 @@ export default function AdminUsersPage() {
           <option value="ADMIN">Administradores</option>
           <option value="CLIENTE">Clientes</option>
         </select>
+        <select
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          className="min-h-12 rounded-xl border-2 border-line bg-card px-3 font-bold text-fg"
+          aria-label="Filtrar por estado"
+        >
+          {STATUS_FILTERS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && <Alert tone="error">{error}</Alert>}
@@ -222,6 +285,7 @@ export default function AdminUsersPage() {
                 u={u}
                 isSelf={u.id === user?.id}
                 onAction={(target, body, label) => setPending({ u: target, body, label })}
+                onSanction={(target, type) => setSanction({ u: target, type })}
               />
             ))}
           </ul>
@@ -239,6 +303,18 @@ export default function AdminUsersPage() {
             </nav>
           )}
         </>
+      )}
+
+      {sanction && (
+        <SanctionDialog
+          user={sanction.u}
+          type={sanction.type}
+          onCancel={() => setSanction(null)}
+          onDone={() => {
+            setSanction(null);
+            load();
+          }}
+        />
       )}
 
       {pending && (

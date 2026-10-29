@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 const STORAGE_KEY = 'hs-theme';
 const TEXT_SIZE_KEY = 'hs-text-size';
+const CONTRAST_KEY = 'hs-contrast';
+const MOTION_KEY = 'hs-motion';
 const ThemeContext = createContext(null);
 
 /** Tamaños de letra disponibles; index.html aplica el guardado antes de pintar. */
@@ -34,6 +36,8 @@ export function ThemeProvider({ children }) {
   const [system, setSystem] = useState(systemTheme);
   const theme = stored ?? system;
   const [textSize, setTextSizeState] = useState(() => readStorage(TEXT_SIZE_KEY, TEXT_SIZES) ?? 'normal');
+  const [highContrast, setHighContrastState] = useState(() => readStorage(CONTRAST_KEY, ['high']) === 'high');
+  const [reduceMotion, setReduceMotionState] = useState(() => readStorage(MOTION_KEY, ['reduce']) === 'reduce');
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -44,12 +48,22 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b192c' : '#0e4a8e');
+    // La barra superior es azul marino en ambos modos; el color del navegador la acompaña.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0a1128');
   }, [theme]);
 
   useEffect(() => {
     document.documentElement.dataset.textSize = textSize;
   }, [textSize]);
+
+  // index.html aplica ambos antes de pintar; aquí se mantienen al cambiar.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (highContrast) root.dataset.contrast = 'high';
+    else delete root.dataset.contrast;
+    if (reduceMotion) root.dataset.motion = 'reduce';
+    else delete root.dataset.motion;
+  }, [highContrast, reduceMotion]);
 
   const setTheme = useCallback((next) => {
     setStored(next);
@@ -62,11 +76,32 @@ export function ThemeProvider({ children }) {
     writeStorage(TEXT_SIZE_KEY, next);
   }, []);
 
+  const setHighContrast = useCallback((on) => {
+    setHighContrastState(on);
+    writeStorage(CONTRAST_KEY, on ? 'high' : 'normal');
+  }, []);
+
+  const setReduceMotion = useCallback((on) => {
+    setReduceMotionState(on);
+    writeStorage(MOTION_KEY, on ? 'reduce' : 'normal');
+  }, []);
+
   const toggleTheme = useCallback(() => setTheme(theme === 'dark' ? 'light' : 'dark'), [theme, setTheme]);
 
   const value = useMemo(
-    () => ({ theme, isDark: theme === 'dark', setTheme, toggleTheme, textSize, setTextSize }),
-    [theme, setTheme, toggleTheme, textSize, setTextSize]
+    () => ({
+      theme,
+      isDark: theme === 'dark',
+      setTheme,
+      toggleTheme,
+      textSize,
+      setTextSize,
+      highContrast,
+      setHighContrast,
+      reduceMotion,
+      setReduceMotion,
+    }),
+    [theme, setTheme, toggleTheme, textSize, setTextSize, highContrast, setHighContrast, reduceMotion, setReduceMotion]
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

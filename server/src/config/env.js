@@ -44,6 +44,15 @@ function trustProxy(value) {
 
 const readCaCert = (file) => (file ? fs.readFileSync(path.resolve(serverRoot, file), 'utf8') : '');
 
+/** Lista de orígenes https separados por coma ("https://a.com, https://b.com"); descarta lo que no sea un origen https. */
+const httpsOrigins = (value = '') =>
+  value
+    .split(',')
+    .map((v) => v.trim().replace(/\/+$/, ''))
+    .filter((v) => /^https:\/\/[a-z0-9.-]+(:\d{1,5})?$/i.test(v));
+
+const ANALYTICS_PROVIDERS = new Set(['ga4', 'cloudflare']);
+
 const secrets = jwtSecrets();
 
 export const env = {
@@ -52,6 +61,12 @@ export const env = {
   isTest: process.env.NODE_ENV === 'test',
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   trustProxy: trustProxy(process.env.TRUST_PROXY),
+  // Redirige http -> https (308). Solo si el proxy envía X-Forwarded-Proto y TRUST_PROXY está bien configurado.
+  forceHttps: process.env.FORCE_HTTPS === 'true',
+  // Orígenes permitidos para la transmisión LL-HLS / WebRTC (WHEP); se agregan a la CSP.
+  streamOrigins: httpsOrigins(process.env.STREAM_ORIGINS),
+  // Analítica sin costo (ga4 | cloudflare): habilita sus dominios en la CSP. El cliente usa VITE_ANALYTICS_*.
+  analyticsProvider: ANALYTICS_PROVIDERS.has(process.env.ANALYTICS_PROVIDER) ? process.env.ANALYTICS_PROVIDER : '',
   // En producción el mismo servidor entrega la web compilada (client/dist) con cabeceras de seguridad.
   serveClient: process.env.SERVE_CLIENT === 'true' || (isProd && process.env.SERVE_CLIENT !== 'false'),
   clientDist: path.resolve(serverRoot, process.env.CLIENT_DIST ?? '../client/dist'),

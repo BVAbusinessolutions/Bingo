@@ -26,9 +26,26 @@ const formFrom = (ev) => ({
   pattern: ev?.pattern ?? 'FULL',
   price: String(ev?.price ?? 2000),
   startsAt: toLocalInput(ev?.startsAt),
+  venue: ev?.venue ?? '',
+  venueArea: ev?.venueArea ?? '',
   provider: ev?.stream?.provider ?? 'youtube',
-  videoId: ev?.stream?.videoId ?? '',
+  videoId: ev?.stream?.videoId ?? ev?.stream?.url ?? '',
 });
+
+// LL-HLS y WebRTC (WHEP) se configuran con una URL https; el resto con el id del video o canal.
+const URL_PROVIDERS = new Set(['hls', 'whep']);
+const STREAM_HINTS = {
+  youtube: ['ID del video', 'ej. jfKfPfyJRdk', 'Lo que va después de watch?v= (latencia de 3 a 10 s con "latencia ultrabaja").'],
+  twitch: ['Nombre del canal', 'ej. hogarsol', 'Latencia de 2 a 5 s.'],
+  vimeo: ['ID del video', 'ej. 76979871', 'Latencia de 5 a 15 s.'],
+  hls: ['URL .m3u8 (LL-HLS)', 'https://…/live/bingo.m3u8', 'Latencia de 2 a 4 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
+  whep: ['URL WHEP (WebRTC)', 'https://…/whep/bingo', 'Latencia menor a 1 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
+};
+const streamValue = ({ provider, videoId }) => {
+  const v = videoId.trim();
+  if (!v) return null;
+  return URL_PROVIDERS.has(provider) ? { provider, url: v } : { provider, videoId: v };
+};
 
 function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
   const [form, setForm] = useState(() => formFrom(initial));
@@ -47,7 +64,9 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
         description: form.description.trim(),
         ...(!locked && { pattern: form.pattern, price: Number(form.price) }),
         startsAt: new Date(form.startsAt).toISOString(),
-        stream: form.videoId.trim() ? { provider: form.provider, videoId: form.videoId.trim() } : null,
+        venue: form.venue.trim(),
+        venueArea: form.venueArea.trim(),
+        stream: streamValue(form),
       });
     } catch (err) {
       setError(errorMessage(err));
@@ -80,7 +99,30 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
         </label>
       </div>
       {locked && <p className="text-sm text-fg-muted">El precio y el patrón no se pueden cambiar porque ya hay ventas.</p>}
-      <Field label="Fecha y hora del sorteo" type="datetime-local" value={form.startsAt} onChange={set('startsAt')} />
+      <Field
+        label="Fecha y hora del sorteo"
+        type="datetime-local"
+        value={form.startsAt}
+        onChange={set('startsAt')}
+        hint="Hora de Costa Rica. La cuenta regresiva de la portada usa esta fecha."
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Lugar del evento"
+          value={form.venue}
+          onChange={set('venue')}
+          maxLength={120}
+          placeholder="ej. Salón de Eventos de Tinamaste"
+        />
+        <Field
+          label="Zona o dirección"
+          value={form.venueArea}
+          onChange={set('venueArea')}
+          maxLength={120}
+          placeholder="ej. Higuito, San José"
+          hint="Se muestran en la portada, el reglamento y el enlace “Cómo llegar”."
+        />
+      </div>
       <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
         <label className="block">
           <span className="font-bold text-fg">Transmisión</span>
@@ -88,14 +130,17 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
             <option value="youtube">YouTube</option>
             <option value="twitch">Twitch</option>
             <option value="vimeo">Vimeo</option>
+            <option value="whep">WebRTC (ultra baja latencia)</option>
+            <option value="hls">LL-HLS (baja latencia)</option>
           </select>
         </label>
         <Field
-          label="ID del video o canal"
+          label={STREAM_HINTS[form.provider][0]}
           value={form.videoId}
           onChange={set('videoId')}
-          placeholder="ej. jfKfPfyJRdk"
-          hint="En YouTube es lo que va después de watch?v="
+          placeholder={STREAM_HINTS[form.provider][1]}
+          hint={STREAM_HINTS[form.provider][2]}
+          inputMode={URL_PROVIDERS.has(form.provider) ? 'url' : undefined}
         />
       </div>
       {error && <Alert tone="error">{error}</Alert>}
@@ -215,7 +260,10 @@ function EventCard({ ev, series, onChanged }) {
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-xl font-black text-fg">{ev.name}</h2>
-          <p className="text-fg-muted">{formatDate(ev.startsAt)}</p>
+          <p className="text-fg-muted">
+            {formatDate(ev.startsAt)}
+            {(ev.venue || ev.venueArea) && ` · ${[ev.venue, ev.venueArea].filter(Boolean).join(', ')}`}
+          </p>
         </div>
         <StatusBadge status={ev.status} />
       </header>

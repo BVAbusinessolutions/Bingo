@@ -168,11 +168,11 @@ export default function ProfilePage() {
 
         <Section icon={Palette} title="Preferencias de lectura" description="Se guardan en este dispositivo.">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-sol-blue p-4 text-white dark:bg-[#0a1628]">
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-sol-blue p-4 text-white dark:bg-navy-950">
               <span className="font-bold">Tamaño de letra</span>
               <TextSizeControl />
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-sol-blue p-4 text-white dark:bg-[#0a1628]">
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-sol-blue p-4 text-white dark:bg-navy-950">
               <span className="font-bold">Modo día / noche</span>
               <ThemeToggle />
             </div>

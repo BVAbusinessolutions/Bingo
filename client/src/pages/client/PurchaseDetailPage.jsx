@@ -13,7 +13,7 @@ import { formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
 import { SITE } from '../../config/site';
 
-const METHODS = { SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia bancaria' };
+const METHODS = { SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia bancaria u otro' };
 const CLOSED = { REJECTED: 'Pago rechazado', EXPIRED: 'Reserva vencida', CANCELLED: 'Reserva cancelada' };
 
 /** Pasos de la compra: reservado → comprobante enviado → aprobado (o el motivo de cierre). */
@@ -76,7 +76,7 @@ export default function PurchaseDetailPage() {
       </main>
     );
   }
-  if (!r) return <PageLoader />;
+  if (!r) return <PageLoader page />;
 
   const approved = r.status === 'APPROVED';
 

@@ -10,11 +10,15 @@ export const publicWinnerName = (name = '') => {
 };
 
 export const CLAIM_SELECT = `
-  select cl.*, c.serial, c.grid, u.name as player_name, u.email as player_email, u.phone as player_phone, e.name as event_name
+  select cl.*, c.serial, c.grid, e.name as event_name,
+         coalesce(u.name, r.buyer_full_name) as player_name,
+         coalesce(u.email, r.buyer_email) as player_email,
+         coalesce(u.phone, r.buyer_phone) as player_phone
     from app.claims cl
     join app.cards c on c.id = cl.card_id
-    join app.users u on u.id = cl.user_id
-    join app.events e on e.id = cl.event_id`;
+    join app.events e on e.id = cl.event_id
+    left join app.users u on u.id = cl.user_id -- null en ganadores del salón (venta en persona sin cuenta)
+    left join app.reservations r on r.id = c.reservation_id`;
 
 const iso = (d) => (d ? new Date(d).toISOString() : null);
 
@@ -23,6 +27,7 @@ export const claimView = (c) => ({
   eventId: c.event_id,
   serial: c.serial,
   status: c.status, // PENDING | CONFIRMED | REJECTED
+  channel: c.channel, // WEB | SALON
   calledCount: c.called_count,
   createdAt: iso(c.created_at),
   decidedAt: iso(c.decided_at),
@@ -52,13 +57,15 @@ export async function decideClaim(id, approve, actor) {
   });
   if (!updated) return null;
   const c = await findClaim(id);
-  sendMail({
-    to: c.player_email,
-    subject: approve ? `🏆 ¡Ganaste! · ${c.event_name}` : `Reclamo de bingo no confirmado · ${c.event_name}`,
-    text: approve
-      ? `Hola ${c.player_name}, confirmamos tu bingo con el cartón #${c.serial}. Te contactaremos para entregarte el premio.`
-      : `Hola ${c.player_name}, revisamos tu reclamo con el cartón #${c.serial} y no pudo confirmarse. Si tienes dudas, contáctanos.`,
-  });
+  if (c.player_email) {
+    sendMail({
+      to: c.player_email,
+      subject: approve ? `🏆 ¡Ganaste! · ${c.event_name}` : `Reclamo de bingo no confirmado · ${c.event_name}`,
+      text: approve
+        ? `Hola ${c.player_name}, confirmamos tu bingo con el cartón #${c.serial}. Te contactaremos para entregarte el premio.`
+        : `Hola ${c.player_name}, revisamos tu reclamo con el cartón #${c.serial} y no pudo confirmarse. Si tienes dudas, contáctanos.`,
+    });
+  }
   notifyUser(c.user_id, 'claim:updated', claimView(c));
   notifyAdmins('claim:updated', adminClaimView(c));
   return claimView(c);

@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef } from 'react';
 import Button from './Button';
+import { useBackdropClose } from '../../hooks/useBackdropClose';
 
 /** Diálogo de confirmación accesible (reemplaza window.confirm). */
 export default function ConfirmDialog({ title, children, confirmLabel, confirmVariant = 'primary', loading, onConfirm, onCancel }) {
   const titleId = useId();
   const cancelRef = useRef(null);
+  const backdrop = useBackdropClose(onCancel);
 
   useEffect(() => {
     cancelRef.current?.focus();
@@ -14,7 +16,7 @@ export default function ConfirmDialog({ title, children, confirmLabel, confirmVa
   }, [onCancel]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" {...backdrop}>
       <div
         role="alertdialog"
         aria-modal="true"

@@ -41,6 +41,10 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: STREAM_ORIGINS
+        sync: false # orígenes https de la transmisión LL-HLS / WebRTC (ver docs/SEGURIDAD.md)
+      - key: ANALYTICS_PROVIDER
+        sync: false # ga4 | cloudflare (igual que VITE_ANALYTICS_PROVIDER)
       # Datos públicos de contacto: Vite los incrusta en la web al compilar (client/.env no se sube a git)
       - key: VITE_CONTACT_EMAIL
         sync: false
@@ -51,4 +55,15 @@ services:
       - key: VITE_CONTACT_ADDRESS
         sync: false
       - key: VITE_CONTACT_SCHEDULE
+        sync: false
+      # Datos corporativos, SEO y analítica (también se incrustan al compilar)
+      - key: VITE_ORG_LEGAL_ID
+        sync: false # cédula jurídica de la Asociación (aviso legal)
+      - key: VITE_SITE_URL
+        sync: false # misma URL pública que CLIENT_ORIGIN
+      - key: VITE_ANALYTICS_PROVIDER
+        sync: false
+      - key: VITE_GA4_ID
+        sync: false
+      - key: VITE_CF_BEACON_TOKEN
         sync: false

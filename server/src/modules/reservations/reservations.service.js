@@ -89,6 +89,30 @@ export async function paymentDuplicates(r) {
   }));
 }
 
+/** Cédula normalizada en SQL (igual que el índice de 003_sanctions_streaming.sql). */
+const normId = (col) => `upper(regexp_replace(${col}, '[^0-9A-Za-z]', '', 'g'))`;
+
+/**
+ * Otras cuentas que compraron con la misma cédula o DIMEX: una persona con varias cuentas, o una cuenta
+ * sancionada que vuelve con otro correo. El admin lo ve antes de aprobar; no bloquea nada por sí solo.
+ */
+export async function identityDuplicates(r) {
+  if (!r.buyer_national_id || !r.user_id) return [];
+  const rows = await query(
+    `select u.id, u.name, u.email, u.status, count(o.id)::int as purchases
+       from app.reservations o
+       join app.users u on u.id = o.user_id
+      where o.user_id <> $1
+        and o.buyer_national_id is not null
+        and ${normId('o.buyer_national_id')} = ${normId('$2::text')}
+      group by u.id
+      order by (u.status = 'BANNED') desc, max(o.created_at) desc
+      limit 10`,
+    [r.user_id, r.buyer_national_id]
+  );
+  return rows.map((u) => ({ userId: u.id, name: u.name, email: u.email, status: u.status, purchases: u.purchases }));
+}
+
 /** Reserva del usuario: la propiedad va en la consulta misma (un id ajeno simplemente no existe). */
 export const findOwnReservation = (id, userId) => one(`${RESERVATION_SELECT} where r.id = $1 and r.user_id = $2`, [id, userId]);
 
@@ -137,16 +161,19 @@ export async function releaseExpiredReservations() {
 const serialsText = (serials) => serials.map((s) => `#${s}`).join(', ');
 
 /** Aprueba una compra con comprobante: cartones vendidos al dueño y correo con el enlace a sus cartones. */
-export async function approveReservation(id, actor) {
+export async function approveReservation(id, actor, method) {
   const updated = await tx(async (q) => {
     const [r] = await q(
-      `update app.reservations set status = 'APPROVED', decided_at = now(), decided_by = $2
+      `update app.reservations set status = 'APPROVED', decided_at = now(), decided_by = $2, payment_method = coalesce($3, payment_method)
         where id = $1 and status = 'PROOF_SUBMITTED' returning *`,
-      [id, actor.actorId]
+      [id, actor.actorId, method ?? null]
     );
     if (!r) return null;
     await q(`update app.cards set status = 'SOLD', owner_id = $2 where reservation_id = $1`, [id, r.user_id]);
-    await audit({ ...actor, action: 'reservation.approved', targetType: 'reservation', targetId: id, details: { total: r.total } }, q);
+    await audit(
+      { ...actor, action: 'reservation.approved', targetType: 'reservation', targetId: id, details: { total: r.total, method: r.payment_method } },
+      q
+    );
     return r;
   });
   if (!updated) return null;

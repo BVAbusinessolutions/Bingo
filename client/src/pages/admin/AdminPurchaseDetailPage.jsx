@@ -11,6 +11,7 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { PAYMENT_DETAIL } from '../../config/site';
 
 function InfoRow({ label, value, copy, children }) {
   return (
@@ -57,12 +58,69 @@ function DuplicateAlert({ duplicates }) {
   );
 }
 
+const ACCOUNT_STATUS = { SUSPENDED: 'suspendida', BANNED: 'baneada', DISABLED: 'desactivada' };
+
+/** Misma cédula/DIMEX usada desde otras cuentas: una persona con varias cuentas o una cuenta sancionada que vuelve. */
+function IdentityAlert({ accounts }) {
+  if (!accounts?.length) return null;
+  const banned = accounts.some((a) => a.status === 'BANNED');
+  return (
+    <Alert tone="error" title={banned ? '⚠ Esta cédula pertenece a una cuenta baneada' : '⚠ Esta cédula también se usó desde otras cuentas'}>
+      <p className="mb-2">Verifica que sea la misma persona y que no esté evadiendo una sanción antes de aprobar.</p>
+      <ul className="space-y-1">
+        {accounts.map((a) => (
+          <li key={a.userId}>
+            <b className="text-fg">{a.name}</b> · {a.email} · {a.purchases} compra(s)
+            {ACCOUNT_STATUS[a.status] && <b className="text-sol-red"> · cuenta {ACCOUNT_STATUS[a.status]}</b>}
+          </li>
+        ))}
+      </ul>
+    </Alert>
+  );
+}
+
+const RECEIVED_METHODS = [
+  ['SINPE', Smartphone, 'SINPE Móvil'],
+  ['TRANSFER', Building2, 'Transferencia bancaria u otro'],
+];
+
+/** Cómo llegó realmente el dinero: el cliente lo indica al pagar y la administración lo confirma al aprobar. */
+function ReceivedMethod({ value, onChange, declared }) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="font-extrabold text-fg">Método de cobro recibido</legend>
+      <div role="radiogroup" aria-label="Método de cobro recibido" className="grid gap-2 sm:grid-cols-2">
+        {RECEIVED_METHODS.map(([m, Icon, label]) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={value === m}
+            onClick={() => onChange(m)}
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-3 font-extrabold transition ${
+              value === m ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue' : 'border-line text-fg-muted hover:border-sol-blue'
+            }`}
+          >
+            <Icon className="h-5 w-5" aria-hidden /> {label}
+          </button>
+        ))}
+      </div>
+      {declared && value !== declared && (
+        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+          El cliente indicó otro método. Se guardará el que confirmes aquí.
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
 /** Lista de verificación: el botón "Aprobar" solo se habilita cuando todo coincide. */
 function VerificationChecklist({ r, checks, setChecks }) {
   const items = [
     ...(r.duplicates?.length
       ? [['duplicate', <>Revisé las otras compras con este comprobante y este pago es distinto</>]]
       : []),
+    ...(r.sameIdentity?.length ? [['identity', <>Revisé las otras cuentas con esta cédula y la compra es legítima</>]] : []),
     [
       'amount',
       <>
@@ -78,7 +136,7 @@ function VerificationChecklist({ r, checks, setChecks }) {
     [
       'detail',
       <>
-        El detalle de la transferencia dice <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? 'BINGO'}</b>
+        El detalle de la transferencia dice <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? PAYMENT_DETAIL}</b>
       </>,
     ],
     ['received', <>El dinero aparece en la cuenta de la Asociación</>],
@@ -112,6 +170,7 @@ export default function AdminPurchaseDetailPage() {
   const [checks, setChecks] = useState({});
   const [confirming, setConfirming] = useState(null); // 'approve' | 'reject' | 'refund'
   const [busy, setBusy] = useState(false);
+  const [receivedMethod, setReceivedMethod] = useState(null); // null = el que indicó el cliente
 
   const load = useCallback(
     () =>
@@ -130,7 +189,8 @@ export default function AdminPurchaseDetailPage() {
     setBusy(true);
     try {
       if (confirming === 'refund') await adminApi.refund(r.id);
-      else await adminApi.decide(r.id, confirming === 'approve');
+      else if (confirming === 'approve') await adminApi.decide(r.id, true, method);
+      else await adminApi.decide(r.id, false);
       setConfirming(null);
       await load();
       reloadCounters();
@@ -147,10 +207,18 @@ export default function AdminPurchaseDetailPage() {
   if (!r) return <PageLoader />;
 
   const reviewable = r.status === 'PROOF_SUBMITTED';
-  const required = ['amount', 'reference', 'detail', 'received', ...(r.duplicates?.length ? ['duplicate'] : [])];
+  const method = receivedMethod ?? (r.method === 'TRANSFER' ? 'TRANSFER' : 'SINPE');
+  const required = [
+    'amount',
+    'reference',
+    'detail',
+    'received',
+    ...(r.duplicates?.length ? ['duplicate'] : []),
+    ...(r.sameIdentity?.length ? ['identity'] : []),
+  ];
   const allChecked = required.every((k) => checks[k]);
   const MethodIcon = { TRANSFER: Building2, CASH: Banknote }[r.method] ?? Smartphone;
-  const METHOD_LABEL = { TRANSFER: 'Transferencia bancaria', SINPE: 'SINPE Móvil', CASH: 'Efectivo' };
+  const METHOD_LABEL = { TRANSFER: 'Transferencia bancaria u otro', SINPE: 'SINPE Móvil', CASH: 'Efectivo' };
 
   return (
     <section className="space-y-5">
@@ -203,7 +271,7 @@ export default function AdminPurchaseDetailPage() {
                 )}
               </InfoRow>
               <InfoRow label="Monto esperado" value={formatCRC(r.total)} />
-              <InfoRow label="Detalle requerido" value={r.payment?.detail ?? 'BINGO'} />
+              <InfoRow label="Detalle requerido" value={r.payment?.detail ?? PAYMENT_DETAIL} />
             </dl>
           </Card>
 
@@ -264,6 +332,8 @@ export default function AdminPurchaseDetailPage() {
             Verifica antes de aprobar
           </h2>
           <DuplicateAlert duplicates={r.duplicates} />
+          <IdentityAlert accounts={r.sameIdentity} />
+          <ReceivedMethod value={method} onChange={setReceivedMethod} declared={r.method} />
           <VerificationChecklist r={r} checks={checks} setChecks={setChecks} />
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
@@ -318,7 +388,7 @@ export default function AdminPurchaseDetailPage() {
           {confirming === 'refund'
             ? 'Registra que ya devolviste el dinero. Los cartones dejan de ser del comprador, vuelven a la venta y se le avisa por correo.'
             : confirming === 'approve'
-              ? `Se asignarán ${r.serials.length} cartón(es) a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
+              ? `Se registrará el cobro por ${METHOD_LABEL[method]}, se asignarán ${r.serials.length} cartón(es) a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
               : 'Los cartones volverán a estar disponibles y el cliente recibirá un correo avisando que el pago no se pudo verificar.'}
         </ConfirmDialog>
       )}

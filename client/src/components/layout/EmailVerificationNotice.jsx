@@ -5,7 +5,7 @@ import { authApi } from '../../api/endpoints';
 import { errorMessage } from '../../lib/format';
 
 /** Aviso persistente mientras el correo no esté confirmado (sin confirmar no se puede comprar). */
-export default function EmailVerificationBanner() {
+export default function EmailVerificationNotice() {
   const { isAuthenticated, user } = useAuth();
   const [state, setState] = useState('idle'); // idle | sending | sent | error
   const [error, setError] = useState('');

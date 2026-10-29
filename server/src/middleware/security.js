@@ -20,6 +20,8 @@ export const emailActionLimiter = limiter(15 * 60_000, 10, 'TOO_MANY_REQUESTS');
 export const claimLimiter = limiter(60_000, 10, 'TOO_MANY_REQUESTS');
 // Importación de ZIP de cartones (operación pesada): 5 por hora
 export const zipUploadLimiter = limiter(60 * 60_000, 5, 'TOO_MANY_REQUESTS');
+// Formulario de contacto: 5 mensajes por hora por IP (evita spam hacia el correo de la Asociación)
+export const contactLimiter = limiter(60 * 60_000, 5, 'TOO_MANY_REQUESTS');
 export const apiLimiter = limiter(60_000, 300, 'TOO_MANY_REQUESTS');
 
 const validationError = (res, error) => res.status(400).json({ error: 'VALIDATION_ERROR', details: z.flattenError(error).fieldErrors });

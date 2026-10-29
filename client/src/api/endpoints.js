@@ -16,6 +16,11 @@ export const authApi = {
   resendVerification: () => http.post('/auth/resend-verification'),
 };
 
+export const contactApi = {
+  payment: () => http.get('/contact/payment').then(data),
+  send: (body) => http.post('/contact/message', body).then(data),
+};
+
 export const eventsApi = {
   current: () => http.get('/events/current').then(data),
   list: () => http.get('/events').then(data),
@@ -51,6 +56,8 @@ export const drawApi = {
   state: (eventId) => http.get(`/events/${eventId}/draw`).then(data),
   call: (eventId, number) => http.post(`/events/${eventId}/draw/call`, { number }).then(data),
   undo: (eventId) => http.post(`/events/${eventId}/draw/undo`).then(data),
+  winningCards: (eventId) => http.get(`/events/${eventId}/draw/winning-cards`).then(data),
+  salonWinner: (eventId, cardId) => http.post(`/events/${eventId}/draw/salon-winner`, { cardId }).then(data),
 };
 
 export const adminApi = {
@@ -64,7 +71,7 @@ export const adminApi = {
   reservations: (status, eventId) => http.get('/admin/reservations', { params: { status, eventId } }).then(data),
   reservation: (id) => http.get(`/admin/reservations/${id}`).then(data),
   proofBlob: (id) => http.get(`/admin/reservations/${id}/proof`, { responseType: 'blob' }).then(data),
-  decide: (id, approve) => http.post(`/admin/reservations/${id}/decision`, { approve }).then(data),
+  decide: (id, approve, method) => http.post(`/admin/reservations/${id}/decision`, { approve, method }).then(data),
   refund: (id) => http.post(`/admin/reservations/${id}/refund`).then(data),
   manualSale: (body) => http.post('/admin/manual-sales', body).then(data),
   exportReservations: (params) => http.get('/admin/reservations/export.csv', { params, responseType: 'blob' }).then(data),
@@ -73,6 +80,7 @@ export const adminApi = {
   users: (params) => http.get('/admin/users', { params }).then(data),
   createUser: (body) => http.post('/admin/users', body).then(data),
   updateUser: (id, body) => http.patch(`/admin/users/${id}`, body).then(data),
+  sanctionUser: (id, body) => http.post(`/admin/users/${id}/sanction`, body).then(data),
   audit: (params) => http.get('/admin/audit', { params }).then(data),
   payment: () => http.get('/admin/settings/payment').then(data),
   updatePayment: (body) => http.put('/admin/settings/payment', body).then(data),

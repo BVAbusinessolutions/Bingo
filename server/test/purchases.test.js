@@ -72,7 +72,7 @@ describe('compra completa: comprobante, aviso al admin y aprobación', () => {
     client = await newVerifiedClient();
     const r = await reserve(client.token, ['1250', '1251']);
     assert.equal(r.status, 201);
-    assert.equal(r.body.payment.detail, 'BINGO');
+    assert.equal(r.body.payment.detail, 'Bingo');
     assert.equal(r.body.total, 4000);
     reservationId = r.body.id;
   });

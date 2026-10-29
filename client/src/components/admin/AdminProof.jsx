@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, ImageOff, Loader2, X, ZoomIn } from 'lucide-react';
 import { adminApi } from '../../api/endpoints';
+import { useBackdropClose } from '../../hooks/useBackdropClose';
 
 /** Carga el comprobante con el token (no hay URL pública) y lo expone como blob local. */
 export function useAdminProof(id, enabled) {
@@ -25,13 +26,14 @@ export function useAdminProof(id, enabled) {
 }
 
 export function ProofViewer({ file, onClose }) {
+  const backdrop = useBackdropClose(onClose);
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" {...backdrop}>
       <div
         role="dialog"
         aria-modal="true"
@@ -40,7 +42,7 @@ export function ProofViewer({ file, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-2 flex justify-end">
-          <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full text-fg hover:bg-muted" aria-label="Cerrar">
+          <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full text-fg hover:bg-muted" aria-label="Cerrar">
             <X />
           </button>
         </div>

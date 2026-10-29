@@ -9,8 +9,15 @@ export function verifyAccessToken(token) {
   return jwt.verify(token, env.accessSecret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
 }
 
-/** Usuario activo con su rol actual (de la BD, no del token): desactivar o cambiar rol aplica al instante. */
-export const loadActiveUser = (id) => one("select id, role from app.users where id = $1 and status = 'ACTIVE'", [id]);
+/** SQL: la cuenta se puede usar (activa, o con una suspensión temporal que ya venció). */
+export const USABLE_ACCOUNT_SQL = "(status = 'ACTIVE' or (status = 'SUSPENDED' and suspended_until <= now()))";
+
+/** Lo mismo que USABLE_ACCOUNT_SQL, para una fila ya leída de app.users. */
+export const isUsableAccount = (u) =>
+  u.status === 'ACTIVE' || (u.status === 'SUSPENDED' && u.suspended_until != null && new Date(u.suspended_until) <= new Date());
+
+/** Usuario activo con su rol actual (de la BD, no del token): desactivar, sancionar o cambiar rol aplica al instante. */
+export const loadActiveUser = (id) => one(`select id, role from app.users where id = $1 and ${USABLE_ACCOUNT_SQL}`, [id]);
 
 /** Exige "Authorization: Bearer <token>" válido de un usuario activo. */
 export async function authenticate(req, res, next) {
