@@ -54,7 +54,9 @@ function EventResult({ event }) {
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg font-black text-fg">{w.name}</span>
                     <span className="text-fg-muted">
-                      Cartón #{w.serial} · con {w.calledCount} bolas · {w.channel === 'SALON' ? 'en el salón' : 'en línea'}
+                      Cartón #{w.serial} · {w.round > 1 || event.round > 1 ? `Ronda ${w.round} · ` : ''}
+                      {PATTERNS[w.pattern ?? event.pattern]?.label} · con {w.calledCount} bolas ·{' '}
+                      {w.channel === 'SALON' ? 'en el salón' : 'en línea'}
                     </span>
                   </span>
                 </li>

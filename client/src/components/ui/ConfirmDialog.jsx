@@ -16,6 +16,7 @@ export default function ConfirmDialog({
   loading,
   onConfirm,
   onCancel,
+  wide = false, // contenido con más opciones (p. ej. elegir la modalidad de una ronda)
 }) {
   const titleId = useId();
   const descId = useId();
@@ -36,7 +37,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className="glass-panel relative w-full max-w-md animate-modal-in space-y-4 overflow-hidden rounded-3xl p-6 shadow-[0_0_0_1px_rgb(251_191_36/0.35),0_30px_70px_rgb(2_6_23/0.45)] sm:p-7"
+        className={`glass-panel relative max-h-[calc(100dvh-2rem)] w-full ${wide ? 'max-w-3xl' : 'max-w-md'} animate-modal-in space-y-4 overflow-y-auto overflow-x-hidden rounded-3xl p-6 shadow-[0_0_0_1px_rgb(251_191_36/0.35),0_30px_70px_rgb(2_6_23/0.45)] sm:p-7`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute -right-14 -top-14 h-40 w-40 rounded-full bg-sol-gold/25 blur-3xl" aria-hidden />

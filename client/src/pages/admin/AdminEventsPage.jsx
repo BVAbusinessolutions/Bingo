@@ -103,7 +103,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Precio por cartón (₡)" type="number" min="0" value={form.price} onChange={set('price')} disabled={locked} />
         <label className="block">
-          <span className="font-bold text-fg">Patrón ganador</span>
+          <span className="font-bold text-fg">Modalidad de la primera ronda</span>
           <select value={form.pattern} onChange={set('pattern')} disabled={locked} className={selectCls}>
             {Object.values(PATTERNS).map((p) => (
               <option key={p.id} value={p.id}>
@@ -113,7 +113,11 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
           </select>
         </label>
       </div>
-      {locked && <p className="text-sm text-fg-muted">El precio y el patrón no se pueden cambiar porque ya hay ventas.</p>}
+      {locked && (
+        <p className="text-sm text-fg-muted">
+          El precio y el patrón no se pueden cambiar aquí porque ya hay ventas. La modalidad de cada ronda se elige en Bingo Master.
+        </p>
+      )}
       <Field
         label="Fecha y hora del sorteo"
         type="datetime-local"

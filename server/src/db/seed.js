@@ -54,6 +54,7 @@ export async function seedDemoData() {
              'youtube', 'jfKfPfyJRdk')`,
     [DEMO_EVENT_ID]
   );
+  await query("insert into app.event_rounds (event_id, round, pattern) values ($1, 1, 'FULL')", [DEMO_EVENT_ID]);
   const seriesId = await createGeneratedSeries({ name: 'Serie de prueba (generada)', count: 300, startSerial: 1001 }, actor);
   await assignSeriesToEvent(DEMO_EVENT_ID, seriesId, actor);
 

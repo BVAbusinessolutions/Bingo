@@ -72,7 +72,7 @@ export default function AdminLayout() {
   const [toast, setToast] = useState(null);
   const [bingoClaims, setBingoClaims] = useState([]); // reclamos de ¡Bingo! aún no vistos (ventana emergente)
   const [revision, setRevision] = useState(0); // sube con cada aviso en tiempo real -> las vistas recargan
-  const { socket } = useSocket('/admin');
+  const { socket, connected } = useSocket('/admin');
   useHashScroll(); // cada sección del panel empieza arriba
 
   const reloadEvents = useCallback(
@@ -123,28 +123,51 @@ export default function AdminLayout() {
     socket.on('reservation:updated', refresh);
     socket.on('claim:new', onClaim);
     socket.on('claim:updated', refresh);
+    // Ronda nueva (desde este u otro panel abierto): todas las vistas toman la modalidad y la ronda nuevas.
+    const onRound = () => {
+      reloadEvents();
+      refresh();
+    };
+    socket.on('draw:round', onRound);
     return () => {
+      socket.off('draw:round', onRound);
       socket.off('reservation:proof', onProof);
       socket.off('reservation:updated', refresh);
       socket.off('claim:new', onClaim);
       socket.off('claim:updated', refresh);
     };
-  }, [socket, reloadCounters]);
+  }, [socket, reloadCounters, reloadEvents]);
 
   const closeToast = useCallback(() => setToast(null), []);
   const closeBingo = useCallback(() => setBingoClaims([]), []);
 
-  const tabs = [
-    { to: '', end: true, label: 'Panel', Icon: LayoutDashboard },
-    { to: PATHS.adminPurchases, label: 'Compras', Icon: ShoppingCart, badge: pending },
-    { to: PATHS.adminWinners, label: 'Ganadores', Icon: Trophy, badge: pendingClaims },
-    { to: PATHS.adminDraw, label: 'Bingo Master', Icon: Mic },
-    { to: PATHS.adminEvents, label: 'Eventos', Icon: CalendarDays },
-    { to: PATHS.adminSeries, label: 'Series', Icon: Layers },
-    { to: PATHS.adminCards, label: 'Cartones', Icon: Grid3x3 },
-    { to: PATHS.adminUsers, label: 'Usuarios', Icon: Users },
-    { to: PATHS.adminAudit, label: 'Bitácora', Icon: ScrollText },
-    { to: PATHS.adminSettings, label: 'Datos de cobro', Icon: Landmark },
+  // Menú agrupado por tarea: el día del bingo (operación), la preparación (configuración) y el control.
+  const sections = [
+    {
+      title: 'Operación',
+      items: [
+        { to: '', end: true, label: 'Panel', Icon: LayoutDashboard },
+        { to: PATHS.adminDraw, label: 'Bingo Master', Icon: Mic },
+        { to: PATHS.adminPurchases, label: 'Compras', Icon: ShoppingCart, badge: pending },
+        { to: PATHS.adminWinners, label: 'Ganadores', Icon: Trophy, badge: pendingClaims },
+      ],
+    },
+    {
+      title: 'Configuración',
+      items: [
+        { to: PATHS.adminEvents, label: 'Eventos', Icon: CalendarDays },
+        { to: PATHS.adminSeries, label: 'Series', Icon: Layers },
+        { to: PATHS.adminCards, label: 'Cartones', Icon: Grid3x3 },
+        { to: PATHS.adminSettings, label: 'Datos de cobro', Icon: Landmark },
+      ],
+    },
+    {
+      title: 'Control',
+      items: [
+        { to: PATHS.adminUsers, label: 'Usuarios', Icon: Users },
+        { to: PATHS.adminAudit, label: 'Bitácora', Icon: ScrollText },
+      ],
+    },
   ];
 
   const event = events.find((e) => e.id === eventId);
@@ -159,8 +182,23 @@ export default function AdminLayout() {
       <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
         {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-22 lg:self-start print:hidden">
-          <div className="surface space-y-2 p-4">
-            <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
+          <div className="surface space-y-3 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-sol-red dark:text-sol-gold">Administración</p>
+              {/* Conexión en tiempo real con el servidor: verde = los avisos y las cifras llegan al instante. */}
+              <span
+                role="status"
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${
+                  connected ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-muted text-fg-muted'
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500 motion-safe:animate-pulse' : 'bg-slate-400'}`}
+                  aria-hidden
+                />
+                {connected ? 'En vivo' : 'Conectando…'}
+              </span>
+            </div>
             <GlassSelect
               label="Evento"
               value={eventId}
@@ -169,29 +207,39 @@ export default function AdminLayout() {
             />
           </div>
 
-          <nav aria-label="Administración" className="surface flex gap-1 overflow-x-auto p-2 lg:flex-col lg:overflow-visible">
-            {tabs.map(({ to, end, label, Icon, badge }) => (
-              <NavLink
-                key={label}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex min-h-12 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 font-extrabold transition ${
-                    isActive ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'text-fg-muted hover:bg-muted hover:text-fg'
-                  }`
-                }
-              >
-                <Icon className="h-5 w-5 shrink-0" aria-hidden />
-                <span className="flex-1">{label}</span>
-                {badge > 0 && (
-                  <span
-                    className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white"
-                    aria-label={`${badge} pendientes`}
+          <nav
+            aria-label="Administración"
+            className="surface flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-3 lg:overflow-visible lg:p-3"
+          >
+            {sections.map(({ title, items }) => (
+              <div key={title} className="flex shrink-0 gap-1 lg:block lg:space-y-1">
+                <p className="hidden px-3 pb-1 text-[0.7rem] font-extrabold uppercase tracking-widest text-fg-subtle lg:block">{title}</p>
+                {items.map(({ to, end, label, Icon, badge }) => (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      `group relative flex min-h-11 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 font-extrabold transition duration-200 ${
+                        isActive
+                          ? 'bg-sol-blue text-white shadow-md dark:bg-sol-gold dark:text-sol-blue'
+                          : 'text-fg-muted hover:translate-x-0.5 hover:bg-muted hover:text-fg'
+                      }`
+                    }
                   >
-                    {badge}
-                  </span>
-                )}
-              </NavLink>
+                    <Icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
+                    <span className="flex-1">{label}</span>
+                    {badge > 0 && (
+                      <span
+                        className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white motion-safe:animate-pop"
+                        aria-label={`${badge} pendientes`}
+                      >
+                        {badge}
+                      </span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
             ))}
           </nav>
         </aside>
@@ -199,7 +247,21 @@ export default function AdminLayout() {
         <div id="contenido-admin" tabIndex={-1} className="min-w-0 outline-none">
           <ErrorBoundary resetKey={pathname}>
             <Suspense fallback={<PageLoader />}>
-              <Outlet context={{ events, event, eventId, setEventId, reloadEvents, reloadCounters, revision, pending }} />
+              <Outlet
+                context={{
+                  events,
+                  event,
+                  eventId,
+                  setEventId,
+                  reloadEvents,
+                  reloadCounters,
+                  revision,
+                  pending,
+                  pendingClaims,
+                  socket,
+                  connected,
+                }}
+              />
             </Suspense>
           </ErrorBoundary>
         </div>

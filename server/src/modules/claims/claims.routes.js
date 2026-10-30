@@ -17,7 +17,7 @@ const crDateTime = (d) =>
 
 const requireEvent = async (req, res, next) => {
   if (!/^[a-z0-9-]{3,64}$/.test(req.params.eventId)) return res.status(404).json({ error: 'NOT_FOUND' });
-  req.event = await one('select id, name, pattern, status from app.events where id = $1', [req.params.eventId]);
+  req.event = await one('select id, name, pattern, round, status from app.events where id = $1', [req.params.eventId]);
   return req.event ? next() : res.status(404).json({ error: 'NOT_FOUND' });
 };
 
@@ -45,21 +45,23 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
   ]);
   if (!card) return res.status(404).json({ error: 'NOT_FOUND' });
 
-  const existing = await one(`${CLAIM_SELECT} where cl.card_id = $1 and cl.status <> 'REJECTED'`, [card.id]);
+  // Un reclamo activo por cartón y ronda: en una ronda nueva el mismo cartón puede volver a ganar.
+  const activeClaim = `${CLAIM_SELECT} where cl.card_id = $1 and cl.round = $2 and cl.status <> 'REJECTED'`;
+  const existing = await one(activeClaim, [card.id, event.round]);
   if (existing) return res.json(claimView(existing));
 
-  const called = (await query('select number from app.draws where event_id = $1 order by seq', [event.id])).map((r) => r.number);
+  const called = (
+    await query('select number from app.draws where event_id = $1 and round = $2 order by seq', [event.id, event.round])
+  ).map((r) => r.number);
   if (!isWinningCard(card.grid, called, event.pattern)) return res.status(422).json({ error: 'NOT_A_WINNER' });
 
   // El índice único parcial impide dos reclamos activos del mismo cartón aunque lleguen a la vez.
   const created = await one(
-    `insert into app.claims (event_id, card_id, user_id, called_count, called_at_claim)
-     values ($1, $2, $3, $4, $5) on conflict do nothing returning id`,
-    [event.id, card.id, req.user.id, called.length, called]
+    `insert into app.claims (event_id, card_id, user_id, called_count, called_at_claim, round, pattern)
+     values ($1, $2, $3, $4, $5, $6, $7) on conflict do nothing returning id`,
+    [event.id, card.id, req.user.id, called.length, called, event.round, event.pattern]
   );
-  const claim = await (created
-    ? findClaim(created.id)
-    : one(`${CLAIM_SELECT} where cl.card_id = $1 and cl.status <> 'REJECTED'`, [card.id]));
+  const claim = await (created ? findClaim(created.id) : one(activeClaim, [card.id, event.round]));
   if (!created) return res.json(claimView(claim));
 
   const patternLabel = PATTERN_LABELS[event.pattern] ?? event.pattern;
@@ -76,7 +78,7 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
       `¡BINGO CANTADO! en ${event.name}.`,
       `Usuario: ${claim.player_name ?? 'Sin nombre'} (${claim.player_email ?? req.user.email})`,
       `Cartón N.°: ${card.serial}`,
-      `Modalidad: ${patternLabel}`,
+      `Modalidad: ${patternLabel} (ronda ${event.round})`,
       `Hora exacta: ${crDateTime(claim.created_at)} (hora de Costa Rica)`,
       `Bolas cantadas al reclamar: ${called.length}`,
       `Cartones de esta cuenta en el evento (${accountCards.length}): ${accountCards.map((c) => `#${c.serial}`).join(', ')}`,

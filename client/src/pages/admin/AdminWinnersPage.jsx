@@ -19,9 +19,16 @@ function ClaimCard({ claim, pattern, onDecide }) {
   return (
     <article className="surface grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div className="space-y-2">
-        <BingoCard card={{ id: claim.id, serial: claim.serial, grid: claim.grid }} called={called} manualMarks={EMPTY} pattern={pattern} />
+        {/* La modalidad con la que se validó el reclamo (la de su ronda), no la actual del evento. */}
+        <BingoCard
+          card={{ id: claim.id, serial: claim.serial, grid: claim.grid }}
+          called={called}
+          manualMarks={EMPTY}
+          pattern={claim.pattern ?? pattern}
+        />
         <p className="text-fg-muted">
-          Marcado con las {claim.calledCount} bolas cantadas al momento del reclamo ({formatDate(claim.createdAt)}).
+          Ronda {claim.round ?? 1} · {PATTERNS[claim.pattern ?? pattern]?.label}. Marcado con las {claim.calledCount} bolas cantadas al
+          momento del reclamo ({formatDate(claim.createdAt)}).
         </p>
       </div>
       <div className="space-y-4">

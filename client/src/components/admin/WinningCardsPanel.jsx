@@ -14,7 +14,7 @@ const CLAIM_LABELS = {
  * Verificación automática: el servidor revisa TODOS los cartones vendidos (web y salón) contra las bolas
  * cantadas y lista los que ya tienen bingo, los haya cantado alguien o no. Se refresca con cada bola.
  */
-export default function WinningCardsPanel({ eventId, calledCount }) {
+export default function WinningCardsPanel({ eventId, calledCount, round }) {
   const [cards, setCards] = useState([]);
   const [busy, setBusy] = useState(null); // cardId que se está publicando
   const [error, setError] = useState('');
@@ -29,7 +29,7 @@ export default function WinningCardsPanel({ eventId, calledCount }) {
 
   useEffect(() => {
     load();
-  }, [load, calledCount]);
+  }, [load, calledCount, round]);
 
   // Cartón del salón verificado en voz alta: el servidor vuelve a validarlo y lo publica en Resultados.
   const publishSalonWinner = async (card) => {

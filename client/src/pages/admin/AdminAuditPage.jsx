@@ -4,35 +4,7 @@ import { adminApi } from '../../api/endpoints';
 import Button from '../../components/ui/Button';
 import PageLoader from '../../components/ui/PageLoader';
 import { formatCRC, formatDate } from '../../lib/format';
-
-/** Texto legible para cada acción registrada. */
-const ACTIONS = {
-  'auth.admin_login': 'Inicio de sesión de administrador',
-  'auth.account_locked': 'Cuenta bloqueada por intentos fallidos',
-  'auth.password_changed': 'Cambio de contraseña',
-  'auth.password_reset': 'Contraseña restablecida por correo',
-  'auth.refresh_reuse_detected': 'Posible robo de sesión: se cerraron todas las sesiones',
-  'reservation.approved': 'Compra aprobada',
-  'reservation.rejected': 'Compra rechazada',
-  'reservation.refunded': 'Compra reembolsada',
-  'reservation.manual_sale': 'Venta manual registrada',
-  'reservations.exported': 'Compras exportadas a Excel',
-  'draw.call': 'Bola cantada',
-  'draw.undo': 'Bola deshecha',
-  'claim.confirmed': 'Premio confirmado',
-  'claim.rejected': 'Reclamo de bingo rechazado',
-  'event.created': 'Evento creado',
-  'event.updated': 'Evento modificado',
-  'event.series_assigned': 'Serie asignada a un evento',
-  'series.generated': 'Serie generada',
-  'series.import_started': 'ZIP de cartones subido',
-  'series.card_corrected': 'Cartón corregido',
-  'series.deleted': 'Serie borrada',
-  'user.created': 'Cuenta creada',
-  'user.updated': 'Cuenta modificada',
-  'user.admin_created_cli': 'Administrador creado por consola',
-  'settings.payment_updated': 'Datos de cobro actualizados',
-};
+import { ACTIONS } from '../../constants/auditActions';
 
 const FILTERS = [
   ['', 'Todo'],

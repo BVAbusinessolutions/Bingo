@@ -24,12 +24,18 @@ const COLS = [0, 1, 2, 3, 4].map((c) => cells([0, 1, 2, 3, 4].map((r) => [r, c])
 const DIAG = [cells([0, 1, 2, 3, 4].map((i) => [i, i])), cells([0, 1, 2, 3, 4].map((i) => [i, 4 - i]))];
 const ALL = ROWS.flat();
 
+const LINES = [...ROWS, ...COLS, ...DIAG];
+// Sin casillas repetidas (la T comparte la casilla N1, dos líneas pueden cruzarse): "faltan" cuenta cada una una vez.
+const uniq = (group) => [...new Map(group.map(([r, c]) => [`${r}-${c}`, [r, c]])).values()];
+const range = [0, 1, 2, 3, 4];
+
 /**
  * Cada patrón es una lista de alternativas; gana quien complete cualquiera de ellas.
- * LINE: cualquier fila, columna o diagonal. X: ambas diagonales. FULL: cartón lleno.
+ * El administrador elige el patrón de cada ronda en Bingo Master. El centro libre siempre cuenta como marcado.
  */
-export const PATTERNS = Object.freeze({
-  LINE: [...ROWS, ...COLS, ...DIAG],
+const RAW_PATTERNS = {
+  LINE: LINES, // cualquier fila, columna o diagonal
+  TWO_LINES: LINES.flatMap((a, i) => LINES.slice(i + 1).map((b) => [...a, ...b])), // dos líneas cualesquiera
   FOUR_CORNERS: [
     cells([
       [0, 0],
@@ -39,11 +45,30 @@ export const PATTERNS = Object.freeze({
     ]),
   ],
   X: [[...DIAG[0], ...DIAG[1]]],
+  PLUS: [[...ROWS[2], ...COLS[2]]], // cruz: fila y columna del centro
+  T: [[...ROWS[0], ...COLS[2]]], // fila superior y columna N
+  L: [[...COLS[0], ...ROWS[4]]], // columna B y fila inferior
+  FRAME: [[...ROWS[0], ...ROWS[4], ...COLS[0], ...COLS[4]]], // marco: todo el borde
+  INNER_SQUARE: [range.slice(1, 4).flatMap((r) => range.slice(1, 4).map((c) => [r, c]))], // cuadro central 3x3
   FULL: [ALL],
-});
+};
+export const PATTERNS = Object.freeze(Object.fromEntries(Object.entries(RAW_PATTERNS).map(([id, groups]) => [id, groups.map(uniq)])));
+
+export const PATTERN_IDS = Object.freeze(Object.keys(PATTERNS));
 
 /** Nombre de cada modalidad para avisos y correos (el cliente usa los mismos en constants/patterns.js). */
-export const PATTERN_LABELS = Object.freeze({ LINE: 'Línea', FOUR_CORNERS: 'Cuatro esquinas', X: 'Letra X', FULL: 'Cartón lleno' });
+export const PATTERN_LABELS = Object.freeze({
+  LINE: 'Línea',
+  TWO_LINES: 'Dos líneas',
+  FOUR_CORNERS: 'Cuatro esquinas',
+  X: 'Letra X',
+  PLUS: 'Cruz',
+  T: 'Letra T',
+  L: 'Letra L',
+  FRAME: 'Marco',
+  INNER_SQUARE: 'Cuadro central',
+  FULL: 'Cartón lleno',
+});
 
 /** Cuántos números faltan para completar el patrón con las bolas cantadas (0 = bingo válido). */
 export function missingFor(grid, called, pattern) {

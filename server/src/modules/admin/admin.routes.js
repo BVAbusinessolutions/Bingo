@@ -15,6 +15,8 @@ import { env } from '../../config/env.js';
 import { toCsv } from '../../utils/csv.js';
 import { EVENT_SELECT, publicEvent } from '../events/events.routes.js';
 import { broadcast } from '../draw/draw.js';
+import { PATTERN_IDS } from '../../domain/bingo.js';
+import { liveMetrics } from '../../services/presence.js';
 import { revokeAllFor } from '../auth/auth.routes.js';
 import { emailField, nameField, newPasswordField } from '../auth/auth.schemas.js';
 import {
@@ -69,6 +71,22 @@ const requireUuid = (param) => (req, res, next) =>
 const adminEvent = (e) => ({ ...publicEvent(e), seriesId: e.series_id, seriesName: e.series_name });
 
 // ---------------------------------------------------------------- Dashboard
+/** Serie diaria de visitas (día de Costa Rica), con ceros en los días sin visitas. */
+async function visitsByDay(days) {
+  const rows = await query(
+    `select to_char(g.day, 'YYYY-MM-DD') as day, coalesce(v.visits, 0)::int as visits
+       from generate_series((now() at time zone 'UTC' - interval '6 hours')::date - ($1::int - 1),
+                            (now() at time zone 'UTC' - interval '6 hours')::date, interval '1 day') as g(day)
+       left join app.site_visits v on v.day = g.day::date
+      order by g.day`,
+    [days]
+  );
+  return rows.map((r) => ({ day: r.day, visits: r.visits }));
+}
+
+/** Presencia y visitas de hoy al momento (el panel también las recibe por Socket.io en 'metrics:update'). */
+router.get('/metrics/live', async (req, res) => res.json(await liveMetrics()));
+
 router.get('/events/:eventId/stats', findEvent, async (req, res) => {
   await releaseExpiredReservations();
   const [s] = await query(
@@ -83,7 +101,8 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
        -- Las reservas pendientes, con comprobante sin revisar, rechazadas o reembolsadas no suman.
        (select coalesce(sum(total), 0)::int from app.reservations
          where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method is not null) as revenue,
-       (select count(*)::int from app.draws where event_id = $1) as called
+       (select count(*)::int from app.draws d join app.events e on e.id = d.event_id
+         where d.event_id = $1 and d.round = e.round) as called
      from app.cards where event_id = $1`,
     [req.event.id]
   );
@@ -133,6 +152,10 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
     verifiedUsers: t.verified_users,
     visitsTotal: t.visits_total,
     visitsWeek: t.visits_week,
+    // Visitas reales de los últimos 14 días (días sin visitas = 0) y presencia en este momento.
+    visitsByDay: await visitsByDay(14),
+    round: req.event.round,
+    ...(await liveMetrics()),
   });
 });
 
@@ -196,7 +219,7 @@ const streamSchema = z.discriminatedUnion('provider', [
 const eventFields = z.object({
   name: z.string().trim().min(3).max(80),
   description: z.string().trim().max(300),
-  pattern: z.enum(['LINE', 'FOUR_CORNERS', 'X', 'FULL']),
+  pattern: z.enum(PATTERN_IDS),
   price: z.number().int().min(0).max(1_000_000),
   startsAt: z.string().datetime({ offset: true }),
   // Lugar del evento presencial: se muestra en la portada, el reglamento y la cuenta regresiva.
@@ -224,6 +247,7 @@ router.post('/events', validateBody(eventSchema), async (req, res) => {
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
     [name, description, pattern, price, startsAt, venue, venueArea, stream?.provider ?? null, stream?.videoId ?? null, stream?.url ?? null]
   );
+  await query('insert into app.event_rounds (event_id, round, pattern) values ($1, 1, $2)', [e.id, pattern]);
   await audit({ ...actorFrom(req), action: 'event.created', targetType: 'event', targetId: e.id, details: { name } });
   res.status(201).json(adminEvent(await one(`${EVENT_SELECT} where e.id = $1`, [e.id])));
 });
@@ -276,6 +300,9 @@ router.patch(
         b.venueArea ?? null,
       ]
     );
+    if (b.pattern && b.pattern !== e.pattern) {
+      await query('update app.event_rounds set pattern = $3 where event_id = $1 and round = $2', [e.id, e.round, b.pattern]);
+    }
     // Cancelar un evento cierra las compras sin aprobar y avisa a quienes ya enviaron comprobante.
     // Las compras aprobadas se reembolsan una por una desde Compras (queda registro de cada devolución).
     if (b.status === 'CANCELLED') {

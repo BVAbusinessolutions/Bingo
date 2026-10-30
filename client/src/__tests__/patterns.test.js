@@ -52,3 +52,16 @@ describe('patrones de 75 bolas (deben coincidir con el servidor)', () => {
     expect(countedMarks(true, called, new Set())).toBe(called); // automático: todo lo cantado
   });
 });
+
+describe('modalidades sincronizadas con el servidor', () => {
+  it('cliente y servidor tienen las mismas modalidades, con las mismas casillas, nombres y orden', async () => {
+    const server = await import('../../../server/src/domain/bingo.js');
+    const { PATTERNS: CLIENT, PATTERN_IDS } = await import('../constants/patterns');
+    expect(PATTERN_IDS).toEqual(server.PATTERN_IDS);
+    const key = (groups) => groups.map((g) => g.map(([r, c]) => `${r}${c}`).sort().join(',')).sort();
+    for (const id of PATTERN_IDS) {
+      expect(key(CLIENT[id].groups), id).toEqual(key(server.PATTERNS[id]));
+      expect(CLIENT[id].label, id).toBe(server.PATTERN_LABELS[id]);
+    }
+  });
+});

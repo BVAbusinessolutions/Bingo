@@ -10,6 +10,7 @@ import BingoCard from '../../components/bingo/BingoCard';
 import ClaimButton from '../../components/bingo/ClaimButton';
 import CardControls from '../../components/bingo/CardControls';
 import CardSwitcher from '../../components/bingo/CardSwitcher';
+import { PatternPreview } from '../../components/bingo/PatternPreview';
 import LiveStream from '../../components/player/LiveStream';
 import CalledNumbersBoard from '../../components/player/CalledNumbersBoard';
 import { BrandBadge } from '../../components/brand/BrandLogo';
@@ -29,7 +30,8 @@ import { PATHS } from '../../routing/paths';
 const EMPTY = new Set();
 
 /** Reclamos del jugador para el evento, indexados por número de serie del cartón. */
-function useClaims(eventId) {
+/** Reclamos del jugador en la ronda actual (en una ronda nueva cada cartón vuelve a poder ganar). */
+function useClaims(eventId, round) {
   const { revision } = useNotifications();
   const [claims, setClaims] = useState({});
   const [pending, setPending] = useState({}); // { [cardId]: true } mientras se envía
@@ -39,9 +41,18 @@ function useClaims(eventId) {
     if (!eventId) return;
     claimsApi
       .mine(eventId)
-      .then((list) => setClaims(Object.fromEntries([...list].reverse().map((c) => [c.serial, c]))))
+      .then((list) =>
+        setClaims(
+          Object.fromEntries(
+            [...list]
+              .filter((c) => (c.round ?? 1) === round)
+              .reverse()
+              .map((c) => [c.serial, c])
+          )
+        )
+      )
       .catch(() => {});
-  }, [eventId, revision]);
+  }, [eventId, round, revision]);
 
   const claim = useCallback(
     async (card) => {
@@ -117,7 +128,8 @@ export default function LivePage() {
   const [slideFrom, setSlideFrom] = useState(24); // dirección de la animación al cambiar de cartón
   const [celebrating, setCelebrating] = useState(null); // serie del cartón ganador recién aceptado
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const { claims, pending, errors, claim } = useClaims(eventId);
+  const [roundNotice, setRoundNotice] = useState(null); // { round, pattern } al empezar otra ronda o cambiar la modalidad
+  const { claims, pending, errors, claim } = useClaims(eventId, event?.round ?? 1);
 
   const called = useMemo(() => new Set(calledList), [calledList]);
 
@@ -193,7 +205,31 @@ export default function LivePage() {
   };
 
   const pattern = event?.pattern ?? 'FULL';
+  const round = event?.round ?? 1;
   const isLive = event?.status === 'LIVE';
+
+  // Ronda nueva (o modalidad nueva) decidida por la administración: se limpian las marcas, se avisa con
+  // sonido y un cartel con la muestra de la modalidad. La primera carga no avisa.
+  const roundRef = useRef(null);
+  useEffect(() => {
+    if (!event) return;
+    const key = `${round}:${pattern}`;
+    const previous = roundRef.current;
+    roundRef.current = key;
+    if (!previous || previous === key) return;
+    if (!previous.startsWith(`${round}:`)) {
+      setManualMarks({});
+      announcedRef.current = new Set();
+    }
+    setRoundNotice({ round, pattern });
+    playReady();
+  }, [event, round, pattern]);
+  // El cartel se va solo a los 9 s (aparte: las bolas nuevas no deben reiniciar ni cancelar el temporizador).
+  useEffect(() => {
+    if (!roundNotice) return undefined;
+    const t = setTimeout(() => setRoundNotice(null), 9000);
+    return () => clearTimeout(t);
+  }, [roundNotice]);
   // Lo que cuenta para el ¡Bingo! es lo marcado en el cartón: automático = todo lo cantado;
   // manual = solo las marcas de la persona que además fueron cantadas (nunca una bola no cantada).
   const marksFor = useCallback((card) => countedMarks(autoMark, called, manualMarks[card.id] ?? EMPTY), [autoMark, called, manualMarks]);
@@ -272,21 +308,29 @@ export default function LivePage() {
               <h1 id="my-cards" className="text-2xl font-black text-brand">
                 Mis cartones <span className="tabular-nums">({cards.length})</span>
               </h1>
-              <p className="text-fg-muted">
-                Se juega: <b className="text-fg">{PATTERNS[pattern]?.label}</b>
-                {cards.length > 0 && (
-                  <>
-                    {' · '}
-                    {bestMissing === 0 ? (
-                      <b className="text-sol-red dark:text-sol-gold">¡tienes un cartón completo!</b>
-                    ) : (
+              <div className="flex items-center gap-2.5 text-fg-muted">
+                <PatternPreview pattern={pattern} active className="h-10 w-10" />
+                <p>
+                  <span className="mr-1.5 rounded-full bg-sol-blue px-2 py-0.5 text-xs font-black text-white dark:bg-sol-gold dark:text-sol-blue">
+                    Ronda {round}
+                  </span>
+                  Se juega: <b className="text-fg">{PATTERNS[pattern]?.label}</b>
+                  <span className="block text-sm">
+                    {cards.length > 0 && (
                       <>
-                        al mejor le {bestMissing === 1 ? 'falta' : 'faltan'} <b className="tabular-nums text-fg">{bestMissing}</b>
+                        {' · '}
+                        {bestMissing === 0 ? (
+                          <b className="text-sol-red dark:text-sol-gold">¡tienes un cartón completo!</b>
+                        ) : (
+                          <>
+                            al mejor le {bestMissing === 1 ? 'falta' : 'faltan'} <b className="tabular-nums text-fg">{bestMissing}</b>
+                          </>
+                        )}
                       </>
                     )}
-                  </>
-                )}
-              </p>
+                  </span>
+                </p>
+              </div>
             </div>
             <CardControls
               autoMark={autoMark}
@@ -308,6 +352,20 @@ export default function LivePage() {
             </div>
           )}
 
+          {roundNotice && (
+            <div
+              role="status"
+              className="flex items-center gap-4 rounded-2xl border-2 border-sol-blue bg-card p-4 shadow-lg motion-safe:animate-pop dark:border-sol-gold print:hidden"
+            >
+              <PatternPreview pattern={roundNotice.pattern} active className="h-16 w-16" />
+              <div>
+                <p className="text-xl font-black text-brand">
+                  Ronda {roundNotice.round}: se juega {PATTERNS[roundNotice.pattern]?.label}
+                </p>
+                <p className="text-fg-muted">{PATTERNS[roundNotice.pattern]?.hint}. Tus marcas empiezan de cero.</p>
+              </div>
+            </div>
+          )}
           {unclaimedWinners.length > 0 && (
             <div
               role="alert"

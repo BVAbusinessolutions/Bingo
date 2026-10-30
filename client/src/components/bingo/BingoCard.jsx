@@ -19,11 +19,15 @@ import { LETTERS, PATTERNS, countedMarks, isFreeCell, missingFor } from '../../c
  */
 export function Marker({ type, valid }) {
   const uid = useId(); // ids únicos por grano: los gradientes SVG no pueden repetir id en la página
-  const dim = valid ? '' : 'opacity-40';
+  const dim = valid ? '' : 'opacity-60';
   const base = `pointer-events-none absolute motion-safe:animate-stamp ${dim}`;
   if (type === 'star') {
     return (
-      <Star className={`${base} inset-[6%] h-[88%] w-[88%] fill-sol-gold text-sol-gold-dark drop-shadow`} strokeWidth={1.5} aria-hidden />
+      <Star
+        className={`${base} inset-[2%] h-[96%] w-[96%] fill-sol-gold text-sol-gold-dark drop-shadow-md`}
+        strokeWidth={1.5}
+        aria-hidden
+      />
     );
   }
   if (type === 'corn') {
@@ -32,7 +36,7 @@ export function Marker({ type, valid }) {
     return (
       <svg
         viewBox="0 0 40 52"
-        className={`pointer-events-none absolute left-[22%] top-[10%] h-[80%] w-[56%] motion-safe:animate-kernel drop-shadow-[0_0.6cqw_0.6cqw_rgb(0_0_0/0.35)] ${dim}`}
+        className={`pointer-events-none absolute left-[18%] top-[4%] h-[92%] w-[64%] motion-safe:animate-kernel drop-shadow-[0_0.6cqw_0.6cqw_rgb(0_0_0/0.35)] ${dim}`}
         aria-hidden
       >
         <defs>
@@ -62,7 +66,7 @@ export function Marker({ type, valid }) {
   if (type === 'gold') {
     return (
       <span
-        className={`${base} inset-[8%] -rotate-12 rounded-full border-[0.9cqw] border-dashed border-sol-gold-dark bg-sol-gold/70 shadow-[inset_0_0_0_0.5cqw_rgb(255_255_255/0.5)]`}
+        className={`${base} inset-[3%] -rotate-12 rounded-full border-[1.1cqw] border-dashed border-sol-gold-dark bg-sol-gold shadow-[inset_0_0_0_0.6cqw_rgb(255_255_255/0.55),0_0.6cqw_1cqw_rgb(0_0_0/0.25)]`}
         aria-hidden
       />
     );
@@ -70,11 +74,19 @@ export function Marker({ type, valid }) {
   // Ficha clásica: disco sólido con brillo, como la ficha de plástico del salón.
   return (
     <span
-      className={`${base} inset-[7%] rounded-full bg-mark shadow-[inset_0_-0.8cqw_0_rgb(0_0_0/0.25),inset_0_0.6cqw_0_rgb(255_255_255/0.3)] ring-[0.5cqw] ring-white/80`}
+      className={`${base} inset-[3%] rounded-full bg-mark shadow-[inset_0_-1cqw_0_rgb(0_0_0/0.28),inset_0_0.8cqw_0_rgb(255_255_255/0.35),0_0.6cqw_1cqw_rgb(0_0_0/0.3)] ring-[0.6cqw] ring-white`}
       aria-hidden
     />
   );
 }
+
+// Casilla marcada (además de la ficha): fondo teñido y borde interior del color de la ficha.
+const MARKED_CELL = {
+  chip: 'bg-red-100 shadow-[inset_0_0_0_0.7cqw_var(--mark)]',
+  gold: 'bg-amber-100 shadow-[inset_0_0_0_0.7cqw_#d97706]',
+  corn: 'bg-amber-100 shadow-[inset_0_0_0_0.7cqw_#d97706]',
+  star: 'bg-amber-100 shadow-[inset_0_0_0_0.7cqw_#d97706]',
+};
 
 // Color del número sobre cada ficha (contraste): blanco sobre la ficha sólida, azul sobre el sello,
 // negro con halo blanco sobre el maíz y la estrella.
@@ -142,11 +154,13 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
                 onClick={() => onToggle?.(card.id, n)}
                 aria-pressed={isMarked}
                 aria-label={`${LETTERS[c]} ${n}${isMarked ? (notCalled ? ', marcado, aún no cantado' : ', marcado') : ''}`}
-                className={`relative grid aspect-square select-none place-items-center rounded-[1.6cqw] bg-white text-[10cqw] font-black tabular-nums leading-none text-black shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)] transition disabled:cursor-default ${
+                className={`relative grid aspect-square select-none place-items-center rounded-[1.6cqw] text-[10cqw] font-black tabular-nums leading-none text-black transition disabled:cursor-default ${
                   !autoMark && onToggle
                     ? 'cursor-pointer hover:bg-sol-gold-light focus-visible:outline-[0.8cqw] focus-visible:outline-sol-gold active:scale-90'
                     : ''
-                } ${pendingManual ? 'outline-solid outline-[0.8cqw] -outline-offset-[0.4cqw] outline-sol-gold motion-safe:animate-hint' : ''}`}
+                } ${pendingManual ? 'outline-solid outline-[0.8cqw] -outline-offset-[0.4cqw] outline-sol-gold motion-safe:animate-hint' : ''} ${
+                  isMarked ? (MARKED_CELL[marker] ?? MARKED_CELL.chip) : 'bg-white shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)]'
+                } ${notCalled ? 'outline-dashed outline-[0.7cqw] -outline-offset-[0.5cqw] outline-sol-red' : ''}`}
               >
                 {isMarked && <Marker type={marker} valid={!notCalled} />}
                 <span className={`relative ${isMarked && !notCalled ? (NUMBER_ON_MARKER[marker] ?? '') : ''}`}>{n}</span>

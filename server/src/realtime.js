@@ -44,6 +44,9 @@ export const registerUserSocket = (io) => setup(io, '/user');
 /** Namespace /draw: usuarios autenticados escuchan el sorteo (lo registra modules/draw). */
 export const registerAuthenticatedNamespace = (io, name, onConnection) => setup(io, name, null, onConnection);
 
+/** Conexiones abiertas en un namespace (p. ej. jugadores mirando el sorteo en /draw). */
+export const connectedCount = (name) => namespaces[name]?.sockets.size ?? 0;
+
 export const notifyAdmins = (event, payload) => namespaces['/admin']?.emit(event, payload);
 export const notifyUser = (userId, event, payload) => userId && namespaces['/user']?.to(userRoom(userId)).emit(event, payload);
 

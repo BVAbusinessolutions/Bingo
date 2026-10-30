@@ -29,6 +29,8 @@ export const claimView = (c) => ({
   status: c.status, // PENDING | CONFIRMED | REJECTED
   channel: c.channel, // WEB | SALON
   calledCount: c.called_count,
+  round: c.round,
+  pattern: c.pattern, // modalidad con la que se validó (la de su ronda)
   createdAt: iso(c.created_at),
   decidedAt: iso(c.decided_at),
 });

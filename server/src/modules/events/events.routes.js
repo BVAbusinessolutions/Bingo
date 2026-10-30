@@ -24,6 +24,7 @@ export function publicEvent(e) {
     name: e.name,
     description: e.description,
     pattern: e.pattern,
+    round: e.round ?? 1,
     price: e.price,
     startsAt: new Date(e.starts_at).toISOString(),
     venue: e.venue ?? '',
@@ -61,8 +62,8 @@ router.get('/', async (req, res) => {
 /** Resultados públicos: eventos en vivo o finalizados con sus ganadores confirmados. */
 router.get('/results', async (req, res) => {
   const events = await query(
-    `select e.id, e.name, e.description, e.pattern, e.starts_at, e.status,
-            (select count(*)::int from app.draws d where d.event_id = e.id) as called_count
+    `select e.id, e.name, e.description, e.pattern, e.round, e.starts_at, e.status,
+            (select count(*)::int from app.draws d where d.event_id = e.id and d.round = e.round) as called_count
        from app.events e
       where e.status in ('LIVE', 'FINISHED')
       order by e.starts_at desc
@@ -70,7 +71,7 @@ router.get('/results', async (req, res) => {
   );
   const winners = events.length
     ? await query(
-        `select cl.event_id, coalesce(u.name, r.buyer_full_name) as name, c.serial, cl.called_count, cl.channel
+        `select cl.event_id, coalesce(u.name, r.buyer_full_name) as name, c.serial, cl.called_count, cl.channel, cl.round, cl.pattern
            from app.claims cl
            join app.cards c on c.id = cl.card_id
            left join app.users u on u.id = cl.user_id
@@ -86,12 +87,20 @@ router.get('/results', async (req, res) => {
       name: e.name,
       description: e.description,
       pattern: e.pattern,
+      round: e.round,
       startsAt: new Date(e.starts_at).toISOString(),
       status: e.status,
       calledCount: e.called_count,
       winners: winners
         .filter((w) => w.event_id === e.id)
-        .map((w) => ({ name: publicWinnerName(w.name ?? ''), serial: w.serial, calledCount: w.called_count, channel: w.channel })),
+        .map((w) => ({
+          name: publicWinnerName(w.name ?? ''),
+          serial: w.serial,
+          calledCount: w.called_count,
+          channel: w.channel,
+          round: w.round,
+          pattern: w.pattern,
+        })),
     }))
   );
 });

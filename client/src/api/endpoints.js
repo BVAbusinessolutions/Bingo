@@ -24,6 +24,7 @@ export const authApi = {
 
 export const metricsApi = {
   visit: () => http.post('/metrics/visit'),
+  presence: (tab) => http.post(`/metrics/presence?tab=${tab}`),
 };
 
 export const contactApi = {
@@ -68,10 +69,14 @@ export const drawApi = {
   undo: (eventId) => http.post(`/events/${eventId}/draw/undo`).then(data),
   winningCards: (eventId) => http.get(`/events/${eventId}/draw/winning-cards`).then(data),
   salonWinner: (eventId, cardId) => http.post(`/events/${eventId}/draw/salon-winner`, { cardId }).then(data),
+  setPattern: (eventId, pattern) => http.put(`/events/${eventId}/draw/pattern`, { pattern }).then(data),
+  newRound: (eventId, pattern) => http.post(`/events/${eventId}/draw/round`, { pattern }).then(data),
+  rounds: (eventId) => http.get(`/events/${eventId}/draw/rounds`).then(data),
 };
 
 export const adminApi = {
   stats: (eventId) => http.get(`/admin/events/${eventId}/stats`).then(data),
+  liveMetrics: () => http.get('/admin/metrics/live').then(data),
   events: () => http.get('/admin/events').then(data),
   createEvent: (body) => http.post('/admin/events', body).then(data),
   updateEvent: (id, body) => http.patch(`/admin/events/${id}`, body).then(data),

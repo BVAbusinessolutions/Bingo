@@ -19,13 +19,25 @@ const ROWS = idx.map((r) => idx.map((c) => [r, c]));
 const COLS = idx.map((c) => idx.map((r) => [r, c]));
 const DIAG = [idx.map((i) => [i, i]), idx.map((i) => [i, 4 - i])];
 
-export const PATTERNS = Object.freeze({
-  LINE: { id: 'LINE', label: 'Línea', hint: 'Una fila, columna o diagonal completa', groups: [...ROWS, ...COLS, ...DIAG] },
-  FOUR_CORNERS: {
-    id: 'FOUR_CORNERS',
-    label: 'Cuatro esquinas',
-    hint: 'Las 4 esquinas del cartón',
-    groups: [
+const LINES = [...ROWS, ...COLS, ...DIAG];
+// Sin casillas repetidas (la T comparte N1, dos líneas pueden cruzarse): "faltan" cuenta cada una una vez.
+const uniq = (group) => [...new Map(group.map(([r, c]) => [`${r}-${c}`, [r, c]])).values()];
+const inner = idx.slice(1, 4);
+
+// [id, nombre, explicación para el jugador, alternativas]. Mismo orden e ids que PATTERN_IDS del servidor.
+const DEFINITIONS = [
+  ['LINE', 'Línea', 'Una fila, columna o diagonal completa', LINES],
+  [
+    'TWO_LINES',
+    'Dos líneas',
+    'Dos filas, columnas o diagonales cualesquiera',
+    LINES.flatMap((a, i) => LINES.slice(i + 1).map((b) => [...a, ...b])),
+  ],
+  [
+    'FOUR_CORNERS',
+    'Cuatro esquinas',
+    'Las 4 esquinas del cartón',
+    [
       [
         [0, 0],
         [0, 4],
@@ -33,10 +45,20 @@ export const PATTERNS = Object.freeze({
         [4, 4],
       ],
     ],
-  },
-  X: { id: 'X', label: 'Letra X', hint: 'Las dos diagonales', groups: [[...DIAG[0], ...DIAG[1]]] },
-  FULL: { id: 'FULL', label: 'Cartón lleno', hint: 'Todos los números del cartón', groups: [ROWS.flat()] },
-});
+  ],
+  ['X', 'Letra X', 'Las dos diagonales', [[...DIAG[0], ...DIAG[1]]]],
+  ['PLUS', 'Cruz', 'La fila y la columna del centro', [[...ROWS[2], ...COLS[2]]]],
+  ['T', 'Letra T', 'La fila de arriba y la columna N', [[...ROWS[0], ...COLS[2]]]],
+  ['L', 'Letra L', 'La columna B y la fila de abajo', [[...COLS[0], ...ROWS[4]]]],
+  ['FRAME', 'Marco', 'Todo el borde del cartón', [[...ROWS[0], ...ROWS[4], ...COLS[0], ...COLS[4]]]],
+  ['INNER_SQUARE', 'Cuadro central', 'Las 8 casillas alrededor del centro', [inner.flatMap((r) => inner.map((c) => [r, c]))]],
+  ['FULL', 'Cartón lleno', 'Todos los números del cartón', [ROWS.flat()]],
+];
+
+export const PATTERNS = Object.freeze(
+  Object.fromEntries(DEFINITIONS.map(([id, label, hint, groups]) => [id, Object.freeze({ id, label, hint, groups: groups.map(uniq) })]))
+);
+export const PATTERN_IDS = Object.freeze(DEFINITIONS.map(([id]) => id));
 
 /** Cuántos números faltan para completar el patrón (0 = ¡BINGO!). */
 export function missingFor(grid, marked, patternId) {
@@ -52,5 +74,8 @@ export const hasWon = (grid, marked, patternId) => missingFor(grid, marked, patt
  */
 export const countedMarks = (autoMark, called, manualMarks) => (autoMark ? called : new Set([...manualMarks].filter((n) => called.has(n))));
 
-/** Celdas que forman el patrón (para resaltarlas en la ayuda visual). */
-export const patternCells = (patternId) => new Set((PATTERNS[patternId] ?? PATTERNS.FULL).groups.flat().map(([r, c]) => `${r}-${c}`));
+/**
+ * Celdas para dibujar la muestra del patrón. Con varias alternativas (Línea, Dos líneas) se muestra un ejemplo
+ * (la primera), no la unión de todas, que pintaría el cartón entero.
+ */
+export const patternCells = (patternId) => new Set((PATTERNS[patternId] ?? PATTERNS.FULL).groups[0].map(([r, c]) => `${r}-${c}`));
