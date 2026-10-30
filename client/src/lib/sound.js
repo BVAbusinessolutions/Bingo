@@ -81,6 +81,7 @@ export function playWin() {
  * Suena aunque el jugador haya silenciado los efectos en este navegador (es un aviso operativo).
  */
 export function playAdminAlert() {
+  if (!adminAlertsOn()) return;
   const ac = audio(true);
   if (!ac) return;
   const t = ac.currentTime;
@@ -88,4 +89,56 @@ export function playAdminAlert() {
     tone(ac, 880, t + d, 0.16, { type: 'square', gain: 0.08 });
     tone(ac, 1320, t + d + 0.14, 0.16, { type: 'square', gain: 0.08 });
   });
+}
+
+// ---------------------------------------------------------------- Alertas del panel de administración
+const ADMIN_KEY = 'hs-admin-alerts';
+
+/** Alertas sonoras del panel (¡Bingo!, cartón ganador): encendidas salvo que la administración las apague. */
+export function adminAlertsOn() {
+  try {
+    return localStorage.getItem(ADMIN_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+export function setAdminAlertsOn(on) {
+  try {
+    localStorage.setItem(ADMIN_KEY, on ? 'on' : 'off');
+  } catch {
+    // sin almacenamiento: dura solo esta visita
+  }
+}
+
+/**
+ * El navegador solo deja sonar audio después de un gesto de la persona. Se prepara el audio con el primer
+ * toque o tecla en el panel: así el ¡Bingo! suena aunque llegue mientras nadie está tocando la pantalla.
+ */
+export function unlockAudio() {
+  const unlock = () => {
+    const ac = audio(true);
+    if (ac?.state === 'running') {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    }
+  };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+  return () => {
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+}
+
+/** ¿El audio ya quedó habilitado por un gesto? (si no, el panel muestra "Toca para activar el sonido"). */
+export const audioReady = () => ctx?.state === 'running';
+
+/** Campanada para administración: un cartón vendido completó el patrón (aunque nadie lo haya cantado). */
+export function playAdminChime() {
+  if (!adminAlertsOn()) return;
+  const ac = audio(true);
+  if (!ac) return;
+  const t = ac.currentTime;
+  [659.25, 987.77, 1318.5].forEach((f, i) => tone(ac, f, t + i * 0.16, 0.5, { type: 'sine', gain: 0.12 }));
 }

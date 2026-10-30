@@ -36,17 +36,10 @@ const FILTERS = [
 ];
 // Virtual = compra en línea; físico = venta registrada en el salón (venta manual).
 const CHANNELS = [
-  ['', 'Todos los canales', ListChecks],
+  ['', 'Todas', ListChecks],
   ['WEB', 'Virtuales', Globe],
-  ['MANUAL', 'Físicas (salón)', Store],
+  ['MANUAL', 'Físicas', Store],
 ];
-const PILL =
-  'inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95';
-const pillTone = (on) =>
-  on
-    ? 'border-sol-blue bg-sol-blue text-white shadow-md dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
-    : 'border-line bg-card text-fg-muted hover:border-sol-blue hover:text-fg dark:hover:border-sol-gold';
-
 const normalize = (s) =>
   String(s ?? '')
     .toLowerCase()
@@ -68,7 +61,8 @@ export default function AdminPurchasesPage() {
   const [query, setQuery] = useState('');
   const [channel, setChannel] = useState('');
 
-  const load = useCallback(() => adminApi.reservations(status).then(setItems), [status]);
+  // Todas las compras del evento en una sola carga: el estado se filtra aquí y cada pestaña muestra su conteo.
+  const load = useCallback(() => adminApi.reservations('', eventId || undefined).then(setItems), [eventId]);
 
   useEffect(() => {
     load();
@@ -94,9 +88,15 @@ export default function AdminPurchasesPage() {
   };
 
   const q = normalize(query.trim());
+  const inEvent = useMemo(() => (items ?? []).filter((r) => !eventId || r.eventId === eventId), [items, eventId]);
+  const counts = useMemo(() => {
+    const c = { '': inEvent.length };
+    inEvent.forEach((r) => (c[r.status] = (c[r.status] ?? 0) + 1));
+    return c;
+  }, [inEvent]);
   const visible = useMemo(
-    () => (items ?? []).filter((r) => (!eventId || r.eventId === eventId) && (!channel || r.channel === channel) && matches(r, q)),
-    [items, eventId, channel, q]
+    () => inEvent.filter((r) => (!status || r.status === status) && (!channel || r.channel === channel) && matches(r, q)),
+    [inEvent, status, channel, q]
   );
   const visibleTotal = visible.reduce((sum, r) => sum + r.total, 0);
   const visibleCards = visible.reduce((sum, r) => sum + r.serials.length, 0);
@@ -143,68 +143,91 @@ export default function AdminPurchasesPage() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div
-          className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
-          role="group"
-          aria-label="Filtrar por estado"
-        >
-          {FILTERS.map(([s, label, Icon]) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setStatus(s);
-                setItems(null);
-              }}
-              aria-pressed={status === s}
-              className={`${PILL} ${pillTone(status === s)}`}
-            >
-              <Icon className="h-4 w-4" aria-hidden />
-              {label}
-            </button>
-          ))}
+      {/* Estado: barra de pestañas con conteo (se desliza de lado en celular) */}
+      <div className="surface p-1.5">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex" role="tablist" aria-label="Estado de las compras">
+          {FILTERS.map(([s, label, Icon]) => {
+            const active = status === s;
+            const n = counts[s] ?? 0;
+            return (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatus(s)}
+                className={`group flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-xl px-3 text-sm font-extrabold transition duration-200 active:scale-95 lg:flex-1 lg:justify-center ${
+                  active
+                    ? 'bg-sol-blue text-white shadow-md dark:bg-sol-gold dark:text-sol-blue'
+                    : 'text-fg-muted hover:bg-muted hover:text-fg'
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  {/* En celular sin ícono: así el nombre completo cabe junto al conteo */}
+                  <Icon className="hidden h-4 w-4 shrink-0 sm:block" aria-hidden />
+                  <span className="truncate">{label}</span>
+                </span>
+                <span
+                  className={`grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1.5 text-xs tabular-nums ${
+                    active
+                      ? 'bg-white/20'
+                      : s === 'PROOF_SUBMITTED' && n > 0
+                        ? 'bg-sol-red text-white motion-safe:animate-pop'
+                        : 'bg-muted text-fg-muted group-hover:bg-card'
+                  }`}
+                >
+                  {n}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <label className="relative lg:ml-auto lg:w-80">
+      </div>
+
+      {/* Búsqueda y canal, en una fila en computadora y apilados en celular */}
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <label className="relative">
           <span className="sr-only">Buscar compra</span>
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-subtle" aria-hidden />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-fg-subtle" aria-hidden />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nombre, cédula, comprobante o cartón"
-            className="h-11 w-full rounded-full border-2 border-line bg-card pl-10 pr-4 text-fg outline-none focus:border-sol-blue dark:focus:border-sol-gold"
+            placeholder="Buscar por nombre, cédula, comprobante o cartón"
+            className="h-12 w-full rounded-2xl border-2 border-line bg-card pl-12 pr-4 text-fg outline-none transition focus:border-sol-blue focus:ring-4 focus:ring-sol-gold/30 dark:focus:border-sol-gold"
           />
         </label>
-      </div>
-
-      {/* Canal y resumen de lo que se está viendo (conteo real de cartones y dinero) */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
-          role="group"
-          aria-label="Filtrar por canal"
-        >
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1" role="group" aria-label="Filtrar por canal">
           {CHANNELS.map(([c, label, Icon]) => (
             <button
               key={c}
               type="button"
               onClick={() => setChannel(c)}
               aria-pressed={channel === c}
-              className={`${PILL} ${pillTone(channel === c)}`}
+              className={`flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-extrabold transition duration-200 active:scale-95 ${
+                channel === c ? 'bg-card text-fg shadow ring-1 ring-line' : 'text-fg-muted hover:text-fg'
+              }`}
             >
-              <Icon className="h-4 w-4" aria-hidden />
+              <Icon className="h-4 w-4 shrink-0" aria-hidden />
               {label}
             </button>
           ))}
         </div>
-        {items && (
-          <p className="text-sm text-fg-muted" aria-live="polite">
-            <b className="text-fg">{visible.length}</b> compras · <b className="text-fg">{visibleCards}</b> cartones ·{' '}
-            <b className="tabular-nums text-fg">{formatCRC(visibleTotal)}</b>
-          </p>
-        )}
       </div>
+
+      {items && (
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-fg-muted" aria-live="polite">
+          <span>
+            <b className="text-fg">{visible.length}</b> {visible.length === 1 ? 'compra' : 'compras'}
+          </span>
+          <span>
+            <b className="text-fg">{visibleCards}</b> cartones
+          </span>
+          <span>
+            <b className="tabular-nums text-fg">{formatCRC(visibleTotal)}</b> en total
+          </span>
+        </p>
+      )}
 
       {error && <Alert tone="error">{error}</Alert>}
       {!items ? (

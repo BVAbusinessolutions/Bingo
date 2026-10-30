@@ -58,11 +58,11 @@ export default function BingoAlert({ claims, onClose }) {
         <p className="relative mt-4 text-white/80">El sistema ya verificó el cartón contra las bolas cantadas. Confirma el premio.</p>
         <Link
           ref={reviewRef}
-          to="ganadores"
+          to={claims.length === 1 ? `ganadores#reclamo-${claims[0].id}` : 'ganadores'}
           onClick={onClose}
           className="relative mt-5 flex min-h-12 items-center justify-center rounded-xl bg-sol-gold px-5 font-black text-sol-blue transition hover:bg-sol-gold-dark"
         >
-          Revisar y confirmar
+          Verificar y confirmar
         </Link>
       </section>
     </div>

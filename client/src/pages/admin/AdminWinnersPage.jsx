@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Check, Mail, Phone, Trophy, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
-import BingoCard from '../../components/bingo/BingoCard';
+import WinnerVerification from '../../components/admin/WinnerVerification';
 import StatusBadge from '../../components/ui/StatusBadge';
 import PageLoader from '../../components/ui/PageLoader';
 import Button from '../../components/ui/Button';
@@ -11,63 +11,50 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { PATTERNS } from '../../constants/patterns';
 import { errorMessage, formatDate } from '../../lib/format';
 
-const EMPTY = new Set();
 const CLAIM_LABELS = { PENDING: 'PROOF_SUBMITTED', CONFIRMED: 'APPROVED', REJECTED: 'REJECTED' }; // reutiliza colores de StatusBadge
 
 function ClaimCard({ claim, pattern, onDecide }) {
-  const called = useMemo(() => new Set(claim.calledAtClaim), [claim.calledAtClaim]);
+  const claimPattern = claim.pattern ?? pattern; // la modalidad de su ronda, no la actual del evento
   return (
-    <article className="surface grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <div className="space-y-2">
-        {/* La modalidad con la que se validó el reclamo (la de su ronda), no la actual del evento. */}
-        <BingoCard
-          card={{ id: claim.id, serial: claim.serial, grid: claim.grid }}
-          called={called}
-          manualMarks={EMPTY}
-          pattern={claim.pattern ?? pattern}
-        />
-        <p className="text-fg-muted">
-          Ronda {claim.round ?? 1} · {PATTERNS[claim.pattern ?? pattern]?.label}. Marcado con las {claim.calledCount} bolas cantadas al
-          momento del reclamo ({formatDate(claim.createdAt)}).
-        </p>
-      </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="flex items-center gap-2 text-2xl font-black text-fg">
-            #{claim.serial}
+    <article id={`reclamo-${claim.id}`} className="surface scroll-mt-24 space-y-5 p-4 sm:p-5">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
+        <div className="min-w-0 space-y-1">
+          <p className="flex flex-wrap items-center gap-2 text-2xl font-black text-fg">
+            Cartón #{claim.serial}
             {claim.channel === 'SALON' && <span className="rounded-full bg-navy-950 px-2 py-0.5 text-sm text-accent">Salón</span>}
+            <span className="[&>span]:text-sm">
+              <StatusBadge status={CLAIM_LABELS[claim.status]} />
+            </span>
           </p>
-          <span className="[&>span]:text-sm">
-            <StatusBadge status={CLAIM_LABELS[claim.status]} />
-          </span>
+          <p className="text-lg font-bold text-fg">{claim.player?.name ?? 'Sin nombre'}</p>
+          <p className="flex flex-wrap gap-x-4 gap-y-1 text-fg-muted">
+            {claim.player?.email && (
+              <a href={`mailto:${claim.player.email}`} className="inline-flex items-center gap-1.5 break-all underline">
+                <Mail className="h-4 w-4 shrink-0" aria-hidden /> {claim.player.email}
+              </a>
+            )}
+            {claim.player?.phone && (
+              <a href={`tel:${claim.player.phone.replace(/[\s-]/g, '')}`} className="inline-flex items-center gap-1.5 underline">
+                <Phone className="h-4 w-4 shrink-0" aria-hidden /> {claim.player.phone}
+              </a>
+            )}
+            <span>Reclamó el {formatDate(claim.createdAt)}</span>
+          </p>
         </div>
-        <div className="space-y-1">
-          <p className="text-lg font-black text-fg">{claim.player?.name}</p>
-          {claim.player?.email && (
-            <a href={`mailto:${claim.player.email}`} className="flex items-center gap-2 break-all text-fg-muted underline">
-              <Mail className="h-4 w-4 shrink-0" aria-hidden /> {claim.player.email}
-            </a>
-          )}
-          {claim.player?.phone && (
-            <a href={`tel:${claim.player.phone.replace(/[\s-]/g, '')}`} className="flex items-center gap-2 text-fg-muted underline">
-              <Phone className="h-4 w-4 shrink-0" aria-hidden /> {claim.player.phone}
-            </a>
-          )}
-        </div>
-        <p className="rounded-xl bg-emerald-500/10 p-3 font-bold text-fg">✔ El sistema verificó que el patrón está completo.</p>
         {claim.status === 'PENDING' ? (
-          <div className="grid gap-2">
-            <Button variant="success" size="lg" icon={Check} onClick={() => onDecide(claim, true)}>
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
+            <Button variant="success" icon={Check} onClick={() => onDecide(claim, true)} className="rounded-full!">
               Confirmar premio
             </Button>
-            <Button variant="danger" icon={X} onClick={() => onDecide(claim, false)}>
-              Rechazar reclamo
+            <Button variant="danger" icon={X} onClick={() => onDecide(claim, false)} className="rounded-full!">
+              Rechazar
             </Button>
           </div>
         ) : (
           claim.decidedAt && <p className="text-fg-muted">Decidido el {formatDate(claim.decidedAt)}.</p>
         )}
-      </div>
+      </header>
+      <WinnerVerification claim={claim} pattern={claimPattern} />
     </article>
   );
 }

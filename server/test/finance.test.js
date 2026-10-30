@@ -99,6 +99,9 @@ describe('finanzas: ingresos reales virtuales y físicos', () => {
     const f = await finance();
     assert.deepEqual(f.channels.WEB, { orders: 1, amount: r.body.total, cards: 3 });
     assert.equal(f.income, f.channels.WEB.amount + f.channels.MANUAL.amount);
+    // Serie diaria: 14 días y hoy suma todo lo verificado en la prueba (virtual y físico por separado).
+    assert.equal(f.incomeByDay.length, 14);
+    assert.deepEqual(f.incomeByDay.at(-1), { day: f.incomeByDay.at(-1).day, web: f.channels.WEB.amount, salon: f.channels.MANUAL.amount });
     assert.equal((await stats()).soldWeb, 3);
   });
 });

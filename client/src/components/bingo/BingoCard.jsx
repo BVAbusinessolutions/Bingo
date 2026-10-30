@@ -97,7 +97,18 @@ const NUMBER_ON_MARKER = {
   star: 'text-black [text-shadow:0_0_0.8cqw_#fff,0_0_0.8cqw_#fff,0_0_0.4cqw_#fff]',
 };
 
-function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip', pattern = 'FULL', onToggle, showStatus = true }) {
+// highlight: Set de "fila-columna" a resaltar (verificación del administrador: las casillas que completan el patrón).
+function BingoCard({
+  card,
+  called,
+  manualMarks,
+  autoMark = true,
+  marker = 'chip',
+  pattern = 'FULL',
+  onToggle,
+  showStatus = true,
+  highlight,
+}) {
   // Lo que se ve marcado: automático = lo cantado; manual = todo lo que la persona marcó.
   const shown = autoMark ? called : manualMarks;
   // Para el patrón solo cuentan las marcas cantadas oficialmente (nunca un "bingo" falso).
@@ -160,7 +171,9 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
                     : ''
                 } ${pendingManual ? 'outline-solid outline-[0.8cqw] -outline-offset-[0.4cqw] outline-sol-gold motion-safe:animate-hint' : ''} ${
                   isMarked ? (MARKED_CELL[marker] ?? MARKED_CELL.chip) : 'bg-white shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)]'
-                } ${notCalled ? 'outline-dashed outline-[0.7cqw] -outline-offset-[0.5cqw] outline-sol-red' : ''}`}
+                } ${notCalled ? 'outline-dashed outline-[0.7cqw] -outline-offset-[0.5cqw] outline-sol-red' : ''} ${
+                  highlight?.has(key) ? 'z-1 outline-solid outline-[1cqw] outline-offset-[0.3cqw] outline-sol-gold' : ''
+                }`}
               >
                 {isMarked && <Marker type={marker} valid={!notCalled} />}
                 <span className={`relative ${isMarked && !notCalled ? (NUMBER_ON_MARKER[marker] ?? '') : ''}`}>{n}</span>
@@ -203,7 +216,8 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
         </span>
       </footer>
 
-      {won && (
+      {/* En la verificación (highlight) el cartel no tapa los números que hay que revisar. */}
+      {won && !highlight && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-sol-gold/25">
           <div className="flex -rotate-6 items-center gap-2 rounded-2xl border-4 border-white bg-sol-red px-5 py-2 text-[9cqw] font-black text-sol-gold shadow-2xl">
             <Trophy className="h-[9cqw] w-[9cqw]" /> ¡BINGO!

@@ -79,3 +79,19 @@ export const countedMarks = (autoMark, called, manualMarks) => (autoMark ? calle
  * (la primera), no la unión de todas, que pintaría el cartón entero.
  */
 export const patternCells = (patternId) => new Set((PATTERNS[patternId] ?? PATTERNS.FULL).groups[0].map(([r, c]) => `${r}-${c}`));
+
+/**
+ * Qué alternativa del patrón quedó completa con las bolas cantadas (Línea o Dos líneas tienen varias):
+ * la que se completó primero, para mostrar exactamente qué casillas ganan y con qué bola se cerró.
+ */
+export function winningGroup(grid, calledInOrder, pattern) {
+  const order = new Map(calledInOrder.map((n, i) => [n, i]));
+  let best = null;
+  for (const group of PATTERNS[pattern]?.groups ?? []) {
+    const cells = group.filter(([r, c]) => !isFreeCell(r, c));
+    if (!cells.every(([r, c]) => order.has(grid[r][c]))) continue;
+    const closedAt = Math.max(...cells.map(([r, c]) => order.get(grid[r][c])));
+    if (!best || closedAt < best.closedAt) best = { group, cells, closedAt };
+  }
+  return best;
+}

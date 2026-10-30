@@ -231,7 +231,7 @@ export default function AdminPurchaseDetailPage() {
   const METHOD_LABEL = { TRANSFER: 'Transferencia bancaria u otro', SINPE: 'SINPE Móvil', CASH: 'Efectivo' };
 
   return (
-    <section className="space-y-5">
+    <section className={`space-y-5 ${reviewable ? 'pb-24 lg:pb-0' : ''}`}>
       <Link
         to="/admin/compras"
         className="inline-flex min-h-11 items-center gap-2 font-bold text-sol-blue hover:underline dark:text-sol-gold"
@@ -351,7 +351,11 @@ export default function AdminPurchaseDetailPage() {
       </div>
 
       {reviewable && (
-        <section className="surface space-y-4 border-t-8 border-sol-gold p-5 sm:p-6" aria-labelledby="verify-title">
+        <section
+          id="verificar"
+          className="surface scroll-mt-24 space-y-4 border-t-8 border-sol-gold p-5 sm:p-6"
+          aria-labelledby="verify-title"
+        >
           <h2 id="verify-title" className="text-2xl font-black text-fg">
             Verifica antes de aprobar
           </h2>
@@ -366,16 +370,35 @@ export default function AdminPurchaseDetailPage() {
               icon={Check}
               disabled={!allChecked}
               onClick={() => setConfirming('approve')}
-              className="flex-1"
+              className="flex-1 rounded-full!"
             >
               Aprobar compra
             </Button>
-            <Button size="lg" variant="danger" icon={X} onClick={() => setConfirming('reject')} className="flex-1">
+            <Button size="lg" variant="danger" icon={X} onClick={() => setConfirming('reject')} className="flex-1 rounded-full!">
               Rechazar
             </Button>
           </div>
           {!allChecked && <p className="text-fg-muted">Marca las {required.length} casillas para habilitar la aprobación.</p>}
         </section>
+      )}
+
+      {/* Celular: la decisión queda al final de una página larga; esta barra fija lleva directo a ella. */}
+      {reviewable && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 p-3 shadow-[0_-8px_24px_rgb(2_6_23/0.12)] backdrop-blur lg:hidden print:hidden">
+          <a
+            href="#verificar"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('verificar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-sol-blue px-5 font-black text-white shadow-md active:scale-95 dark:bg-sol-gold dark:text-sol-blue"
+          >
+            <Check className="h-5 w-5" aria-hidden /> Verificar y decidir
+            <span className="rounded-full bg-white/20 px-2 text-sm tabular-nums">
+              {required.filter((k) => checks[k]).length}/{required.length}
+            </span>
+          </a>
+        </div>
       )}
 
       {r.decidedAt && (

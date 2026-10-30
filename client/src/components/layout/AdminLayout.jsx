@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   BellRing,
@@ -24,7 +24,7 @@ import GlassSelect from '../ui/GlassSelect';
 import ErrorBoundary from './ErrorBoundary';
 import BingoAlert from '../admin/BingoAlert';
 import AdminTopBar from './AdminTopBar';
-import { playAdminAlert } from '../../lib/sound';
+import { playAdminAlert, playAdminChime, unlockAudio } from '../../lib/sound';
 import { useHashScroll } from '../../hooks/useHashScroll';
 
 const vibrate = () => {
@@ -139,6 +139,40 @@ export default function AdminLayout() {
     };
   }, [socket, reloadCounters, reloadEvents]);
 
+  // Audio listo desde el primer toque en el panel (el navegador no deja sonar sin un gesto previo).
+  useEffect(() => unlockAudio(), []);
+
+  // ¡Bingo! sin atender: el timbre se repite cada 6 s (máx. 10 veces) hasta que alguien cierre la alerta.
+  useEffect(() => {
+    if (bingoClaims.length === 0) return undefined;
+    let rings = 0;
+    const id = setInterval(() => {
+      rings += 1;
+      if (rings > 10) return clearInterval(id);
+      playAdminAlert();
+    }, 6000);
+    return () => clearInterval(id);
+  }, [bingoClaims.length]);
+
+  // Verificación automática: un cartón vendido completó el patrón (aunque el jugador no lo haya cantado).
+  const knownWinners = useRef(new Set());
+  useEffect(() => {
+    if (!socket) return undefined;
+    const onWinning = ({ cards }) => {
+      const fresh = cards.filter((c) => !c.claimStatus && !knownWinners.current.has(c.cardId));
+      cards.forEach((c) => knownWinners.current.add(c.cardId));
+      if (fresh.length === 0) return;
+      playAdminChime();
+      setToast({
+        title: '🎯 Cartón con bingo',
+        text: `${fresh.map((c) => `#${c.serial}${c.holder ? ` (${c.holder})` : ''}`).join(', ')} completó el patrón.`,
+        to: PATHS.adminDraw,
+      });
+    };
+    socket.on('draw:winning-cards', onWinning);
+    return () => socket.off('draw:winning-cards', onWinning);
+  }, [socket]);
+
   const closeToast = useCallback(() => setToast(null), []);
   const closeBingo = useCallback(() => setBingoClaims([]), []);
 
@@ -183,7 +217,7 @@ export default function AdminLayout() {
       <AdminTopBar />
       <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
         {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-22 lg:self-start print:hidden">
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 lg:[scrollbar-width:thin] print:hidden">
           <div className="surface space-y-3 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-extrabold uppercase tracking-wider text-sol-red dark:text-sol-gold">Administración</p>

@@ -145,8 +145,22 @@ router.get('/events/:eventId/finance', findEvent, async (req, res) => {
       order by r.decided_at desc limit 50`,
     [req.event.id]
   );
+  // Ingresos verificados por día (día de Costa Rica = UTC-6), últimos 14 días, separados en virtual y físico.
+  const daily = await query(
+    `select to_char(g.day, 'YYYY-MM-DD') as day,
+            coalesce(sum(r.total) filter (where r.channel = 'WEB'), 0)::int as web,
+            coalesce(sum(r.total) filter (where r.channel = 'MANUAL'), 0)::int as salon
+       from generate_series((now() at time zone 'UTC' - interval '6 hours')::date - 13,
+                            (now() at time zone 'UTC' - interval '6 hours')::date, interval '1 day') as g(day)
+       left join app.reservations r
+         on r.event_id = $1 and ${VERIFIED}
+        and (r.decided_at at time zone 'UTC' - interval '6 hours')::date = g.day::date
+      group by g.day order by g.day`,
+    [req.event.id]
+  );
   res.json({
     ...summary,
+    incomeByDay: daily.map((d) => ({ day: d.day, web: d.web, salon: d.salon })),
     missingProofs: missing.map((r) => ({
       id: r.id,
       channel: r.channel,

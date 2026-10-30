@@ -10,6 +10,7 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { PATTERNS } from '../../constants/patterns';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { useReveal } from '../../hooks/useReveal';
 
 const selectCls = 'mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg';
 
@@ -258,6 +259,7 @@ const STATUS_ACTIONS = {
 
 function EventCard({ ev, series, onChanged }) {
   const [editing, setEditing] = useState(false);
+  const editRef = useReveal(editing);
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -295,17 +297,19 @@ function EventCard({ ev, series, onChanged }) {
       </p>
 
       {editing ? (
-        <EventForm
-          initial={ev}
-          locked={locked}
-          submitLabel="Guardar cambios"
-          onCancel={() => setEditing(false)}
-          onSubmit={async (body) => {
-            await adminApi.updateEvent(ev.id, body);
-            setEditing(false);
-            onChanged();
-          }}
-        />
+        <div ref={editRef} className="scroll-mt-24">
+          <EventForm
+            initial={ev}
+            locked={locked}
+            submitLabel="Guardar cambios"
+            onCancel={() => setEditing(false)}
+            onSubmit={async (body) => {
+              await adminApi.updateEvent(ev.id, body);
+              setEditing(false);
+              onChanged();
+            }}
+          />
+        </div>
       ) : (
         !closed && (
           <>
@@ -348,6 +352,7 @@ export default function AdminEventsPage() {
   const { events, reloadEvents, setEventId } = useAdmin();
   const [series, setSeries] = useState([]);
   const [creating, setCreating] = useState(false);
+  const createRef = useReveal(creating);
 
   useEffect(() => {
     adminApi.series().then(setSeries);
@@ -368,7 +373,7 @@ export default function AdminEventsPage() {
       </header>
 
       {creating && (
-        <section className="surface border-t-8 border-sol-gold p-5">
+        <section ref={createRef} className="surface scroll-mt-24 border-t-8 border-sol-gold p-5 motion-safe:animate-fade-up">
           <h2 className="mb-4 text-xl font-black text-fg">Programar nuevo bingo</h2>
           <EventForm
             submitLabel="Crear evento"

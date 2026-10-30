@@ -65,3 +65,28 @@ describe('modalidades sincronizadas con el servidor', () => {
     }
   });
 });
+
+describe('verificación del ganador', () => {
+  const GRID = [
+    [1, 16, 31, 46, 61],
+    [2, 17, 32, 47, 62],
+    [3, 18, null, 48, 63],
+    [4, 19, 34, 49, 64],
+    [5, 20, 35, 50, 65],
+  ];
+
+  it('señala la línea que se completó primero y la bola que la cerró', async () => {
+    const { winningGroup } = await import('../constants/patterns');
+    // Primero se completa la columna B (1-5); la fila de arriba se completa después.
+    const called = [16, 1, 2, 3, 31, 4, 46, 5, 61];
+    const win = winningGroup(GRID, called, 'LINE');
+    expect(win.cells.map(([r, c]) => GRID[r][c]).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+    expect(called[win.closedAt]).toBe(5);
+  });
+
+  it('el centro libre no se exige y sin patrón completo no hay ganador', async () => {
+    const { winningGroup } = await import('../constants/patterns');
+    expect(winningGroup(GRID, [3, 18, 48, 63], 'LINE').cells).toHaveLength(4); // fila del centro: 4 números
+    expect(winningGroup(GRID, [1, 2, 3], 'LINE')).toBeNull();
+  });
+});
