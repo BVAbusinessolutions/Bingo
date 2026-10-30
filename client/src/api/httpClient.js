@@ -63,7 +63,7 @@ http.interceptors.response.use(
         original.headers.Authorization = `Bearer ${accessToken}`;
         return http(original);
       } catch (refreshErr) {
-        onSessionExpired();
+        onSessionExpired(refreshErr);
         return Promise.reject(refreshErr);
       }
     }

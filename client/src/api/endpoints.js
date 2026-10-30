@@ -22,6 +22,10 @@ export const authApi = {
   resendVerification: () => http.post('/auth/resend-verification'),
 };
 
+export const metricsApi = {
+  visit: () => http.post('/metrics/visit'),
+};
+
 export const contactApi = {
   payment: () => http.get('/contact/payment').then(data),
   send: (body) => http.post('/contact/message', body).then(data),

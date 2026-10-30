@@ -15,6 +15,7 @@ import reservationRoutes from './modules/reservations/reservations.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import claimRoutes from './modules/claims/claims.routes.js';
 import contactRoutes from './modules/contact/contact.routes.js';
+import metricsRoutes from './modules/metrics/metrics.routes.js';
 import { drawRouter } from './modules/draw/draw.js';
 
 const STREAM_FRAMES = ['https://www.youtube-nocookie.com', 'https://player.twitch.tv', 'https://player.vimeo.com'];
@@ -195,6 +196,7 @@ export function createApp() {
   app.use('/api/reservations', reservationRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/contact', contactRoutes);
+  app.use('/api/metrics', metricsRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
 
   // Producción: la web compilada se sirve desde el mismo origen (cookies SameSite=Strict y sin CORS).

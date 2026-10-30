@@ -32,6 +32,10 @@ describe('recaudación', () => {
     const decision = await api().post(`/api/admin/reservations/${r.body.id}/decision`).set(auth(admin)).send({ approve: true, method: 'TRANSFER' });
     assert.equal(decision.status, 200);
     assert.equal(await revenue(), r.body.total);
+    const stats = (await api().get(`/api/admin/events/${DEMO_EVENT_ID}/stats`).set(auth(admin))).body;
+    assert.equal(stats.approvedCards, 2);
+    assert.equal(stats.revenue, stats.approvedCards * (await one('select price from app.events where id = $1', [DEMO_EVENT_ID])).price);
+    assert.ok(stats.conversionPct > 0 && stats.conversionPct <= 100);
     const row = await one('select payment_method from app.reservations where id = $1', [r.body.id]);
     assert.equal(row.payment_method, 'TRANSFER', 'el método que confirmó la administración');
   });
@@ -42,5 +46,24 @@ describe('recaudación', () => {
       .set(auth(admin))
       .send({ approve: true, method: 'BITCOIN' });
     assert.equal(res.status, 400);
+  });
+});
+
+describe('métricas de tráfico', () => {
+  const stats = async () => (await api().get(`/api/admin/events/${DEMO_EVENT_ID}/stats`).set(auth(admin))).body;
+
+  it('cuenta visitas anónimas y exige la cabecera anti-CSRF', async () => {
+    const before = (await stats()).visitsTotal;
+    assert.equal((await api().post('/api/metrics/visit')).status, 403);
+    assert.equal((await api().post('/api/metrics/visit').set('X-Requested-With', 'XMLHttpRequest')).status, 204);
+    const after = await stats();
+    assert.equal(after.visitsTotal, before + 1);
+    assert.equal(after.visitsWeek >= 1, true);
+  });
+
+  it('cuenta usuarios activos y verificados (sin administradores)', async () => {
+    const s = await stats();
+    assert.ok(s.activeUsers >= s.verifiedUsers);
+    assert.ok(s.verifiedUsers >= 1);
   });
 });

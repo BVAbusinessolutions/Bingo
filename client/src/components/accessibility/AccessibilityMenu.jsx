@@ -164,7 +164,7 @@ export default function AccessibilityMenu() {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="glass-panel flex max-h-full w-full max-w-sm animate-modal-in flex-col gap-5 overflow-y-auto rounded-3xl p-5 shadow-[0_24px_60px_rgb(2_6_23/0.35)] outline-none"
+        className="glass-panel flex max-h-full w-full max-w-sm animate-modal-in flex-col gap-5 overflow-y-auto overscroll-contain rounded-3xl p-5 shadow-[0_24px_60px_rgb(2_6_23/0.35)] outline-none"
       >
         <header className="flex items-center justify-between gap-2">
           <h2 id={titleId} className="flex items-center gap-2 text-xl font-black text-fg">
@@ -266,7 +266,8 @@ export default function AccessibilityMenu() {
             <Eye className="h-5 w-5 text-brand" aria-hidden /> Visión del color
           </legend>
           <p className="mb-2 text-sm text-fg-muted">Cambia los colores de bolas y fichas por otros fáciles de distinguir.</p>
-          <div role="radiogroup" aria-label="Filtro de visión del color" className="grid grid-cols-2 gap-2">
+          {/* auto-fit: con letra grande pasa a una columna en lugar de cortar "Deuteranopía". */}
+          <div role="radiogroup" aria-label="Filtro de visión del color" className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-2">
             {CVD_OPTIONS.map(([value, label, hint]) => {
               const active = theme.cvd === value;
               return (
@@ -276,7 +277,7 @@ export default function AccessibilityMenu() {
                   role="radio"
                   aria-checked={active}
                   onClick={() => theme.setCvd(value)}
-                  className={`flex min-h-12 flex-col items-start justify-center rounded-xl border-2 px-3 py-1.5 text-left transition ${
+                  className={`flex min-h-12 min-w-0 flex-col items-start justify-center rounded-xl border-2 px-3 py-1.5 text-left transition [overflow-wrap:anywhere] ${
                     active
                       ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
                       : 'border-line text-fg hover:border-sol-blue'

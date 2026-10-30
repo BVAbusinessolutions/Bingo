@@ -3,6 +3,9 @@ export const formatCRC = (n) =>
 
 export const formatDate = (iso) => new Intl.DateTimeFormat('es-CR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
 
+// Motivo de una sanción, tal como lo escribió el admin (sin duplicar el punto final).
+const reasonText = (d) => (d.reason ? ` Motivo: ${d.reason.trim().replace(/[.\s]+$/, '')}.` : '');
+
 const ERRORS = {
   INVALID_CREDENTIALS: 'Correo o contraseña incorrectos.',
   EMAIL_TAKEN: 'Ya existe una cuenta con ese correo.',
@@ -45,14 +48,18 @@ const ERRORS = {
   NOT_A_WINNER: 'Ese cartón todavía no completa el patrón con las bolas cantadas.',
   EVENT_NOT_LIVE: 'El sorteo no está en vivo en este momento.',
   ACCOUNT_SUSPENDED: (d) =>
-    `Tu cuenta está suspendida${d.until ? ` hasta el ${formatDate(d.until)}` : ''}. Si crees que es un error, contáctanos.`,
-  ACCOUNT_BANNED: 'Tu cuenta fue suspendida de forma permanente por incumplir el reglamento. Si crees que es un error, contáctanos.',
+    `Tu cuenta ha sido suspendida${d.until ? ` hasta el ${formatDate(d.until)}` : ''}.${reasonText(d)} Si consideras que es un error, contacta a soporte.`,
+  ACCOUNT_BANNED: (d) => `Tu cuenta ha sido baneada.${reasonText(d)} Si consideras que es un error, contacta a soporte.`,
   ALREADY_CLAIMED: 'Ese cartón ya tiene un reclamo registrado.',
   CANNOT_SANCTION_ADMIN: 'Primero quítale el rol de administrador para poder sancionar la cuenta.',
   NOT_SANCTIONED: 'La cuenta no tiene ninguna sanción activa.',
 };
 
 /** Mensaje en español para un error de la API; algunos usan datos de la respuesta (p. ej. la fecha de una suspensión). */
+/** Sanciones: códigos que traen el motivo escrito por el admin. */
+export const SANCTION_ERRORS = ['ACCOUNT_SUSPENDED', 'ACCOUNT_BANNED'];
+export const isSanctionError = (err) => SANCTION_ERRORS.includes(err?.response?.data?.error);
+
 export const errorMessage = (err, fallback = 'Ocurrió un error. Intenta de nuevo.') => {
   const body = err?.response?.data ?? {};
   const msg = ERRORS[body.error];

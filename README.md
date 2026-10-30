@@ -26,18 +26,21 @@ Cuentas de demostración (solo desarrollo, **nunca** se crean en producción):
 | Administrador | `admin@hogarsol.org` | `Admin123!` |
 | Cliente | `cliente@hogarsol.org` | `Cliente123!` |
 
+> Lo que falta para salir a producción está en [docs/PENDIENTES.md](docs/PENDIENTES.md).
+
 ## Scripts (desde la raíz)
 
 | Comando | Qué hace |
 |---|---|
 | `npm run setup` | Instala dependencias y crea `server/.env` |
 | `npm run server` / `npm run dev` | API y web en modo desarrollo |
-| `npm test` | 77 pruebas del servidor (Postgres en memoria) + 26 del cliente |
+| `npm test` | 97 pruebas del servidor (Postgres en memoria) + 36 del cliente |
 | `npm run lint` | ESLint en servidor y cliente |
 | `npm run build` | Compila la web en `client/dist` |
 | `npm start` | Servidor de producción (sirve también la web compilada) |
 | `npm run create-admin` | Crea o promueve un administrador (pide los datos por consola) |
 | `npm run backup` | Respaldo de toda la base en `server/backups/*.json.gz` |
+| `npm run demo:cartones` | Solo desarrollo: 3 cartones de prueba para `cliente@hogarsol.org` (`-- --vivo`, `-- --venta`, `-- --reiniciar`) |
 
 ## Cómo funciona
 

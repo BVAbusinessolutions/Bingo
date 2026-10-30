@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock, Coins, Hourglass, Ticket } from 'lucide-react';
+import { ArrowRight, Clock, Coins, Eye, Hourglass, Ticket, TrendingUp, Users } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -48,9 +48,9 @@ export default function AdminDashboard() {
         />
         <Stat
           Icon={Coins}
-          label="Recaudación"
+          label="Recaudación verificada"
           value={formatCRC(stats.revenue)}
-          sub={`${formatCRC(event?.price)} por cartón`}
+          sub={`${stats.approvedCards} cartones aprobados × ${formatCRC(event?.price)}`}
           accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
         />
         <Stat
@@ -68,6 +68,43 @@ export default function AdminDashboard() {
           accent="bg-orange-500/15 text-orange-600 dark:text-orange-400"
         />
       </div>
+
+      {/* Tráfico y conversión (las compras de demostración no cuentan) */}
+      <section aria-labelledby="traffic-title" className="space-y-3">
+        <h2 id="traffic-title" className="text-sm font-extrabold uppercase tracking-widest text-fg-muted">
+          Tráfico y conversión
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat
+            Icon={Eye}
+            label="Visitas"
+            value={stats.visitsTotal}
+            sub={`${stats.visitsWeek} en los últimos 7 días`}
+            accent="bg-sky-500/15 text-sky-600 dark:text-sky-400"
+          />
+          <Stat
+            Icon={Users}
+            label="Usuarios activos"
+            value={stats.activeUsers}
+            sub={`${stats.verifiedUsers} con correo verificado`}
+            accent="bg-violet-500/15 text-violet-600 dark:text-violet-400"
+          />
+          <Stat
+            Icon={TrendingUp}
+            label="Conversión de compras"
+            value={`${stats.conversionPct}%`}
+            sub={`${stats.approvedOrders} pagadas de ${stats.startedOrders} iniciadas`}
+            accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          />
+          <Stat
+            Icon={Hourglass}
+            label="Comprobantes pendientes"
+            value={stats.pendingReview}
+            sub="esperan verificación"
+            accent="bg-sol-gold/25 text-sol-gold-dark"
+          />
+        </div>
+      </section>
 
       {/* Inventario */}
       <section className="surface space-y-2 p-4" aria-label="Inventario de cartones">

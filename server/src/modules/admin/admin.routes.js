@@ -87,6 +87,21 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
      from app.cards where event_id = $1`,
     [req.event.id]
   );
+  // Tráfico y conversión. Las compras de demostración (aprobadas sin admin) no cuentan en ningún lado.
+  const [t] = await query(
+    `select
+       (select count(*)::int from app.reservation_cards rc join app.reservations r on r.id = rc.reservation_id
+         where r.event_id = $1 and r.status = 'APPROVED' and r.decided_by is not null and r.payment_method is not null) as approved_cards,
+       (select count(*)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method is not null) as approved_orders,
+       (select count(*)::int from app.reservations
+         where event_id = $1 and not (status = 'APPROVED' and decided_by is null)) as started_orders,
+       (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL}) as active_users,
+       (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL} and email_verified) as verified_users,
+       (select coalesce(sum(visits), 0)::int from app.site_visits) as visits_total,
+       (select coalesce(sum(visits), 0)::int from app.site_visits where day > (now() at time zone 'UTC' - interval '6 hours')::date - 7) as visits_week`,
+    [req.event.id]
+  );
   res.json({
     total: s.total,
     sold: s.sold,
@@ -96,6 +111,15 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
     pendingReview: s.pending_review,
     awaitingPayment: s.awaiting_payment,
     called: s.called,
+    approvedCards: t.approved_cards,
+    approvedOrders: t.approved_orders,
+    startedOrders: t.started_orders,
+    // Compras iniciadas que terminaron con el pago aprobado (0 a 100).
+    conversionPct: t.started_orders ? Math.round((t.approved_orders / t.started_orders) * 100) : 0,
+    activeUsers: t.active_users,
+    verifiedUsers: t.verified_users,
+    visitsTotal: t.visits_total,
+    visitsWeek: t.visits_week,
   });
 });
 

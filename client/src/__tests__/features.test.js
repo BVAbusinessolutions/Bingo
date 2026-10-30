@@ -30,6 +30,13 @@ describe('mensajes de error de sanciones', () => {
     expect(msg).toMatch(/2026/);
   });
 
+  it('muestra el motivo que dio el administrador', () => {
+    const banned = errorMessage({ response: { data: { error: 'ACCOUNT_BANNED', reason: 'Comprobantes falsos.' } } });
+    expect(banned).toBe('Tu cuenta ha sido baneada. Motivo: Comprobantes falsos. Si consideras que es un error, contacta a soporte.');
+    const noReason = errorMessage({ response: { data: { error: 'ACCOUNT_BANNED' } } });
+    expect(noReason).not.toMatch(/Motivo/);
+  });
+
   it('usa el texto de respaldo para errores desconocidos', () => {
     expect(errorMessage({ response: { data: { error: 'OTRO' } } }, 'Respaldo')).toBe('Respaldo');
   });

@@ -4,12 +4,16 @@ import { authApi } from '../api/endpoints';
 import { refreshAccessToken, setSessionExpiredHandler } from '../api/httpClient';
 import { tokenStore } from '../api/tokenStore';
 import { ROLES } from '../constants/roles';
+import { PATHS } from '../routing/paths';
+import { errorMessage, isSanctionError } from '../lib/format';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | authenticated | guest
+  const [sanction, setSanction] = useState(''); // aviso de suspensión/baneo con el motivo del admin
   const navigate = useNavigate();
 
   const reset = useCallback(() => {
@@ -25,13 +29,22 @@ export function AuthProvider({ children }) {
         setUser(user);
         setStatus('authenticated');
       })
-      .catch(reset);
+      .catch((err) => {
+        if (isSanctionError(err)) setSanction(errorMessage(err));
+        reset();
+      });
   }, [reset]);
 
   useEffect(() => {
-    setSessionExpiredHandler(() => {
+    setSessionExpiredHandler((err) => {
       reset();
-      navigate('/login', { replace: true, state: { expired: true } });
+      if (isSanctionError(err)) {
+        // Sancionada con la sesión abierta: aviso claro con el motivo, nunca un cierre de sesión mudo.
+        setSanction(errorMessage(err));
+        navigate(PATHS.home, { replace: true });
+      } else {
+        navigate('/login', { replace: true, state: { expired: true } });
+      }
     });
   }, [navigate, reset]);
 
@@ -84,7 +97,25 @@ export function AuthProvider({ children }) {
     [user, status, login, register, logout, logoutAll, updateUser, changePassword]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {sanction && (
+        <ConfirmDialog
+          title="Cuenta sancionada"
+          cancelLabel="Entendido"
+          confirmLabel="Contactar a soporte"
+          onCancel={() => setSanction('')}
+          onConfirm={() => {
+            setSanction('');
+            navigate(PATHS.contact);
+          }}
+        >
+          {sanction}
+        </ConfirmDialog>
+      )}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => {

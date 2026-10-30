@@ -29,6 +29,19 @@ describe('sanciones a cuentas', () => {
     assert.equal(again.status, 403);
     assert.equal(again.body.error, 'ACCOUNT_SUSPENDED');
     assert.ok(again.body.until);
+    assert.equal(again.body.reason, 'Comprobante alterado'); // el usuario ve el motivo que dio el admin
+  });
+
+  it('una sesión abierta se entera del baneo y su motivo al renovar el token', async () => {
+    const c = await newVerifiedClient();
+    const { cookie } = await login(c.email, 'Clave12345');
+    await sanction(c.id, { type: 'BAN', reason: 'Comprobantes falsos' });
+    const res = await api().post('/api/auth/refresh').set('Cookie', cookie).set('X-Requested-With', 'XMLHttpRequest');
+    assert.equal(res.status, 403);
+    assert.equal(res.body.error, 'ACCOUNT_BANNED');
+    assert.equal(res.body.reason, 'Comprobantes falsos');
+    const audit = await one("select count(*)::int as n from app.audit_log where action = 'auth.refresh_reuse_detected' and target_id = $1", [c.id]);
+    assert.equal(audit.n, 0); // no se confunde con un robo de sesión
   });
 
   it('con contraseña incorrecta no revela que la cuenta está sancionada', async () => {

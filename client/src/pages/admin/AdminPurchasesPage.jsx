@@ -98,7 +98,7 @@ export default function AdminPurchasesPage() {
       </header>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="group" aria-label="Filtrar por estado">
+        <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
           {FILTERS.map(([s, label]) => (
             <button
               key={s}
@@ -108,7 +108,7 @@ export default function AdminPurchasesPage() {
                 setItems(null);
               }}
               aria-pressed={status === s}
-              className={`inline-flex h-11 items-center justify-center rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95 sm:text-base ${
+              className={`inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95 sm:text-base ${
                 status === s
                   ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
                   : 'border-line bg-card text-fg-muted hover:border-sol-blue hover:text-fg dark:hover:border-sol-gold'

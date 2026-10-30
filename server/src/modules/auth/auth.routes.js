@@ -30,7 +30,7 @@ const cookieOptions = {
 };
 
 const USER_COLUMNS =
-  'id, name, email, phone, role, status, suspended_until, email_verified, password_hash, failed_logins, locked_until, avatar_file_id';
+  'id, name, email, phone, role, status, suspended_until, sanction_reason, email_verified, password_hash, failed_logins, locked_until, avatar_file_id';
 
 /** Lo único que se devuelve de un usuario: nunca el hash ni contadores internos. */
 export const publicUser = (u) => ({
@@ -42,6 +42,14 @@ export const publicUser = (u) => ({
   emailVerified: u.email_verified,
   // El id del archivo cambia con cada foto: la URL sirve de llave de caché y no se puede adivinar.
   avatarUrl: u.avatar_file_id ? `/api/auth/avatars/${u.avatar_file_id}` : null,
+});
+
+/** Sanción vigente (no DISABLED, que es administrativa): el motivo que dio el admin viaja al usuario. */
+const isSanctioned = (u) => !isUsableAccount(u) && ['SUSPENDED', 'BANNED'].includes(u.status);
+const sanctionError = (u) => ({
+  error: u.status === 'BANNED' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+  ...(u.status === 'SUSPENDED' && { until: new Date(u.suspended_until).toISOString() }),
+  reason: u.sanction_reason ?? null,
 });
 
 const findByEmail = (email) => one(`select ${USER_COLUMNS} from app.users where email = $1`, [email]);
@@ -106,13 +114,7 @@ router.post('/login', loginLimiter, validateBody(loginSchema), async (req, res) 
   if (locked) return res.status(429).json({ error: 'TOO_MANY_LOGIN_ATTEMPTS' });
 
   // Sanción vigente: solo se informa a quien ya demostró conocer la contraseña.
-  if (user && ok && !isUsableAccount(user) && user.status !== 'DISABLED') {
-    return res.status(403).json(
-      user.status === 'BANNED'
-        ? { error: 'ACCOUNT_BANNED' }
-        : { error: 'ACCOUNT_SUSPENDED', until: new Date(user.suspended_until).toISOString() }
-    );
-  }
+  if (user && ok && isSanctioned(user)) return res.status(403).json(sanctionError(user));
 
   if (!user || !ok || !isUsableAccount(user)) {
     if (user && !ok) {
@@ -176,6 +178,13 @@ router.post('/refresh', requireXhrHeader, async (req, res) => {
   } catch {
     res.clearCookie(REFRESH_COOKIE, cookieOptions);
     return res.status(401).json({ error: 'INVALID_SESSION' });
+  }
+  // Sesión abierta de una cuenta sancionada: la firma ya probó quién es, así que se le explica el motivo
+  // (sus sesiones se revocaron al sancionar; sin esto vería un cierre de sesión sin explicación).
+  const owner = await findById(payload.sub);
+  if (owner && isSanctioned(owner)) {
+    res.clearCookie(REFRESH_COOKIE, cookieOptions);
+    return res.status(403).json(sanctionError(owner));
   }
   const stored = await one('delete from app.refresh_tokens where jti = $1 and expires_at > now() returning user_id', [payload.jti]);
   if (!stored || stored.user_id !== payload.sub) {
