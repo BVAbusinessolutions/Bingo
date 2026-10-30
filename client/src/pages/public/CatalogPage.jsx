@@ -33,7 +33,7 @@ export default function CatalogPage() {
   });
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { event, loading } = useCurrentEvent();
+  const { event, loading, error: eventError, reload } = useCurrentEvent();
 
   const [cards, setCards] = useState(null);
   const [clockOffset, setClockOffset] = useState(0); // hora servidor - hora local
@@ -113,6 +113,16 @@ export default function CatalogPage() {
   };
 
   if (loading) return <Loader2 className="mx-auto mt-20 h-8 w-8 animate-spin text-sol-blue dark:text-sol-gold" />;
+  if (eventError && !event) {
+    return (
+      <div role="alert" className="surface mx-auto mt-20 max-w-md space-y-3 p-6 text-center">
+        <p className="text-fg-muted">No pudimos conectar con el servidor para cargar los cartones. Reintentamos solos en unos segundos.</p>
+        <Button variant="outline" size="sm" onClick={() => reload()}>
+          Reintentar ahora
+        </Button>
+      </div>
+    );
+  }
   if (!event || event.status !== 'SCHEDULED') {
     return <p className="mx-auto mt-20 max-w-md px-4 text-center text-fg-muted">No hay bingos con venta abierta en este momento.</p>;
   }

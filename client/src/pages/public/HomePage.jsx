@@ -57,8 +57,20 @@ function LiveNow() {
 }
 
 /** Tarjeta de vidrio del evento: cuenta regresiva, fecha, hora y lugar tal como los definió el panel. */
-function EventCard({ event, loading }) {
-  if (loading) {
+function EventCard({ event, loading, error, onRetry }) {
+  if (loading || (error && !event)) {
+    if (error) {
+      return (
+        <div className="glass space-y-3 rounded-3xl p-6 text-center" role="alert">
+          <BrandBadge className="mx-auto h-20 w-20" decorative={false} />
+          <h2 className="font-display text-2xl font-bold">Conectando con el bingo…</h2>
+          <p className="text-white/80">No pudimos cargar el evento. Lo reintentamos solos en unos segundos.</p>
+          <Button variant="light" size="sm" onClick={() => onRetry()}>
+            Reintentar ahora
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="glass space-y-4 rounded-3xl p-6" role="status" aria-label="Cargando el próximo evento">
         <div className="h-6 w-1/2 animate-pulse rounded-lg bg-white/10" />
@@ -214,7 +226,7 @@ function LatestWinnerSection() {
 }
 
 export default function HomePage() {
-  const { event, loading } = useCurrentEvent();
+  const { event, loading, error, reload } = useCurrentEvent();
   const { isAuthenticated } = useAuth();
   const isLive = event?.status === 'LIVE';
   const place = eventPlace(event);
@@ -257,7 +269,7 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <EventCard event={event} loading={loading} />
+          <EventCard event={event} loading={loading} error={error} onRetry={reload} />
         </div>
       </section>
 
