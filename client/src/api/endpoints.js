@@ -89,6 +89,29 @@ export const adminApi = {
   decide: (id, approve, method) => http.post(`/admin/reservations/${id}/decision`, { approve, method }).then(data),
   refund: (id) => http.post(`/admin/reservations/${id}/refund`).then(data),
   manualSale: (body) => http.post('/admin/manual-sales', body).then(data),
+  /** Adjuntar o reemplazar el comprobante de una compra (ventas del salón, pagos verificados sin foto). */
+  attachProof: (id, file, reference) => {
+    const form = new FormData();
+    form.append('proof', file);
+    if (reference) form.append('reference', reference);
+    return http.post(`/admin/reservations/${id}/proof`, form).then(data);
+  },
+  finance: (eventId) => http.get(`/admin/events/${eventId}/finance`).then(data),
+  exportFinance: (eventId) => http.get(`/admin/events/${eventId}/finance/export.csv`, { responseType: 'blob' }).then(data),
+  expenses: (eventId) => http.get(`/admin/events/${eventId}/expenses`).then(data),
+  createExpense: (eventId, fields, receipt) => {
+    const form = new FormData();
+    Object.entries(fields).forEach(([k, v]) => form.append(k, v ?? ''));
+    if (receipt) form.append('receipt', receipt);
+    return http.post(`/admin/events/${eventId}/expenses`, form).then(data);
+  },
+  attachReceipt: (id, file) => {
+    const form = new FormData();
+    form.append('receipt', file);
+    return http.post(`/admin/expenses/${id}/receipt`, form).then(data);
+  },
+  receiptBlob: (id) => http.get(`/admin/expenses/${id}/receipt`, { responseType: 'blob' }).then(data),
+  deleteExpense: (id) => http.delete(`/admin/expenses/${id}`).then(data),
   exportReservations: (params) => http.get('/admin/reservations/export.csv', { params, responseType: 'blob' }).then(data),
   claims: (eventId) => http.get('/admin/claims', { params: { eventId } }).then(data),
   decideClaim: (id, approve) => http.post(`/admin/claims/${id}/decision`, { approve }).then(data),

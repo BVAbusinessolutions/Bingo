@@ -26,6 +26,7 @@ export function parseSerials(text) {
 export default function ManualSaleDialog({ event, onClose, onDone }) {
   const backdrop = useBackdropClose(onClose);
   const [form, setForm] = useState(EMPTY);
+  const [proof, setProof] = useState(null); // foto del SINPE, la transferencia o el recibo del salón (opcional)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -43,7 +44,17 @@ export default function ManualSaleDialog({ event, onClose, onDone }) {
     setBusy(true);
     setError('');
     try {
-      await adminApi.manualSale({ ...form, serials, eventId: event.id });
+      const sale = await adminApi.manualSale({ ...form, serials, eventId: event.id });
+      // La venta ya quedó registrada: si el comprobante falla, se avisa y se puede subir luego en Finanzas.
+      if (proof) {
+        try {
+          await adminApi.attachProof(sale.id, proof);
+        } catch (err) {
+          setError(`La venta se registró, pero el comprobante no se subió: ${errorMessage(err)} Súbelo desde Finanzas.`);
+          setBusy(false);
+          return;
+        }
+      }
       onDone();
     } catch (err) {
       setError(errorMessage(err, 'Revisa los datos del comprador.'));
@@ -110,6 +121,16 @@ export default function ManualSaleDialog({ event, onClose, onDone }) {
           </label>
           <Field label="N.º de comprobante (opcional)" value={form.reference} onChange={set('reference')} />
         </div>
+        <label className="block">
+          <span className="font-bold text-fg">Foto o PDF del comprobante o recibo (opcional)</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            onChange={(e) => setProof(e.target.files?.[0] ?? null)}
+            className="mt-1.5 block w-full rounded-xl border-2 border-dashed border-line bg-card p-3 text-fg file:mr-3 file:rounded-full file:border-0 file:bg-sol-blue file:px-4 file:py-2 file:font-bold file:text-white dark:file:bg-sol-gold dark:file:text-sol-blue"
+          />
+          <span className="mt-1 block text-sm text-fg-muted">Si no lo tienes ahora, puedes adjuntarlo después en Finanzas.</span>
+        </label>
         {error && <Alert tone="error">{error}</Alert>}
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>

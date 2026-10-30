@@ -54,6 +54,9 @@ exportación a Excel protegida, etc.); se puede consultar en el historial de `pe
       servidor y en el cliente con las mismas reglas (pruebas en ambos lados).
 - [x] Botón **¡Bingo!** bloqueado hasta completar el patrón con bolas cantadas; se enciende con pulso y sonido.
 - [x] Marcado manual por defecto (aviso antes de activar el automático) y fichas: ficha, oro, maíz, estrella.
+- [x] Finanzas (Administración → Finanzas): ingresos verificados separados en cartones virtuales (en línea) y
+      físicos (salón), por método (SINPE, transferencia, efectivo), gastos con factura, balance, comprobantes
+      adjuntados por la administración y libro en Excel. Los vendidos de demostración no cuentan como dinero.
 - [x] Rondas y modalidades: en Bingo Master se elige la modalidad de cada ronda (Línea, Dos líneas, Cuatro esquinas,
       Letra X, Cruz, Letra T, Letra L, Marco, Cuadro central, Cartón lleno) y se abren rondas nuevas; cada cartón
       puede ganar una vez por ronda.

@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Trophy,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import { PATHS } from '../../routing/paths';
@@ -149,6 +150,7 @@ export default function AdminLayout() {
         { to: '', end: true, label: 'Panel', Icon: LayoutDashboard },
         { to: PATHS.adminDraw, label: 'Bingo Master', Icon: Mic },
         { to: PATHS.adminPurchases, label: 'Compras', Icon: ShoppingCart, badge: pending },
+        { to: PATHS.adminFinance, label: 'Finanzas', Icon: Wallet },
         { to: PATHS.adminWinners, label: 'Ganadores', Icon: Trophy, badge: pendingClaims },
       ],
     },

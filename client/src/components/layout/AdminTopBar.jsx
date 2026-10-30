@@ -34,7 +34,7 @@ export default function AdminTopBar() {
       <div className="container-page flex h-16 items-center justify-between gap-3">
         <Link to={PATHS.admin} className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Panel de administración, inicio">
           <BrandBadge className="h-10 w-10 rounded-xl p-1" logoClassName="block h-8 max-h-8 w-8 object-contain" />
-          <span className="flex min-w-0 flex-col leading-tight">
+          <span className="hidden min-w-0 flex-col leading-tight sm:flex">
             <span className="flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-widest text-accent">
               <Shield className="h-3.5 w-3.5" aria-hidden /> Administración
             </span>

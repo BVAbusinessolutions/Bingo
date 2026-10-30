@@ -83,7 +83,10 @@ router.post('/', authenticate, reservationLimiter, validateBody(createSchema), a
       await q('insert into app.reservation_cards (reservation_id, card_id) select $1, unnest($2::uuid[])', [r.id, taken.map((c) => c.id)]);
       return r.id;
     });
-    res.status(201).json(await reservationDetailView(await findOwnReservation(reservationId, req.user.id)));
+    const created = await reservationDetailView(await findOwnReservation(reservationId, req.user.id));
+    // El panel cuenta los cartones apartados al instante (inventario y finanzas en vivo).
+    notifyAdmins('reservation:updated', created);
+    res.status(201).json(created);
   } catch (err) {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.code });
     throw err;

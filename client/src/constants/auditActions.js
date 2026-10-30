@@ -29,4 +29,9 @@ export const ACTIONS = Object.freeze({
   'draw.pattern': 'Modalidad de la ronda elegida',
   'draw.new_round': 'Nueva ronda iniciada',
   'claim.salon_confirmed': 'Ganador del salón confirmado',
+  'reservation.proof_attached': 'Comprobante adjuntado por la administración',
+  'expense.created': 'Gasto registrado',
+  'expense.deleted': 'Gasto borrado',
+  'expense.receipt_attached': 'Factura de gasto adjuntada',
+  'finance.exported': 'Libro de finanzas exportado a Excel',
 });

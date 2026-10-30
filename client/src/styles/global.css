@@ -211,16 +211,18 @@ html[data-contrast='high'] :is(p, li, dd) > a {
 }
 
 /* Gráficos del panel (DonutChart): paleta categórica validada (daltonismo, contraste) para cada tema.
-   Solo las tres primeras posiciones: son las que separan bien todos los pares entre sí. */
+   Tres posiciones separan bien todos los pares; la cuarta solo se usa en anillos (pares vecinos validados). */
 .viz-root {
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
+  --series-4: #eda100;
   --viz-track: #e5e7eb;
 }
 .dark .viz-root {
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;
+  --series-4: #c98500;
   --viz-track: #334155;
 }

@@ -9,6 +9,7 @@ import { ACTIONS } from '../../constants/auditActions';
 const FILTERS = [
   ['', 'Todo'],
   ['reservation', 'Compras'],
+  ['expense', 'Gastos'],
   ['draw', 'Sorteo'],
   ['claim', 'Premios'],
   ['auth', 'Seguridad'],

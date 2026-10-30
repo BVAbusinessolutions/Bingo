@@ -65,7 +65,7 @@ export function ProofPanel({ reservationId, hasProof }) {
     return (
       <div className="grid min-h-60 place-items-center rounded-2xl bg-muted p-6 text-center text-fg-muted">
         <span>
-          <ImageOff className="mx-auto mb-2 h-10 w-10" aria-hidden /> El cliente todavía no envió comprobante.
+          <ImageOff className="mx-auto mb-2 h-10 w-10" aria-hidden /> Esta compra todavía no tiene comprobante.
         </span>
       </div>
     );

@@ -4,6 +4,7 @@ import { ArrowLeft, BadgeCheck, Banknote, Building2, Check, Mail, MailWarning, P
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import { ProofPanel } from '../../components/admin/AdminProof';
+import UploadButton from '../../components/admin/UploadButton';
 import { CopyButton } from '../../components/payments/PaymentPieces';
 import StatusBadge from '../../components/ui/StatusBadge';
 import PageLoader from '../../components/ui/PageLoader';
@@ -38,8 +39,13 @@ function Card({ title, children, className = '' }) {
 function DuplicateAlert({ duplicates }) {
   if (!duplicates?.length) return null;
   return (
-    <Alert tone="error" title={`⚠ Este comprobante ya aparece en ${duplicates.length === 1 ? 'otra compra' : `${duplicates.length} compras más`}`}>
-      <p className="mb-2">Puede ser un mismo pago usado dos veces. Revisa en el banco que haya un depósito por cada compra antes de aprobar.</p>
+    <Alert
+      tone="error"
+      title={`⚠ Este comprobante ya aparece en ${duplicates.length === 1 ? 'otra compra' : `${duplicates.length} compras más`}`}
+    >
+      <p className="mb-2">
+        Puede ser un mismo pago usado dos veces. Revisa en el banco que haya un depósito por cada compra antes de aprobar.
+      </p>
       <ul className="space-y-1.5">
         {duplicates.map((d) => (
           <li key={d.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -65,7 +71,10 @@ function IdentityAlert({ accounts }) {
   if (!accounts?.length) return null;
   const banned = accounts.some((a) => a.status === 'BANNED');
   return (
-    <Alert tone="error" title={banned ? '⚠ Esta cédula pertenece a una cuenta baneada' : '⚠ Esta cédula también se usó desde otras cuentas'}>
+    <Alert
+      tone="error"
+      title={banned ? '⚠ Esta cédula pertenece a una cuenta baneada' : '⚠ Esta cédula también se usó desde otras cuentas'}
+    >
       <p className="mb-2">Verifica que sea la misma persona y que no esté evadiendo una sanción antes de aprobar.</p>
       <ul className="space-y-1">
         {accounts.map((a) => (
@@ -98,7 +107,9 @@ function ReceivedMethod({ value, onChange, declared }) {
             aria-checked={value === m}
             onClick={() => onChange(m)}
             className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-3 font-extrabold transition ${
-              value === m ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue' : 'border-line text-fg-muted hover:border-sol-blue'
+              value === m
+                ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
+                : 'border-line text-fg-muted hover:border-sol-blue'
             }`}
           >
             <Icon className="h-5 w-5" aria-hidden /> {label}
@@ -117,9 +128,7 @@ function ReceivedMethod({ value, onChange, declared }) {
 /** Lista de verificación: el botón "Aprobar" solo se habilita cuando todo coincide. */
 function VerificationChecklist({ r, checks, setChecks }) {
   const items = [
-    ...(r.duplicates?.length
-      ? [['duplicate', <>Revisé las otras compras con este comprobante y este pago es distinto</>]]
-      : []),
+    ...(r.duplicates?.length ? [['duplicate', <>Revisé las otras compras con este comprobante y este pago es distinto</>]] : []),
     ...(r.sameIdentity?.length ? [['identity', <>Revisé las otras cuentas con esta cédula y la compra es legítima</>]] : []),
     [
       'amount',
@@ -136,7 +145,8 @@ function VerificationChecklist({ r, checks, setChecks }) {
     [
       'detail',
       <>
-        El detalle de la transferencia dice <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? PAYMENT_DETAIL}</b>
+        El detalle de la transferencia dice{' '}
+        <b className="rounded bg-sol-gold px-1.5 text-sol-blue">{r.payment?.detail ?? PAYMENT_DETAIL}</b>
       </>,
     ],
     ['received', <>El dinero aparece en la cuenta de la Asociación</>],
@@ -251,9 +261,23 @@ export default function AdminPurchaseDetailPage() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-5">
-          <Card title="Comprobante enviado">
-            <p className="mb-3 text-fg-muted">{r.proofUploadedAt ? `Recibido el ${formatDate(r.proofUploadedAt)}` : 'Pendiente'}</p>
-            <ProofPanel reservationId={r.id} hasProof={r.hasProof} />
+          <Card title="Comprobante">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-fg-muted">{r.proofUploadedAt ? `Recibido el ${formatDate(r.proofUploadedAt)}` : 'Pendiente'}</p>
+              {/* Ventas del salón o pagos verificados sin foto: la administración adjunta o reemplaza el comprobante. */}
+              {['APPROVED', 'PROOF_SUBMITTED'].includes(r.status) && (
+                <UploadButton
+                  size="sm"
+                  label={r.hasProof ? 'Reemplazar comprobante' : 'Subir comprobante'}
+                  onUpload={async (file) => {
+                    await adminApi.attachProof(r.id, file);
+                    await load();
+                  }}
+                />
+              )}
+            </div>
+            {/* key: al reemplazarlo se vuelve a descargar el archivo nuevo */}
+            <ProofPanel key={r.proofUploadedAt ?? 'none'} reservationId={r.id} hasProof={r.hasProof} />
           </Card>
         </div>
 

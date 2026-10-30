@@ -17,6 +17,7 @@ import { EVENT_SELECT, publicEvent } from '../events/events.routes.js';
 import { broadcast } from '../draw/draw.js';
 import { PATTERN_IDS } from '../../domain/bingo.js';
 import { liveMetrics } from '../../services/presence.js';
+import financeRoutes, { financeSummary } from '../finance/finance.routes.js';
 import { revokeAllFor } from '../auth/auth.routes.js';
 import { emailField, nameField, newPasswordField } from '../auth/auth.schemas.js';
 import {
@@ -45,6 +46,7 @@ import { readPngsFromZip } from '../series/zipReader.js';
 
 const router = Router();
 router.use(authenticate, authorize('ADMIN'));
+router.use(financeRoutes); // finanzas: ingresos, gastos y comprobantes
 
 const uuid = z.string().uuid();
 const eventIdSchema = z.string().regex(/^[a-z0-9-]{3,64}$/);
@@ -115,20 +117,13 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
          where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method is not null) as approved_orders,
        (select count(*)::int from app.reservations
          where event_id = $1 and not (status = 'APPROVED' and decided_by is null)) as started_orders,
-       (select count(*)::int from app.reservations
-         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'SINPE') as sinpe_orders,
-       (select coalesce(sum(total), 0)::int from app.reservations
-         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'SINPE') as sinpe_amount,
-       (select count(*)::int from app.reservations
-         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'TRANSFER') as transfer_orders,
-       (select coalesce(sum(total), 0)::int from app.reservations
-         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'TRANSFER') as transfer_amount,
        (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL}) as active_users,
        (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL} and email_verified) as verified_users,
        (select coalesce(sum(visits), 0)::int from app.site_visits) as visits_total,
        (select coalesce(sum(visits), 0)::int from app.site_visits where day > (now() at time zone 'UTC' - interval '6 hours')::date - 7) as visits_week`,
     [req.event.id]
   );
+  const fin = await financeSummary(req.event.id);
   res.json({
     total: s.total,
     sold: s.sold,
@@ -143,11 +138,13 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
     startedOrders: t.started_orders,
     // Compras iniciadas que terminaron con el pago aprobado (0 a 100).
     conversionPct: t.started_orders ? Math.round((t.approved_orders / t.started_orders) * 100) : 0,
-    // Ventas verificadas por método de cobro (gráfico del panel).
-    byMethod: {
-      SINPE: { orders: t.sinpe_orders, amount: t.sinpe_amount },
-      TRANSFER: { orders: t.transfer_orders, amount: t.transfer_amount },
-    },
+    // Ventas verificadas por método (SINPE, transferencia y efectivo del salón) y cartones virtuales/físicos.
+    byMethod: fin.byMethod,
+    soldWeb: fin.cards.soldWeb,
+    soldSalon: fin.cards.soldSalon,
+    soldUnverified: fin.cards.soldUnverified,
+    expenses: fin.expenses,
+    balance: fin.balance,
     activeUsers: t.active_users,
     verifiedUsers: t.verified_users,
     visitsTotal: t.visits_total,

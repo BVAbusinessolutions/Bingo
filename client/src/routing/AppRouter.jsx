@@ -30,6 +30,7 @@ const AdminLayout = lazyWithRetry(() => import('../components/layout/AdminLayout
 const AdminDashboardPage = lazyWithRetry(() => import('../pages/admin/AdminDashboardPage'));
 const AdminPurchasesPage = lazyWithRetry(() => import('../pages/admin/AdminPurchasesPage'));
 const AdminPurchaseDetailPage = lazyWithRetry(() => import('../pages/admin/AdminPurchaseDetailPage'));
+const AdminFinancePage = lazyWithRetry(() => import('../pages/admin/AdminFinancePage'));
 const AdminWinnersPage = lazyWithRetry(() => import('../pages/admin/AdminWinnersPage'));
 const AdminDrawPage = lazyWithRetry(() => import('../pages/admin/AdminDrawPage'));
 const AdminEventsPage = lazyWithRetry(() => import('../pages/admin/AdminEventsPage'));
@@ -96,6 +97,7 @@ export default function AppRouter() {
           <Route index element={<AdminDashboardPage />} />
           <Route path={PATHS.adminPurchases} element={<AdminPurchasesPage />} />
           <Route path={PATHS.adminPurchaseDetail} element={<AdminPurchaseDetailPage />} />
+          <Route path={PATHS.adminFinance} element={<AdminFinancePage />} />
           <Route path={PATHS.adminWinners} element={<AdminWinnersPage />} />
           <Route path="pagos" element={<Navigate to="/admin/compras" replace />} />
           <Route path={PATHS.adminDraw} element={<AdminDrawPage />} />

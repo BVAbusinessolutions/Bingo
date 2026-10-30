@@ -24,6 +24,8 @@ const ERRORS = {
   EVENT_CLOSED: 'El evento está cerrado y no se puede editar.',
   INVALID_STATUS_CHANGE: 'Ese cambio de estado no está permitido.',
   ALREADY_CALLED: 'Esa bola ya fue cantada.',
+  PROOF_NOT_ATTACHABLE: 'Solo se adjuntan comprobantes a compras aprobadas o en revisión.',
+  FILE_REQUIRED: 'Elige la foto o el PDF del comprobante.',
   ROUND_STARTED: 'La ronda ya empezó: su modalidad queda fija. Abre una nueva ronda para cambiarla.',
   ROUND_NOT_STARTED: 'Esta ronda aún no tiene bolas: cambia su modalidad en lugar de abrir otra.',
   CANNOT_CHANGE_SELF: 'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.',

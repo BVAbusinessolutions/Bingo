@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Download, HandCoins, RefreshCw, Search } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Download,
+  FileWarning,
+  Globe,
+  HandCoins,
+  Hourglass,
+  ListChecks,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Store,
+  XCircle,
+} from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import { ProofThumb } from '../../components/admin/AdminProof';
@@ -12,13 +27,25 @@ import PageLoader from '../../components/ui/PageLoader';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
 
 const FILTERS = [
-  ['PROOF_SUBMITTED', 'Por verificar'],
-  ['APPROVED', 'Aprobadas'],
-  ['PENDING', 'Sin pagar aún'],
-  ['REJECTED', 'Rechazadas'],
-  ['REFUNDED', 'Reembolsadas'],
-  ['', 'Todas'],
+  ['PROOF_SUBMITTED', 'Por verificar', Hourglass],
+  ['APPROVED', 'Aprobadas', CheckCircle2],
+  ['PENDING', 'Sin pagar aún', Clock],
+  ['REJECTED', 'Rechazadas', XCircle],
+  ['REFUNDED', 'Reembolsadas', RotateCcw],
+  ['', 'Todas', ListChecks],
 ];
+// Virtual = compra en línea; físico = venta registrada en el salón (venta manual).
+const CHANNELS = [
+  ['', 'Todos los canales', ListChecks],
+  ['WEB', 'Virtuales', Globe],
+  ['MANUAL', 'Físicas (salón)', Store],
+];
+const PILL =
+  'inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95';
+const pillTone = (on) =>
+  on
+    ? 'border-sol-blue bg-sol-blue text-white shadow-md dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
+    : 'border-line bg-card text-fg-muted hover:border-sol-blue hover:text-fg dark:hover:border-sol-gold';
 
 const normalize = (s) =>
   String(s ?? '')
@@ -39,6 +66,7 @@ export default function AdminPurchasesPage() {
   const [status, setStatus] = useState('PROOF_SUBMITTED');
   const [items, setItems] = useState(null);
   const [query, setQuery] = useState('');
+  const [channel, setChannel] = useState('');
 
   const load = useCallback(() => adminApi.reservations(status).then(setItems), [status]);
 
@@ -66,7 +94,12 @@ export default function AdminPurchasesPage() {
   };
 
   const q = normalize(query.trim());
-  const visible = useMemo(() => (items ?? []).filter((r) => (!eventId || r.eventId === eventId) && matches(r, q)), [items, eventId, q]);
+  const visible = useMemo(
+    () => (items ?? []).filter((r) => (!eventId || r.eventId === eventId) && (!channel || r.channel === channel) && matches(r, q)),
+    [items, eventId, channel, q]
+  );
+  const visibleTotal = visible.reduce((sum, r) => sum + r.total, 0);
+  const visibleCards = visible.reduce((sum, r) => sum + r.serials.length, 0);
 
   return (
     <section className="space-y-5">
@@ -77,29 +110,46 @@ export default function AdminPurchasesPage() {
         </div>
         {/* Acciones y filtros con la misma medida: píldoras de 44 px, mismo radio y espaciado; en celular
             las acciones ocupan columnas iguales y los filtros se acomodan en filas ordenadas. */}
-        <div className="flex w-full gap-2 sm:w-auto">
+        <div className="grid w-full grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:w-auto [&>*]:whitespace-nowrap">
           {event && ['SCHEDULED', 'LIVE'].includes(event.status) && (
-            <Button variant="gold" icon={HandCoins} onClick={() => setSelling(true)} className="h-11 min-h-11! flex-1 rounded-full! px-4 text-sm sm:flex-none sm:text-base">
-              Venta manual
+            <Button
+              variant="gold"
+              icon={HandCoins}
+              onClick={() => setSelling(true)}
+              className="h-11 min-h-11! rounded-full! px-3! text-sm sm:px-4! sm:text-base"
+            >
+              Venta en salón
             </Button>
           )}
-          <Button variant="outline" icon={Download} loading={exporting} onClick={exportCsv} className="h-11 min-h-11! flex-1 rounded-full! px-4 text-sm sm:flex-none sm:text-base">
-            Exportar a Excel
+          <Button
+            variant="outline"
+            icon={Download}
+            loading={exporting}
+            onClick={exportCsv}
+            className="h-11 min-h-11! rounded-full! px-3! text-sm sm:px-4! sm:text-base"
+          >
+            <span className="sm:hidden">Excel</span>
+            <span className="hidden sm:inline">Exportar a Excel</span>
           </Button>
           <button
             type="button"
             onClick={load}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-line bg-card text-fg transition hover:border-sol-blue active:scale-95 dark:hover:border-sol-gold"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border-2 border-line bg-card px-3 font-bold text-fg transition hover:border-sol-blue active:scale-95 dark:hover:border-sol-gold"
             aria-label="Actualizar lista"
           >
             <RefreshCw className="h-5 w-5" aria-hidden />
+            <span className="hidden lg:inline">Actualizar</span>
           </button>
         </div>
       </header>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
-          {FILTERS.map(([s, label]) => (
+        <div
+          className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+          role="group"
+          aria-label="Filtrar por estado"
+        >
+          {FILTERS.map(([s, label, Icon]) => (
             <button
               key={s}
               type="button"
@@ -108,12 +158,9 @@ export default function AdminPurchasesPage() {
                 setItems(null);
               }}
               aria-pressed={status === s}
-              className={`inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95 sm:text-base ${
-                status === s
-                  ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
-                  : 'border-line bg-card text-fg-muted hover:border-sol-blue hover:text-fg dark:hover:border-sol-gold'
-              }`}
+              className={`${PILL} ${pillTone(status === s)}`}
             >
+              <Icon className="h-4 w-4" aria-hidden />
               {label}
             </button>
           ))}
@@ -131,6 +178,34 @@ export default function AdminPurchasesPage() {
         </label>
       </div>
 
+      {/* Canal y resumen de lo que se está viendo (conteo real de cartones y dinero) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+          role="group"
+          aria-label="Filtrar por canal"
+        >
+          {CHANNELS.map(([c, label, Icon]) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setChannel(c)}
+              aria-pressed={channel === c}
+              className={`${PILL} ${pillTone(channel === c)}`}
+            >
+              <Icon className="h-4 w-4" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+        {items && (
+          <p className="text-sm text-fg-muted" aria-live="polite">
+            <b className="text-fg">{visible.length}</b> compras · <b className="text-fg">{visibleCards}</b> cartones ·{' '}
+            <b className="tabular-nums text-fg">{formatCRC(visibleTotal)}</b>
+          </p>
+        )}
+      </div>
+
       {error && <Alert tone="error">{error}</Alert>}
       {!items ? (
         <PageLoader />
@@ -144,14 +219,28 @@ export default function AdminPurchasesPage() {
                 <ProofThumb reservationId={r.id} hasProof={r.hasProof} />
                 <div className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
                   <div className="min-w-0">
-                    <p className="truncate text-lg font-black text-fg">{r.buyer?.fullName ?? 'Sin datos todavía'}</p>
+                    <p className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-lg font-black text-fg">{r.buyer?.fullName ?? 'Sin datos todavía'}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-black ${
+                          r.channel === 'MANUAL' ? 'bg-navy-950 text-accent' : 'bg-sol-blue/10 text-sol-blue dark:text-brand'
+                        }`}
+                      >
+                        {r.channel === 'MANUAL' ? 'Físico' : 'Virtual'}
+                      </span>
+                    </p>
                     <p className="truncate text-fg-muted">
                       {r.buyer ? `Céd. ${r.buyer.nationalId} · ${r.buyer.phone}` : formatDate(r.createdAt)}
                     </p>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate font-bold text-fg">{r.serials.map((s) => `#${s}`).join(', ')}</p>
-                    <p className="truncate text-fg-muted">{r.reference ? `Comprobante ${r.reference}` : 'Sin comprobante'}</p>
+                    <p className="flex items-center gap-1.5 truncate text-fg-muted">
+                      {r.status === 'APPROVED' && !r.hasProof && (
+                        <FileWarning className="h-4 w-4 shrink-0 text-sol-gold-dark" aria-label="Falta el comprobante" />
+                      )}
+                      {r.reference ? `Comprobante ${r.reference}` : r.hasProof ? 'Con comprobante adjunto' : 'Sin comprobante'}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
                     <span className="text-xl font-black tabular-nums text-fg">{formatCRC(r.total)}</span>

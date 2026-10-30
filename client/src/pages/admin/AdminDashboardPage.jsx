@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Trophy,
   Users,
+  Wallet,
   Wifi,
 } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
@@ -166,7 +167,8 @@ export default function AdminDashboard() {
   if (!stats) return <div className="surface h-40 animate-pulse" />;
 
   const soldPct = stats.total ? Math.round((stats.sold / stats.total) * 100) : 0;
-  const byMethod = stats.byMethod ?? { SINPE: { orders: 0, amount: 0 }, TRANSFER: { orders: 0, amount: 0 } };
+  const none = { orders: 0, amount: 0 };
+  const byMethod = { SINPE: none, TRANSFER: none, CASH: none, ...stats.byMethod };
   const pattern = event?.pattern ?? 'FULL';
   const updated = live?.at
     ? new Date(live.at).toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -222,7 +224,7 @@ export default function AdminDashboard() {
           <QuickAction to={PATHS.adminDraw} Icon={Mic} label="Cantar bolas" />
           <QuickAction to={PATHS.adminPurchases} Icon={ShoppingCart} label="Verificar pagos" badge={pending} />
           <QuickAction to={PATHS.adminWinners} Icon={Trophy} label="Confirmar ganadores" badge={pendingClaims} />
-          <QuickAction to={PATHS.adminCards} Icon={Ticket} label="Ver cartones" />
+          <QuickAction to={PATHS.adminFinance} Icon={Wallet} label="Finanzas y comprobantes" />
           <QuickAction
             onClick={exportCsv}
             busy={exporting}
@@ -244,7 +246,7 @@ export default function AdminDashboard() {
             Icon={Ticket}
             label="Cartones vendidos"
             value={`${stats.sold} / ${stats.total}`}
-            sub={`${soldPct}% del inventario`}
+            sub={`${stats.soldWeb ?? 0} virtuales · ${stats.soldSalon ?? 0} físicos · ${soldPct}% del inventario`}
             pulseKey={stats.sold}
             accent="bg-sol-blue/10 text-sol-blue dark:bg-sol-blue-light/25 dark:text-brand"
           />
@@ -322,22 +324,28 @@ export default function AdminDashboard() {
         <div className="grid gap-3 lg:grid-cols-3">
           <DonutChart
             title="Inventario de cartones"
-            description={`${stats.total} cartones en el evento`}
+            description={`${stats.total} cartones · conteo real de virtuales y físicos`}
             center={{ value: `${soldPct}%`, label: 'vendido' }}
             items={[
-              { key: 'sold', label: 'Vendidos', value: stats.sold, color: 'var(--series-1)' },
+              { key: 'web', label: 'Vendidos virtuales', value: stats.soldWeb ?? 0, color: 'var(--series-1)' },
+              { key: 'salon', label: 'Vendidos físicos', value: stats.soldSalon ?? 0, color: 'var(--series-4)' },
               { key: 'reserved', label: 'Apartados', value: stats.reserved, color: 'var(--series-2)' },
               { key: 'available', label: 'Disponibles', value: stats.available, color: 'var(--series-3)' },
+              // Vendidos sin una compra verificada (demostración): solo aparecen si existen.
+              ...(stats.soldUnverified
+                ? [{ key: 'demo', label: 'Sin compra verificada', value: stats.soldUnverified, color: 'var(--viz-track)' }]
+                : []),
             ]}
           />
           <DonutChart
             title="Ventas por método de pago"
-            description={`${byMethod.SINPE.orders + byMethod.TRANSFER.orders} compras aprobadas`}
+            description={`${byMethod.SINPE.orders + byMethod.TRANSFER.orders + byMethod.CASH.orders} compras verificadas`}
             format={formatCRC}
             center={{ value: formatCRC(stats.revenue), label: 'recaudado' }}
             items={[
               { key: 'sinpe', label: 'SINPE Móvil', value: byMethod.SINPE.amount, color: 'var(--series-1)' },
               { key: 'transfer', label: 'Transferencia', value: byMethod.TRANSFER.amount, color: 'var(--series-2)' },
+              { key: 'cash', label: 'Efectivo (salón)', value: byMethod.CASH.amount, color: 'var(--series-3)' },
             ]}
           />
           <DonutChart
