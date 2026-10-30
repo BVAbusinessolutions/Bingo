@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Loader2, Ticket, X } from 'lucide-react';
+import { Loader2, LogIn, ShieldAlert, Ticket, UserPlus, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
 import { eventsApi, reservationsApi } from '../../api/endpoints';
@@ -17,6 +17,7 @@ import { usePageMeta } from '../../hooks/usePageMeta';
 const MAX = 20;
 const POLL_MS = 15_000;
 const SELECTION_KEY = 'hs-selected-cards'; // conserva la selección al recargar o volver del pago
+const LOGIN_NOTICE_KEY = 'hs-login-notice'; // el aviso "solo con cuenta" se abre solo una vez por visita
 
 const loadSelection = () => {
   try {
@@ -31,7 +32,7 @@ export default function CatalogPage() {
     title: 'Comprar cartones',
     description: 'Elige tus cartones del Bingo Benéfico Hogar Sol y paga por SINPE Móvil o transferencia. Juega en el salón o en línea.',
   });
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, status } = useAuth();
   const navigate = useNavigate();
   const { event, loading, error: eventError, reload } = useCurrentEvent();
 
@@ -92,6 +93,19 @@ export default function CatalogPage() {
     [isAuthenticated]
   );
   const closeLogin = useCallback(() => setAskLogin(false), []);
+
+  // Invitado: al llegar se le avisa de entrada que comprar exige cuenta (una vez por visita, no en cada recarga).
+  // Se espera a saber si hay sesión: a quien ya entró nunca se le muestra.
+  useEffect(() => {
+    if (status !== 'guest' || event?.status !== 'SCHEDULED') return;
+    try {
+      if (sessionStorage.getItem(LOGIN_NOTICE_KEY)) return;
+      sessionStorage.setItem(LOGIN_NOTICE_KEY, '1');
+    } catch {
+      // sin almacenamiento: se muestra igual
+    }
+    setAskLogin(true);
+  }, [status, event?.status]);
 
   const reserve = async () => {
     if (!isAuthenticated) {
@@ -159,18 +173,33 @@ export default function CatalogPage() {
       </div>
 
       {error && <Alert tone="error">{error}</Alert>}
-      {!isAuthenticated && (
-        <Alert
-          tone="info"
-          title="Necesitas una cuenta para comprar"
-          action={
-            <Button size="sm" icon={LogIn} onClick={() => setAskLogin(true)}>
-              Entrar
-            </Button>
-          }
+      {status === 'guest' && (
+        // Advertencia fija y visible: el catálogo se puede mirar, pero solo con cuenta se elige y se compra.
+        <section
+          role="note"
+          aria-labelledby="account-required"
+          className="flex flex-col gap-4 rounded-2xl border-2 border-sol-gold bg-sol-gold/15 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
         >
-          {LOGIN_REQUIRED_TEXT}.
-        </Alert>
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-sol-gold text-sol-blue">
+              <ShieldAlert className="h-6 w-6" aria-hidden />
+            </span>
+            <div>
+              <h2 id="account-required" className="text-lg font-black text-fg">
+                Solo con cuenta se pueden comprar cartones
+              </h2>
+              <p className="text-fg-muted">{LOGIN_REQUIRED_TEXT}.</p>
+            </div>
+          </div>
+          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+            <Button to={PATHS.login} state={{ from: { pathname: PATHS.catalog } }} size="sm" icon={LogIn}>
+              Iniciar sesión
+            </Button>
+            <Button to={PATHS.register} size="sm" variant="gold" icon={UserPlus}>
+              Crear cuenta
+            </Button>
+          </div>
+        </section>
       )}
 
       {/* Celular y tablet: catálogo y selección apilados; minmax(0,…) impide que una celda ensanche la página. */}

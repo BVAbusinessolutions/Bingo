@@ -13,12 +13,18 @@ import { LETTERS, PATTERNS, countedMarks, isFreeCell, missingFor } from '../../c
  *  - onToggle(cardId, number)
  *  - showStatus:  false = vista previa (catálogo, impresión), sin progreso del patrón
  */
-/** La "ficha" que se coloca sobre la casilla. `valid` = la bola ya fue cantada. */
-function Marker({ type, valid }) {
+/**
+ * La "ficha" que se coloca sobre la casilla, DETRÁS del número (que siempre queda legible encima).
+ * `valid` = la bola ya fue cantada; si no, la ficha queda tenue.
+ */
+export function Marker({ type, valid }) {
   const uid = useId(); // ids únicos por grano: los gradientes SVG no pueden repetir id en la página
-  const base = `pointer-events-none absolute animate-stamp ${valid ? '' : 'opacity-45'}`;
+  const dim = valid ? '' : 'opacity-40';
+  const base = `pointer-events-none absolute motion-safe:animate-stamp ${dim}`;
   if (type === 'star') {
-    return <Star className={`${base} inset-[12%] h-[76%] w-[76%] fill-sol-gold text-sol-gold-dark drop-shadow`} strokeWidth={1.5} aria-hidden />;
+    return (
+      <Star className={`${base} inset-[6%] h-[88%] w-[88%] fill-sol-gold text-sol-gold-dark drop-shadow`} strokeWidth={1.5} aria-hidden />
+    );
   }
   if (type === 'corn') {
     // Grano de maíz vectorial: corona ancha y redondeada, punta (pedicelo) clara, brillo y sombra.
@@ -26,7 +32,7 @@ function Marker({ type, valid }) {
     return (
       <svg
         viewBox="0 0 40 52"
-        className={`pointer-events-none absolute left-[24%] top-[14%] h-[72%] w-[52%] animate-kernel drop-shadow-[0_0.6cqw_0.6cqw_rgb(0_0_0/0.35)] ${valid ? '' : 'opacity-45'}`}
+        className={`pointer-events-none absolute left-[22%] top-[10%] h-[80%] w-[56%] motion-safe:animate-kernel drop-shadow-[0_0.6cqw_0.6cqw_rgb(0_0_0/0.35)] ${dim}`}
         aria-hidden
       >
         <defs>
@@ -41,7 +47,12 @@ function Marker({ type, valid }) {
             <stop offset="1" stopColor="#fff1c9" />
           </linearGradient>
         </defs>
-        <path d="M20 50C12 46 5 36 3.5 24 2 12 9 3 20 2c11 1 18 10 16.5 22C35 36 28 46 20 50z" fill={`url(#${uid}b)`} stroke="#b86e00" strokeWidth="1.2" />
+        <path
+          d="M20 50C12 46 5 36 3.5 24 2 12 9 3 20 2c11 1 18 10 16.5 22C35 36 28 46 20 50z"
+          fill={`url(#${uid}b)`}
+          stroke="#b86e00"
+          strokeWidth="1.2"
+        />
         <path d="M20 50c-3.5-2.4-6-6-7-10 4 1.6 10 1.6 14 0-1 4-3.5 7.6-7 10z" fill={`url(#${uid}t)`} />
         <path d="M10 14c2-5 6-8 11-8.5" stroke="#fff" strokeOpacity="0.85" strokeWidth="3" strokeLinecap="round" fill="none" />
         <ellipse cx="13" cy="22" rx="2.2" ry="4" fill="#fff" fillOpacity="0.45" />
@@ -51,13 +62,28 @@ function Marker({ type, valid }) {
   if (type === 'gold') {
     return (
       <span
-        className={`${base} inset-[10%] -rotate-12 rounded-full border-[0.9cqw] border-dashed border-sol-gold-dark bg-sol-gold/35 shadow-[inset_0_0_0_0.5cqw_rgb(245_158_11/0.5)]`}
+        className={`${base} inset-[8%] -rotate-12 rounded-full border-[0.9cqw] border-dashed border-sol-gold-dark bg-sol-gold/70 shadow-[inset_0_0_0_0.5cqw_rgb(255_255_255/0.5)]`}
         aria-hidden
       />
     );
   }
-  return <span className={`${base} inset-[8%] rounded-full bg-mark/55 ring-[0.6cqw] ring-mark mix-blend-multiply`} aria-hidden />;
+  // Ficha clásica: disco sólido con brillo, como la ficha de plástico del salón.
+  return (
+    <span
+      className={`${base} inset-[7%] rounded-full bg-mark shadow-[inset_0_-0.8cqw_0_rgb(0_0_0/0.25),inset_0_0.6cqw_0_rgb(255_255_255/0.3)] ring-[0.5cqw] ring-white/80`}
+      aria-hidden
+    />
+  );
 }
+
+// Color del número sobre cada ficha (contraste): blanco sobre la ficha sólida, azul sobre el sello,
+// negro con halo blanco sobre el maíz y la estrella.
+const NUMBER_ON_MARKER = {
+  chip: 'text-white',
+  gold: 'text-[#0f4c9c]',
+  corn: 'text-black [text-shadow:0_0_0.8cqw_#fff,0_0_0.8cqw_#fff,0_0_0.4cqw_#fff]',
+  star: 'text-black [text-shadow:0_0_0.8cqw_#fff,0_0_0.8cqw_#fff,0_0_0.4cqw_#fff]',
+};
 
 function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip', pattern = 'FULL', onToggle, showStatus = true }) {
   // Lo que se ve marcado: automático = lo cantado; manual = todo lo que la persona marcó.
@@ -66,13 +92,16 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
   const marked = useMemo(() => countedMarks(autoMark, called, manualMarks), [autoMark, called, manualMarks]);
 
   const missing = missingFor(card.grid, marked, pattern);
+  // Casillas que pide el patrón (sin marcas): base de la barra de progreso.
+  const required = useMemo(() => missingFor(card.grid, new Set(), pattern), [card.grid, pattern]);
+  const progress = required ? Math.round(((required - missing) / required) * 100) : 0;
   const won = showStatus && missing === 0;
 
   return (
     <article
       aria-label={`Cartón número ${card.serial}`}
       className={`@container relative overflow-hidden rounded-2xl bg-white shadow-lg ring-4 transition print:shadow-none dark:shadow-black/40 ${
-        won ? 'ring-sol-gold motion-safe:animate-pulse' : 'ring-transparent'
+        won ? 'ring-sol-gold motion-safe:animate-ready' : 'ring-transparent'
       }`}
     >
       {/* Letras B I N G O */}
@@ -114,20 +143,31 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
                 aria-pressed={isMarked}
                 aria-label={`${LETTERS[c]} ${n}${isMarked ? (notCalled ? ', marcado, aún no cantado' : ', marcado') : ''}`}
                 className={`relative grid aspect-square select-none place-items-center rounded-[1.6cqw] bg-white text-[10cqw] font-black tabular-nums leading-none text-black shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)] transition disabled:cursor-default ${
-                  !autoMark && onToggle ? 'cursor-pointer hover:bg-sol-gold-light active:scale-95' : ''
-                } ${pendingManual ? 'ring-[0.8cqw] ring-sol-gold' : ''} ${notCalled ? 'outline-dashed outline-[0.5cqw] -outline-offset-[1cqw] outline-sol-red/70' : ''}`}
+                  !autoMark && onToggle
+                    ? 'cursor-pointer hover:bg-sol-gold-light focus-visible:outline-[0.8cqw] focus-visible:outline-sol-gold active:scale-90'
+                    : ''
+                } ${pendingManual ? 'outline-solid outline-[0.8cqw] -outline-offset-[0.4cqw] outline-sol-gold motion-safe:animate-hint' : ''}`}
               >
-                {n}
                 {isMarked && <Marker type={marker} valid={!notCalled} />}
+                <span className={`relative ${isMarked && !notCalled ? (NUMBER_ON_MARKER[marker] ?? '') : ''}`}>{n}</span>
+                {/* Marcada a mano pero la bola aún no sale: no cuenta para el ¡Bingo! */}
+                {notCalled && (
+                  <span
+                    className="absolute right-[4%] top-[4%] grid h-[32%] w-[32%] place-items-center rounded-full bg-sol-red text-[4.2cqw] font-black text-white shadow"
+                    aria-hidden
+                  >
+                    !
+                  </span>
+                )}
               </button>
             );
           })
         )}
       </div>
 
-      {/* Pie: estado del patrón y número de serie */}
-      <footer className="flex items-center justify-between gap-2 px-[3cqw] pb-[3cqw]">
-        <span className="text-[3.6cqw] font-bold leading-tight text-[#0f4c9c]">
+      {/* Pie: estado del patrón (con barra de progreso) y número de serie */}
+      <footer className="flex items-center justify-between gap-[3cqw] px-[3cqw] pb-[3cqw]">
+        <span className="min-w-0 flex-1 text-[3.6cqw] font-bold leading-tight text-[#0f4c9c]">
           {showStatus
             ? won
               ? '¡Completo!'
@@ -135,6 +175,14 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
                 ? '¡Te falta 1!'
                 : `${PATTERNS[pattern]?.label} · faltan ${missing}`
             : 'Asociación Infantil Hogar Sol'}
+          {showStatus && (
+            <span className="mt-[1.2cqw] block h-[1.6cqw] overflow-hidden rounded-full bg-[#0f4c9c]/15" aria-hidden>
+              <span
+                className={`block h-full rounded-full transition-[width] duration-500 ${won ? 'bg-sol-gold' : missing <= 2 ? 'bg-sol-red' : 'bg-[#0f4c9c]'}`}
+                style={{ width: `${progress}%` }}
+              />
+            </span>
+          )}
         </span>
         <span className="rounded-full bg-[#0f4c9c] px-[3.5cqw] py-[0.8cqw] text-[6cqw] font-black tabular-nums leading-none text-white underline decoration-[0.4cqw] underline-offset-[0.8cqw]">
           {card.serial}

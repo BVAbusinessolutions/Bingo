@@ -54,6 +54,8 @@ exportación a Excel protegida, etc.); se puede consultar en el historial de `pe
       servidor y en el cliente con las mismas reglas (pruebas en ambos lados).
 - [x] Botón **¡Bingo!** bloqueado hasta completar el patrón con bolas cantadas; se enciende con pulso y sonido.
 - [x] Marcado manual por defecto (aviso antes de activar el automático) y fichas: ficha, oro, maíz, estrella.
+- [x] Vistas de "Mis cartones" (Auto, Grande, Una a la vez, Mosaico, Mini): Auto se ajusta a cuántos cartones hay
+      (1 grande, 2 a 4 mosaico, 5 o más mini); accesos por n.º de cartón con lo que le falta a cada uno.
 - [x] Terminología "bola" en toda la plataforma.
 - [x] Cartones de prueba: `npm run demo:cartones` (`--vivo`, `--venta`, `--reiniciar`).
 

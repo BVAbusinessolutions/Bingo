@@ -12,6 +12,7 @@ import Alert from '../../components/ui/Alert';
 import { formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
 import { SITE } from '../../config/site';
+import { autoView, gridClassFor } from '../../constants/cardViews';
 
 const METHODS = { SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia bancaria u otro' };
 const CLOSED = { REJECTED: 'Pago rechazado', EXPIRED: 'Reserva vencida', CANCELLED: 'Reserva cancelada' };
@@ -154,10 +155,15 @@ export default function PurchaseDetailPage() {
             Tus cartones
           </h2>
           {!approved && <p className="text-fg-muted print:hidden">Podrás imprimirlos cuando el pago esté aprobado.</p>}
-          <div className="print-cards grid gap-4 sm:grid-cols-2">
-            {r.cards.map((card) => (
-              <CardImage key={card.id} card={card} />
-            ))}
+          {/* Mismas columnas automáticas que en el juego en vivo, según cuántos cartones tiene la compra. */}
+          <div className="@container">
+            <div className={`print-cards grid gap-4 ${gridClassFor(autoView(r.cards.length))}`}>
+              {r.cards.map((card, i) => (
+                <div key={card.id} className="motion-safe:animate-fade-up" style={{ '--delay': `${Math.min(i, 8) * 60}ms` }}>
+                  <CardImage card={card} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </div>

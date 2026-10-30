@@ -31,26 +31,29 @@ const CardTile = memo(function CardTile({ card, selected, remainingMs, onToggle 
       onClick={() => onToggle(card.serial)}
       aria-pressed={selectable ? selected : undefined}
       aria-label={`Cartón ${formatSerial(card.serial)}: ${tooltip}`}
-      className={`group relative flex min-h-14 flex-col items-center justify-center rounded-xl border-2 py-2 text-lg font-black tabular-nums transition ${
+      // Tooltip nativo: el flotante anterior se cortaba en los bordes del catálogo y en táctil quedaba pegado.
+      title={`${formatSerial(card.serial)} · ${tooltip}`}
+      className={`relative flex min-h-14 flex-col items-center justify-center rounded-xl border-2 py-2 text-lg font-black tabular-nums transition duration-200 ${
         selected
-          ? 'scale-105 border-sol-gold bg-sol-blue text-white shadow-lg ring-2 ring-sol-gold dark:bg-sol-gold dark:text-sol-blue'
+          ? 'border-sol-blue bg-sol-blue text-white shadow-[0_6px_16px_rgb(15_76_156/0.35)] motion-safe:animate-pop dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
           : meta.tile
-      } ${selectable ? 'cursor-pointer active:scale-95' : 'cursor-not-allowed'}`}
+      } ${selectable ? 'cursor-pointer hover:-translate-y-0.5 active:scale-95' : 'cursor-not-allowed'} focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-sol-gold`}
     >
       {card.serial}
-      {selected && <Check className="absolute right-1 top-1 h-4 w-4" aria-hidden />}
+      {/* Seleccionado: sello dorado con check en la esquina, visible en claro y oscuro */}
+      {selected && (
+        <span
+          className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-sol-gold text-sol-blue shadow ring-2 ring-white motion-safe:animate-stamp dark:bg-white dark:ring-sol-gold"
+          aria-hidden
+        >
+          <Check className="h-4 w-4" strokeWidth={3.5} />
+        </span>
+      )}
       {card.status === 'RESERVED' && remainingMs != null && (
         <span className="mt-0.5 flex items-center gap-1 text-xs font-bold">
           <Clock className="h-3 w-3" aria-hidden /> {mmss(remainingMs)}
         </span>
       )}
-      {/* Tooltip visual (hover / foco de teclado). En táctil se usa el aria-label y la leyenda. */}
-      <span
-        role="presentation"
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden w-max max-w-44 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-sm font-medium text-white no-underline shadow-lg group-hover:block group-focus-visible:block"
-      >
-        {formatSerial(card.serial)} · {tooltip}
-      </span>
     </button>
   );
 });
@@ -107,7 +110,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
             type="button"
             onClick={() => setFilter(key)}
             aria-pressed={filter === key}
-            className={`flex min-h-11 items-center gap-2 rounded-full px-4 font-extrabold transition ${
+            className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-extrabold transition sm:gap-2 sm:px-4 sm:text-base ${
               filter === key ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'bg-muted text-fg-muted hover:text-fg'
             }`}
           >
@@ -120,18 +123,20 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
 
       {/* Leyenda */}
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-fg-muted">
-        {['AVAILABLE', 'RESERVED', 'VERIFYING', 'SOLD'].filter((s) => s === 'AVAILABLE' || cards.some((c) => c.status === s)).map((s) => (
-          <li key={s} className="flex items-center gap-1">
-            <span aria-hidden>{CARD_STATUS[s].emoji}</span> {CARD_STATUS[s].label}
-          </li>
-        ))}
+        {['AVAILABLE', 'RESERVED', 'VERIFYING', 'SOLD']
+          .filter((s) => s === 'AVAILABLE' || cards.some((c) => c.status === s))
+          .map((s) => (
+            <li key={s} className="flex items-center gap-1">
+              <span aria-hidden>{CARD_STATUS[s].emoji}</span> {CARD_STATUS[s].label}
+            </li>
+          ))}
         {maxSelectable && <li className="ml-auto">Máximo {maxSelectable} por compra</li>}
       </ul>
 
       {visible.length === 0 ? (
         <p className="py-10 text-center text-fg-muted">No hay cartones con ese filtro.</p>
       ) : (
-        <div className="grid max-h-[60vh] grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2 overflow-y-auto overflow-x-hidden p-1 pt-8 -mt-6">
+        <div className="grid max-h-[60vh] grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2.5 overflow-y-auto overflow-x-hidden p-2 pt-8 -mt-6">
           {visible.map((card) => (
             <CardTile
               key={card.serial}
