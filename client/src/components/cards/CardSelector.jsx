@@ -81,7 +81,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
   }, [cards, filter, query]);
 
   return (
-    <section aria-labelledby="catalog-title" className="surface space-y-4 p-4">
+    <section aria-labelledby="catalog-title" className="surface min-w-0 space-y-4 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 id="catalog-title" className="text-2xl font-black text-brand">
           Catálogo de cartones
@@ -94,7 +94,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
             onChange={(e) => setQuery(e.target.value.replace(/\D/g, '').slice(0, 8))}
             inputMode="numeric"
             placeholder="Buscar #"
-            className="w-36 bg-transparent py-2 text-base text-fg outline-none placeholder:text-fg-subtle"
+            className="w-full min-w-0 bg-transparent sm:w-36 py-2 text-base text-fg outline-none placeholder:text-fg-subtle"
           />
         </label>
       </div>
@@ -131,7 +131,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
       {visible.length === 0 ? (
         <p className="py-10 text-center text-fg-muted">No hay cartones con ese filtro.</p>
       ) : (
-        <div className="grid max-h-[60vh] grid-cols-4 gap-2 overflow-y-auto p-1 pt-8 -mt-6 sm:grid-cols-6 md:grid-cols-8">
+        <div className="grid max-h-[60vh] grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2 overflow-y-auto overflow-x-hidden p-1 pt-8 -mt-6">
           {visible.map((card) => (
             <CardTile
               key={card.serial}

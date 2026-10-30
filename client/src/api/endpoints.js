@@ -8,6 +8,12 @@ export const authApi = {
   logout: () => http.post('/auth/logout'),
   me: () => http.get('/auth/me').then(data),
   updateProfile: (body) => http.patch('/auth/me', body).then(data),
+  uploadAvatar: (blob) => {
+    const form = new FormData();
+    form.append('avatar', blob, 'avatar.webp');
+    return http.put('/auth/me/avatar', form).then(data);
+  },
+  removeAvatar: () => http.delete('/auth/me/avatar').then(data),
   changePassword: (body) => http.post('/auth/change-password', body).then(data),
   logoutAll: () => http.post('/auth/logout-all'),
   forgotPassword: (email) => http.post('/auth/forgot-password', { email }),

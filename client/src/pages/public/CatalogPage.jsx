@@ -149,7 +149,7 @@ export default function CatalogPage() {
   const total = selected.length * event.price;
 
   return (
-    <main className="container-page space-y-5 pb-32 pt-6">
+    <main className="container-page max-w-full space-y-5 overflow-x-clip pb-32 pt-6">
       <CheckoutSteps current={1} />
       <div>
         <h1 className="text-3xl font-black text-brand sm:text-4xl">Elige tus cartones</h1>
@@ -173,7 +173,8 @@ export default function CatalogPage() {
         </Alert>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {/* Celular y tablet: catálogo y selección apilados; minmax(0,…) impide que una celda ensanche la página. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {cards ? (
           <CardSelector cards={cards} selected={selectedSet} now={now + clockOffset} onToggle={toggle} maxSelectable={MAX} />
         ) : (
@@ -183,7 +184,7 @@ export default function CatalogPage() {
         )}
 
         {/* Vista previa de los cartones elegidos con el diseño tradicional */}
-        <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start" aria-label="Cartones seleccionados">
+        <aside className="min-w-0 space-y-3 lg:sticky lg:top-20 lg:self-start" aria-label="Cartones seleccionados">
           <h2 className="font-bold text-fg">Tu selección ({selected.length})</h2>
           {selectedCards.length === 0 ? (
             <p className="surface p-6 text-center text-sm text-fg-muted">

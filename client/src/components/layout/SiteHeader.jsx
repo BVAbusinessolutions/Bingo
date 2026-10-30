@@ -8,16 +8,10 @@ import { BrandBadge } from '../brand/BrandLogo';
 import AccessibilityButton from '../accessibility/AccessibilityButton';
 import ThemeToggle from '../ui/ThemeToggle';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import UserAvatar from '../ui/UserAvatar';
 import { useExclusiveOverlay } from '../../lib/overlays';
 import { useCanPlayLive } from '../../hooks/useCanPlayLive';
 
-const initials = (name = '') =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('');
 
 const navLinkClass = ({ isActive }) =>
   `relative whitespace-nowrap rounded-lg px-2.5 py-2 text-[0.95rem] font-semibold transition-colors 2xl:px-3 2xl:text-base after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-accent after:transition-transform after:duration-300 ${
@@ -63,7 +57,7 @@ function UserMenu({ user, isAdmin, onLogout }) {
         aria-haspopup="menu"
         className="flex h-11 items-center gap-2 rounded-full bg-white/10 pl-1 pr-3 font-semibold ring-1 ring-white/15 transition hover:bg-white/20"
       >
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-black text-navy-950">{initials(user?.name)}</span>
+        <UserAvatar user={user} />
         <span className="hidden max-w-32 truncate 2xl:inline">{user?.name?.split(' ')[0]}</span>
         <ChevronDown className={`h-4 w-4 transition ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
@@ -213,7 +207,7 @@ export default function SiteHeader() {
           <div className="container-page space-y-4 pt-4">
             {isAuthenticated && (
               <p className="flex items-center gap-3 font-semibold">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-accent font-black text-navy-950">{initials(user?.name)}</span>
+                <UserAvatar user={user} className="h-10 w-10" />
                 Hola, {user?.name?.split(' ')[0]}
               </p>
             )}

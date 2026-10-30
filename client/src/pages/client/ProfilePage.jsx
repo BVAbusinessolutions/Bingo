@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BadgeCheck, KeyRound, LogOut, MailWarning, Palette, UserRound } from 'lucide-react';
+import { BadgeCheck, Camera, KeyRound, LogOut, MailWarning, Palette, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationsContext';
 import { authApi } from '../../api/endpoints';
@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import ThemeToggle from '../../components/ui/ThemeToggle';
 import TextSizeControl from '../../components/ui/TextSizeControl';
+import AvatarEditor from '../../components/profile/AvatarEditor';
 import { changePasswordSchema, profileSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
 
@@ -157,6 +158,10 @@ export default function ProfilePage() {
     <main className="container-page py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         <PageHeader eyebrow="Tu cuenta" title="Mi perfil" description="Actualiza tus datos, tu contraseña y cómo ves el sitio." />
+
+        <Section icon={Camera} title="Foto de perfil" description="Se muestra en la barra superior.">
+          <AvatarEditor />
+        </Section>
 
         <Section icon={UserRound} title="Datos personales">
           <PersonalDataForm />

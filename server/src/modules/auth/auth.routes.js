@@ -1,15 +1,17 @@
 import { Router } from 'express';
+import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { one, query } from '../../db/index.js';
+import { one, query, tx } from '../../db/index.js';
 import { env } from '../../config/env.js';
 import { authenticate, isUsableAccount, JWT_AUDIENCE, JWT_ISSUER } from '../../middleware/auth.js';
 import { emailActionLimiter, loginLimiter, registerLimiter, requireXhrHeader, validateBody } from '../../middleware/security.js';
 import { sendMail } from '../../utils/mailer.js';
 import { consumeToken, issueToken } from '../../services/oneTimeTokens.js';
 import { audit } from '../../services/audit.js';
+import { getFile, hasValidSignature, saveFile, sendFile } from '../../services/files.js';
 import { disconnectUser } from '../../realtime.js';
 import { emailField, nameField, newPasswordField, phoneField } from './auth.schemas.js';
 
@@ -28,7 +30,7 @@ const cookieOptions = {
 };
 
 const USER_COLUMNS =
-  'id, name, email, phone, role, status, suspended_until, email_verified, password_hash, failed_logins, locked_until';
+  'id, name, email, phone, role, status, suspended_until, email_verified, password_hash, failed_logins, locked_until, avatar_file_id';
 
 /** Lo único que se devuelve de un usuario: nunca el hash ni contadores internos. */
 export const publicUser = (u) => ({
@@ -38,6 +40,8 @@ export const publicUser = (u) => ({
   phone: u.phone,
   role: u.role,
   emailVerified: u.email_verified,
+  // El id del archivo cambia con cada foto: la URL sirve de llave de caché y no se puede adivinar.
+  avatarUrl: u.avatar_file_id ? `/api/auth/avatars/${u.avatar_file_id}` : null,
 });
 
 const findByEmail = (email) => one(`select ${USER_COLUMNS} from app.users where email = $1`, [email]);
@@ -296,6 +300,47 @@ router.post('/verify-email', validateBody(z.object({ token: z.string().max(128) 
 router.post('/resend-verification', emailActionLimiter, authenticate, currentUser, async (req, res) => {
   if (!req.account.email_verified) await sendVerificationEmail(req.account);
   res.status(204).end();
+});
+
+
+// ---------- Foto de perfil ----------
+// El navegador la recorta a un cuadrado y la re-codifica (quita metadatos como la ubicación GPS).
+const AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
+  fileFilter: (req, file, cb) => cb(null, AVATAR_TYPES.has(file.mimetype)),
+});
+
+router.put('/me/avatar', requireXhrHeader, authenticate, avatarUpload.single('avatar'), async (req, res) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'AVATAR_REQUIRED' });
+  if (!hasValidSignature(file.mimetype, file.buffer)) return res.status(400).json({ error: 'INVALID_FILE' });
+  const user = await tx(async (q) => {
+    const fileId = await saveFile(q, { kind: 'AVATAR', mime: file.mimetype, data: file.buffer });
+    const [old] = await q('select avatar_file_id from app.users where id = $1 for update', [req.user.id]);
+    const [u] = await q(`update app.users set avatar_file_id = $2, updated_at = now() where id = $1 returning ${USER_COLUMNS}`, [req.user.id, fileId]);
+    if (old?.avatar_file_id) await q("delete from app.files where id = $1 and kind = 'AVATAR'", [old.avatar_file_id]);
+    return u;
+  });
+  res.json(publicUser(user));
+});
+
+router.delete('/me/avatar', requireXhrHeader, authenticate, async (req, res) => {
+  const user = await tx(async (q) => {
+    const [old] = await q('select avatar_file_id from app.users where id = $1 for update', [req.user.id]);
+    const [u] = await q(`update app.users set avatar_file_id = null, updated_at = now() where id = $1 returning ${USER_COLUMNS}`, [req.user.id]);
+    if (old?.avatar_file_id) await q("delete from app.files where id = $1 and kind = 'AVATAR'", [old.avatar_file_id]);
+    return u;
+  });
+  res.json(publicUser(user));
+});
+
+// Pública (la usa un <img>), pero solo sirve archivos AVATAR: nunca comprobantes de pago.
+router.get('/avatars/:fileId', async (req, res) => {
+  if (!z.string().uuid().safeParse(req.params.fileId).success) return res.status(404).json({ error: 'NOT_FOUND' });
+  const row = await one("select id from app.files where id = $1 and kind = 'AVATAR'", [req.params.fileId]);
+  sendFile(res, row && (await getFile(row.id)), { cache: true });
 });
 
 export default router;

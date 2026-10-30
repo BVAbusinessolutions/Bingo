@@ -12,6 +12,7 @@ const ERRORS = {
   NOT_ENOUGH_CARDS: 'No quedan suficientes cartones disponibles.',
   EVENT_NOT_ON_SALE: 'La venta de este evento está cerrada.',
   RESERVATION_NOT_PENDING: 'Esta reserva ya no admite pagos (puede haber vencido).',
+  AVATAR_REQUIRED: 'Elige una foto JPG, PNG o WebP.',
   PROOF_REQUIRED: 'Adjunta la foto o el PDF del comprobante.',
   NOT_REFUNDABLE: 'Solo se pueden reembolsar compras aprobadas.',
   EVENT_ALREADY_STARTED: 'El sorteo ya empezó: esa acción ya no está permitida.',
