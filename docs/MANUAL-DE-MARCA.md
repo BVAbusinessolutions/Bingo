@@ -61,11 +61,17 @@ Reglas:
 
 ### Fotografía del premio mayor
 
-- Archivo: `client/public/img/premio-motocicleta.webp` (o la URL de `VITE_PRIZE_IMAGE`), horizontal 16:10,
-  1600×1000 px o más, fondo limpio, sin textos ni logos sobreimpuestos.
-- Va dentro de un marco de vidrio (`bg-white/5`, blur 16 px, filo `ring-white/20` y un brillo dorado de 1 px).
-- Si la foto no existe o no carga, el marco no se muestra: nunca una imagen rota ni un ícono de relleno.
-- No se colocan logos ni insignias encima de la foto, de la cuenta regresiva ni de los encabezados de las tarjetas.
+- Archivos: `client/public/img/premio-motocicleta*.webp` (recortes con fondo transparente) o la URL de
+  `VITE_PRIZE_IMAGE`. Sin textos ni logos sobreimpuestos.
+- **Escenario único:** una sola superficie de vidrio con foco de luz arriba y sombra de piso bajo las ruedas.
+  Nada de marco dentro de marco.
+- **Marco 4:3 con `object-contain`:** acomoda por igual la foto horizontal y las casi cuadradas, así la moto
+  mantiene un tamaño parecido entre fotos.
+- **Fundido** entre fotos cada 4,5 s; miniaturas, pausa y contador en una barra propia debajo de la foto. En
+  celular no hay flechas (se desliza o se usan las miniaturas).
+- **Distribución:** fotos en 7 de 12 columnas, información (título, requisito de retiro y compra) en 5, y los
+  incentivos debajo en tres columnas iguales.
+- Si una foto no carga, se quita; si no queda ninguna, el escenario no se muestra (nunca una imagen rota).
 
 ## 3. Logo
 

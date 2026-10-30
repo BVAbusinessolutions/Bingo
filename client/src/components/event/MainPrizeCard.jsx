@@ -6,31 +6,27 @@ import { MOTORCYCLE_REQUIREMENT } from '../../config/site';
 import { PATHS } from '../../routing/paths';
 
 /**
- * Premio mayor (la motocicleta) en vidrio translúcido con brillo dorado. Va sobre fondo azul marino.
- * Incluye el requisito legal de retiro, tal como lo aprobó la Asociación.
+ * Premio mayor (la motocicleta): escenario de fotos a la izquierda (7 de 12 columnas) e información a la
+ * derecha. En celular se apilan: primero la moto, luego el texto. Incluye el requisito legal de retiro.
  */
 export default function MainPrizeCard({ withCta = true, className = '' }) {
   if (!MAIN_PRIZE) return null;
   return (
-    <article
-      className={`glass group relative overflow-hidden rounded-3xl p-5 text-white shadow-neon transition-transform duration-500 hover:-translate-y-1 sm:p-7 ${className}`}
-    >
-      {/* Halos de luz: dorado arriba a la derecha, azul abajo a la izquierda */}
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent/25 blur-3xl transition-opacity duration-500 group-hover:opacity-80" aria-hidden />
-      <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-sol-blue-light/30 blur-3xl" aria-hidden />
+    <article className={`grid items-center gap-8 lg:grid-cols-12 lg:gap-12 ${className}`}>
+      <div className="lg:col-span-7">
+        <PrizeCarousel images={MAIN_PRIZE.images} alt={MAIN_PRIZE.imageAlt} views={MAIN_PRIZE.views} />
+      </div>
 
-      <div className="relative space-y-5">
-        <PrizeCarousel images={MAIN_PRIZE.images} alt={MAIN_PRIZE.imageAlt} />
-
+      <div className="space-y-5 lg:col-span-5">
+        <p className="inline-flex items-center rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent ring-1 ring-accent/30">
+          Premio mayor
+        </p>
         <div>
-          <p className="inline-flex items-center rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent ring-1 ring-accent/30">
-            Premio mayor
-          </p>
-          <h3 className="mt-3 font-display text-3xl font-bold sm:text-4xl">{MAIN_PRIZE.title}</h3>
-          <p className="mt-1 text-white/80">{MAIN_PRIZE.text}</p>
+          <h3 className="font-display text-4xl font-bold sm:text-5xl">{MAIN_PRIZE.title}</h3>
+          <p className="mt-2 text-lg text-white/80">{MAIN_PRIZE.text}</p>
         </div>
 
-        <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="glass flex gap-3 rounded-2xl p-5">
           <IdCard className="mt-0.5 h-6 w-6 shrink-0 text-accent" aria-hidden />
           <p className="text-sm leading-relaxed text-white/90 sm:text-base">
             <span className="mb-1 flex items-center gap-1.5 font-semibold text-white">

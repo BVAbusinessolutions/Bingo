@@ -7,7 +7,7 @@ import { Bike, HeartHandshake, ShieldCheck, Ticket } from 'lucide-react';
 export const PRIZES = Object.freeze([
   {
     id: 'moto',
-    icon: Bike, // solo para la cinta de premios; la tarjeta del premio mayor usa la fotografía
+    icon: Bike, // la sección del premio mayor usa las fotografías, no el ícono
     title: 'Motocicleta',
     text: 'El gran premio del Bingo Benéfico Hogar Sol.',
     main: true,
@@ -16,6 +16,8 @@ export const PRIZES = Object.freeze([
       ? [import.meta.env.VITE_PRIZE_IMAGE]
       : ['/img/premio-motocicleta.webp', '/img/premio-motocicleta-2.webp', '/img/premio-motocicleta-3.webp'],
     imageAlt: 'Motocicleta, premio mayor del Bingo Benéfico Hogar Sol',
+    // Qué muestra cada foto (texto alternativo y miniaturas), en el mismo orden que `images`.
+    views: import.meta.env.VITE_PRIZE_IMAGE ? [] : ['vista lateral', 'vista frontal desde la derecha', 'vista frontal desde la izquierda'],
   },
   { id: 'carton', icon: Ticket, title: 'Un cartón ya participa', text: 'Juega en el salón del evento o desde tu casa, con las mismas bolas y las mismas reglas.' },
   {
