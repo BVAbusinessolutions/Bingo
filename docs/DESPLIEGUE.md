@@ -65,7 +65,7 @@ con su SMTP: solo cambian las variables.
 - [ ] **Datos de cobro** (Administración → Datos de cobro) correctos: SINPE, IBAN, titular.
 - [ ] Subiste el ZIP de cartones (Administración → Series), revisaste los marcados "por revisar" y elegiste la serie del evento.
 - [ ] Hiciste una compra de prueba completa y recibiste los correos (admin y cliente).
-- [ ] Probaste el sorteo: cantar balotas, ver los cartones marcarse y reclamar un bingo.
+- [ ] Probaste el sorteo: cantar bolas, ver los cartones marcarse y reclamar un bingo.
 - [ ] Respaldo: `npm run backup` y guarda el archivo fuera de Render (el disco del servidor se borra en cada despliegue). Confirma en Supabase (**Database → Backups**) si tu plan incluye respaldos automáticos; en el plan gratis normalmente no.
 - [ ] El proyecto de Supabase está activo: el plan gratis se pausa tras una semana sin actividad.
 - [ ] Revisa el tamaño de la base (**Settings → Database** o el panel de uso). Los comprobantes y las imágenes de cartones se guardan dentro de ella; el plan gratis tiene 500 MB.

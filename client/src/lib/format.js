@@ -19,7 +19,7 @@ const ERRORS = {
   EVENT_NOT_PLAYABLE: 'El evento está finalizado o cancelado.',
   EVENT_CLOSED: 'El evento está cerrado y no se puede editar.',
   INVALID_STATUS_CHANGE: 'Ese cambio de estado no está permitido.',
-  ALREADY_CALLED: 'Esa balota ya fue cantada.',
+  ALREADY_CALLED: 'Esa bola ya fue cantada.',
   CANNOT_CHANGE_SELF: 'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.',
   SERIES_IN_USE: 'La serie está asignada a un evento y no se puede modificar ni borrar.',
   SERIES_NOT_READY: 'La serie todavía se está procesando o falló.',
@@ -41,7 +41,7 @@ const ERRORS = {
   INVALID_TOKEN: 'El enlace no es válido o ya venció. Solicita uno nuevo.',
   INVALID_PASSWORD: 'La contraseña actual no es correcta.',
   TOO_MANY_REQUESTS: 'Demasiados intentos. Espera unos minutos.',
-  NOT_A_WINNER: 'Ese cartón todavía no completa el patrón con las balotas cantadas.',
+  NOT_A_WINNER: 'Ese cartón todavía no completa el patrón con las bolas cantadas.',
   EVENT_NOT_LIVE: 'El sorteo no está en vivo en este momento.',
   ACCOUNT_SUSPENDED: (d) =>
     `Tu cuenta está suspendida${d.until ? ` hasta el ${formatDate(d.until)}` : ''}. Si crees que es un error, contáctanos.`,

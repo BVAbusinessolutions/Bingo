@@ -4,7 +4,7 @@ import BrandLogo from '../brand/BrandLogo';
 import { LETTERS, PATTERNS, countedMarks, isFreeCell, missingFor } from '../../constants/patterns';
 
 /**
- * Cartón de bingo de 75 balotas (5x5, centro libre), con el diseño del cartón impreso de la Asociación.
+ * Cartón de bingo de 75 bolas (5x5, centro libre), con el diseño del cartón impreso de la Asociación.
  *  - card:        { id, serial, grid: (number|null)[5][5] }
  *  - called:      Set<number> con los números cantados
  *  - manualMarks: Set<number> con las marcas del jugador (modo manual)
@@ -13,7 +13,7 @@ import { LETTERS, PATTERNS, countedMarks, isFreeCell, missingFor } from '../../c
  *  - onToggle(cardId, number)
  *  - showStatus:  false = vista previa (catálogo, impresión), sin progreso del patrón
  */
-/** La "ficha" que se coloca sobre la casilla. `valid` = la balota ya fue cantada. */
+/** La "ficha" que se coloca sobre la casilla. `valid` = la bola ya fue cantada. */
 function Marker({ type, valid }) {
   const uid = useId(); // ids únicos por grano: los gradientes SVG no pueden repetir id en la página
   const base = `pointer-events-none absolute animate-stamp ${valid ? '' : 'opacity-45'}`;
@@ -102,7 +102,7 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
               );
             }
             const isMarked = shown.has(n);
-            const notCalled = isMarked && !called.has(n); // marcada a mano, pero la balota aún no sale
+            const notCalled = isMarked && !called.has(n); // marcada a mano, pero la bola aún no sale
             const pendingManual = !autoMark && called.has(n) && !isMarked;
             return (
               <button

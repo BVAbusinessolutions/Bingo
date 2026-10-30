@@ -21,7 +21,7 @@ function ClaimCard({ claim, pattern, onDecide }) {
       <div className="space-y-2">
         <BingoCard card={{ id: claim.id, serial: claim.serial, grid: claim.grid }} called={called} manualMarks={EMPTY} pattern={pattern} />
         <p className="text-fg-muted">
-          Marcado con las {claim.calledCount} balotas cantadas al momento del reclamo ({formatDate(claim.createdAt)}).
+          Marcado con las {claim.calledCount} bolas cantadas al momento del reclamo ({formatDate(claim.createdAt)}).
         </p>
       </div>
       <div className="space-y-4">

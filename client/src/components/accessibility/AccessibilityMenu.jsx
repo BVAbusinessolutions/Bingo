@@ -265,7 +265,7 @@ export default function AccessibilityMenu() {
           <legend className="mb-2 flex items-center gap-2 font-extrabold text-fg">
             <Eye className="h-5 w-5 text-brand" aria-hidden /> Visión del color
           </legend>
-          <p className="mb-2 text-sm text-fg-muted">Cambia los colores de balotas y fichas por otros fáciles de distinguir.</p>
+          <p className="mb-2 text-sm text-fg-muted">Cambia los colores de bolas y fichas por otros fáciles de distinguir.</p>
           <div role="radiogroup" aria-label="Filtro de visión del color" className="grid grid-cols-2 gap-2">
             {CVD_OPTIONS.map(([value, label, hint]) => {
               const active = theme.cvd === value;

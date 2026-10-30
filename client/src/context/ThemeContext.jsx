@@ -10,7 +10,7 @@ const ThemeContext = createContext(null);
 
 /** Tamaños de letra disponibles; index.html aplica el guardado antes de pintar. */
 export const TEXT_SIZES = Object.freeze(['normal', 'large', 'xlarge']);
-/** Filtros de visión del color (daltonismo): cambian la paleta de balotas y fichas (tokens.css). */
+/** Filtros de visión del color (daltonismo): cambian la paleta de bolas y fichas (tokens.css). */
 export const CVD_MODES = Object.freeze(['none', 'protan', 'deutan', 'tritan']);
 
 const DYSLEXIA_FONT_URL = 'https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&display=swap';

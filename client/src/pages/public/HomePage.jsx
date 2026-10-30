@@ -16,7 +16,7 @@ const STEPS = [
   { icon: UserPlus, title: 'Crea tu cuenta', text: 'Solo necesitas tu nombre y tu correo.' },
   { icon: MousePointerClick, title: 'Elige tus cartones', text: 'Escoge los que más te gusten del catálogo.' },
   { icon: CreditCard, title: 'Paga con SINPE', text: 'O por transferencia. Envíanos el comprobante.' },
-  { icon: PartyPopper, title: '¡Juega en vivo!', text: 'Marca tus números al salir cada balota. Si completas, pulsa “¡Bingo!”.' },
+  { icon: PartyPopper, title: '¡Juega en vivo!', text: 'Marca tus números al salir cada bola. Si completas, pulsa “¡Bingo!”.' },
 ];
 
 const IMPACT = [

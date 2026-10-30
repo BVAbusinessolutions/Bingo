@@ -17,8 +17,8 @@ const ACTIONS = {
   'reservation.refunded': 'Compra reembolsada',
   'reservation.manual_sale': 'Venta manual registrada',
   'reservations.exported': 'Compras exportadas a Excel',
-  'draw.call': 'Balota cantada',
-  'draw.undo': 'Balota deshecha',
+  'draw.call': 'Bola cantada',
+  'draw.undo': 'Bola deshecha',
   'claim.confirmed': 'Premio confirmado',
   'claim.rejected': 'Reclamo de bingo rechazado',
   'event.created': 'Evento creado',
@@ -47,7 +47,7 @@ const FILTERS = [
 
 const detailText = (e) => {
   const d = e.details ?? {};
-  if (d.number) return `Balota ${d.number}`;
+  if (d.number) return `Bola ${d.number}`;
   if (d.total !== undefined) return formatCRC(d.total);
   if (d.serials) return `Cartones ${d.serials.join(', ')}`;
   if (d.name) return d.name;

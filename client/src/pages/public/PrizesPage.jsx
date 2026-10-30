@@ -24,7 +24,7 @@ const DELIVERY = [
   {
     icon: Scale,
     title: 'Empates',
-    text: 'Si varios cartones completan el patrón con la misma balota, los premios divisibles se reparten y los indivisibles se desempatan con una balota por cartón.',
+    text: 'Si varios cartones completan el patrón con la misma bola, los premios divisibles se reparten y los indivisibles se desempatan con una bola por cartón.',
   },
 ];
 

@@ -27,7 +27,7 @@ router.get('/mine', authenticate, requireEvent, async (req, res) => {
 
 /**
  * "¡Bingo!": el servidor decide. Verifica que el cartón sea del jugador, que el sorteo esté en vivo
- * y que el patrón esté completo con las balotas realmente cantadas. Luego el admin confirma el premio.
+ * y que el patrón esté completo con las bolas realmente cantadas. Luego el admin confirma el premio.
  */
 router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object({ cardId: z.string().uuid() })), async (req, res) => {
   const { event } = req;
@@ -61,7 +61,7 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
   notifyAdmins('claim:new', adminClaimView(claim));
   notifyAdminsByMail({
     subject: `🏆 ¡Bingo reclamado! Cartón #${card.serial}`,
-    text: `Un jugador reclamó bingo en ${event.name} con el cartón #${card.serial} tras ${called.length} balotas.\nEl sistema ya verificó el patrón; confirma el premio desde el panel.`,
+    text: `Un jugador reclamó bingo en ${event.name} con el cartón #${card.serial} tras ${called.length} bolas.\nEl sistema ya verificó el patrón; confirma el premio desde el panel.`,
     action: { label: 'Revisar reclamo', url: `${env.clientOrigin}/admin/ganadores` },
   });
   res.status(201).json(claimView(claim));

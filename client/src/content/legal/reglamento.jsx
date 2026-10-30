@@ -34,7 +34,7 @@ const SECTIONS = ({ event } = {}) => [
           )}
         </p>
         <p>
-          Se puede jugar de forma presencial en el salón o en línea. Ambos canales juegan con las mismas balotas, al mismo tiempo y con las
+          Se puede jugar de forma presencial en el salón o en línea. Ambos canales juegan con las mismas bolas, al mismo tiempo y con las
           mismas reglas.
         </p>
       </>
@@ -67,16 +67,16 @@ const SECTIONS = ({ event } = {}) => [
     body: (
       <ul>
         <li>
-          Bingo de 75 balotas: columnas B (1-15), I (16-30), N (31-45), G (46-60) y O (61-75). El centro del cartón es un espacio libre.
+          Bingo de 75 bolas: columnas B (1-15), I (16-30), N (31-45), G (46-60) y O (61-75). El centro del cartón es un espacio libre.
         </li>
         <li>El patrón ganador de cada ronda (línea, cuatro esquinas, letra X o cartón lleno) se anuncia antes de empezar.</li>
-        <li>Las balotas se extraen al azar en el salón, frente al público y la cámara, y se registran al instante en el sistema.</li>
+        <li>Las bolas se extraen al azar en el salón, frente al público y la cámara, y se registran al instante en el sistema.</li>
         <li>
           En línea, tus cartones se marcan solos. Cuando completes el patrón aparece el botón <strong>“¡Bingo!”</strong>; púlsalo de
           inmediato. En el salón, se canta en voz alta.
         </li>
         <li>
-          El sistema verifica automáticamente cada cartón vendido contra las balotas cantadas. Un bingo solo es válido si coincide con ese
+          El sistema verifica automáticamente cada cartón vendido contra las bolas cantadas. Un bingo solo es válido si coincide con ese
           registro oficial.
         </li>
       </ul>
@@ -124,7 +124,7 @@ const SECTIONS = ({ event } = {}) => [
             nombre y el número deben coincidir con los de la compra.
           </li>
           <li>
-            Los bingos en línea se confirman con el registro del sistema (cartón, balotas y hora del reclamo). Los bingos del salón se
+            Los bingos en línea se confirman con el registro del sistema (cartón, bolas y hora del reclamo). Los bingos del salón se
             confirman leyendo el cartón físico en voz alta frente al público y la cámara, contra el mismo registro.
           </li>
           <li>La Asociación puede pedir información adicional si detecta indicios de fraude, y retener el premio mientras lo verifica.</li>
@@ -218,7 +218,7 @@ const SECTIONS = ({ event } = {}) => [
     body: (
       <p>
         Los resultados se publican en la sección “Resultados” con el número de cartón y solo el primer nombre y la inicial del apellido de
-        quien gana. El registro completo de balotas cantadas queda guardado y disponible para auditoría.
+        quien gana. El registro completo de bolas cantadas queda guardado y disponible para auditoría.
       </p>
     ),
   },

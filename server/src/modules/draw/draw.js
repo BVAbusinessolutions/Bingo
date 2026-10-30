@@ -22,13 +22,13 @@ export const broadcast = async (eventId) => drawNs?.to(`event:${eventId}`).emit(
 
 /**
  * Verificación automática: cartones vendidos (en línea o en el salón) que ya completaron el patrón
- * con las balotas cantadas, con el estado de su reclamo. Así el admin ve un bingo aunque nadie lo cante.
+ * con las bolas cantadas, con el estado de su reclamo. Así el admin ve un bingo aunque nadie lo cante.
  */
 export async function winningCards(eventId) {
   const event = await one('select pattern from app.events where id = $1', [eventId]);
   if (!event) return [];
   const called = (await query('select number from app.draws where event_id = $1', [eventId])).map((r) => r.number);
-  if (called.length < 4) return []; // ningún patrón se completa con menos de 4 balotas
+  if (called.length < 4) return []; // ningún patrón se completa con menos de 4 bolas
   const cards = await query(
     `select c.id, c.serial, c.grid, coalesce(u.name, r.buyer_full_name) as holder, r.channel, cl.status as claim_status
        from app.cards c
@@ -53,7 +53,7 @@ export async function winningCards(eventId) {
     .sort((a, b) => Number(a.serial) - Number(b.serial));
 }
 
-/** Avisa al panel de administración qué cartones tienen bingo tras cada balota. */
+/** Avisa al panel de administración qué cartones tienen bingo tras cada bola. */
 const notifyWinningCards = async (eventId) => notifyAdmins('draw:winning-cards', { eventId, cards: await winningCards(eventId) });
 
 /** Namespace /draw: solo usuarios autenticados; los clientes solo escuchan, nunca cantan. */
@@ -133,7 +133,7 @@ drawRouter.post('/draw/undo', authenticate, authorize('ADMIN'), requireEvent, re
 
 /**
  * Ganador del salón: el admin verificó el cartón físico en voz alta y lo registra. El servidor vuelve a
- * validar el patrón con las balotas cantadas; el premio queda confirmado y aparece en Resultados al instante.
+ * validar el patrón con las bolas cantadas; el premio queda confirmado y aparece en Resultados al instante.
  */
 drawRouter.post(
   '/draw/salon-winner',

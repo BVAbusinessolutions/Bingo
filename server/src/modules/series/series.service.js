@@ -210,7 +210,7 @@ export async function deleteSeries(id, actor) {
 
 /**
  * Elige qué serie se juega en un evento: reemplaza sus cartones por los de la serie.
- * Solo antes de vender: si el evento ya tiene reservas o balotas cantadas, se rechaza.
+ * Solo antes de vender: si el evento ya tiene reservas o bolas cantadas, se rechaza.
  */
 export async function assignSeriesToEvent(eventId, seriesId, actor) {
   return tx(async (q) => {

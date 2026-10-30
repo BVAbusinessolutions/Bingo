@@ -41,7 +41,7 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-brand: var(--brand);
 
-  /* Balotas por columna (B I N G O) y color de la ficha de marcado: cambian con los filtros de daltonismo */
+  /* Bolas por columna (B I N G O) y color de la ficha de marcado: cambian con los filtros de daltonismo */
   --color-ball-b: var(--ball-b);
   --color-ball-i: var(--ball-i);
   --color-ball-n: var(--ball-n);
@@ -50,7 +50,7 @@
   --color-mark: var(--mark);
 }
 
-/* Paleta de balotas: todas con texto blanco legible (contraste >= 4.5:1). */
+/* Paleta de bolas: todas con texto blanco legible (contraste >= 4.5:1). */
 :root {
   --ball-b: #0e4a8e;
   --ball-i: #d32f2f;

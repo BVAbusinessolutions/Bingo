@@ -1,4 +1,4 @@
-// Bingo de 75 balotas: cartón 5x5 (columnas B-I-N-G-O) con centro libre en grid[2][2] = null.
+// Bingo de 75 bolas: cartón 5x5 (columnas B-I-N-G-O) con centro libre en grid[2][2] = null.
 // Mantener en sincronía con server/src/domain/bingo.js: el servidor es quien valida los bingos.
 export const MAX_BALL = 75;
 export const LETTERS = ['B', 'I', 'N', 'G', 'O'];

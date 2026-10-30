@@ -314,7 +314,7 @@ function EventCard({ ev, series, onChanged }) {
           {confirm === 'CANCELLED'
             ? 'Se cierran las compras sin aprobar y se avisa por correo a quienes enviaron comprobante. Las compras aprobadas se reembolsan desde Compras.'
             : confirm === 'FINISHED'
-              ? 'Ya no se podrán cantar balotas ni reclamar premios.'
+              ? 'Ya no se podrán cantar bolas ni reclamar premios.'
               : 'Se cierra la venta de cartones y los jugadores podrán reclamar bingo.'}
         </ConfirmDialog>
       )}

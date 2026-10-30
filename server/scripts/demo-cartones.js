@@ -2,10 +2,12 @@
 //
 //   npm run demo:cartones                 asigna 3 cartones aprobados a cliente@hogarsol.org
 //   npm run demo:cartones -- --vivo       además pone el evento demo EN VIVO (para "Jugar en vivo")
-//   npm run demo:cartones -- --reiniciar  quita los cartones de prueba, las balotas y los reclamos,
+//   npm run demo:cartones -- --venta      conserva los cartones, borra bolas y reclamos, y reabre la venta
+//                                         (evento "programado": vuelve a verse en Comprar cartones)
+//   npm run demo:cartones -- --reiniciar  quita los cartones de prueba, las bolas y los reclamos,
 //                                         y devuelve el evento a "programado" (0 vendidos)
 //
-// Las balotas se cantan desde Administración > Sorteo (así llegan en tiempo real por el socket).
+// Las bolas se cantan desde Administración > Sorteo (así llegan en tiempo real por el socket).
 // Detén el servidor antes de correrlo si usas la base embebida (PGlite admite un solo proceso).
 import { connect, close, one, query, tx } from '../src/db/index.js';
 import { DEMO_EVENT_ID } from '../src/db/seed.js';
@@ -36,7 +38,16 @@ async function reset() {
     }
     await q("update app.events set status = 'SCHEDULED' where id = $1", [DEMO_EVENT_ID]);
   });
-  console.log('✔ Evento demo reiniciado: 0 vendidos, sin balotas ni reclamos, estado "programado".');
+  console.log('✔ Evento demo reiniciado: 0 vendidos, sin bolas ni reclamos, estado "programado".');
+}
+
+async function reopenSales() {
+  await tx(async (q) => {
+    await q('delete from app.claims where event_id = $1', [DEMO_EVENT_ID]);
+    await q('delete from app.draws where event_id = $1', [DEMO_EVENT_ID]);
+    await q("update app.events set status = 'SCHEDULED' where id = $1", [DEMO_EVENT_ID]);
+  });
+  console.log('✔ Venta reabierta: evento "programado", sin bolas ni reclamos (los cartones de prueba se conservan).');
 }
 
 async function assign() {
@@ -74,9 +85,10 @@ try {
     await reset();
   } else {
     await assign();
+    if (args.has('--venta')) await reopenSales();
     if (args.has('--vivo')) {
       await query("update app.events set status = 'LIVE' where id = $1", [DEMO_EVENT_ID]);
-      console.log('✔ Evento demo EN VIVO: canta balotas en Administración > Sorteo (admin@hogarsol.org).');
+      console.log('✔ Evento demo EN VIVO: canta bolas en Administración > Sorteo (admin@hogarsol.org).');
     }
   }
 } catch (err) {

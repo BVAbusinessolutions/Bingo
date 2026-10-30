@@ -154,10 +154,8 @@ export default function SiteHeader() {
             logoClassName="block h-10 max-h-10 w-10 object-contain"
           />
           <span className="min-w-0 font-display text-base font-bold sm:text-lg">
+            <span className="hidden text-[0.7rem] font-semibold text-white/70 sm:block">Asociación Infantil</span>
             Hogar Sol
-            <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-accent sm:text-[0.7rem] sm:tracking-[0.2em]">
-              Bingo Benéfico
-            </span>
           </span>
         </Link>
 

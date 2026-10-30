@@ -33,7 +33,7 @@ export const claimView = (c) => ({
   decidedAt: iso(c.decided_at),
 });
 
-/** Vista para administración: incluye cartón completo, balotas al momento del reclamo y datos del jugador. */
+/** Vista para administración: incluye cartón completo, bolas al momento del reclamo y datos del jugador. */
 export const adminClaimView = (c) => ({
   ...claimView(c),
   grid: c.grid,

@@ -1,6 +1,6 @@
 # Bingo Benéfico · Asociación Infantil Hogar Sol
 
-Plataforma para vender cartones de bingo en línea y jugar el sorteo en vivo. Bingo de **75 balotas**
+Plataforma para vender cartones de bingo en línea y jugar el sorteo en vivo. Bingo de **75 bolas**
 (cartón 5×5 B-I-N-G-O con centro libre), pago por SINPE Móvil o transferencia con verificación manual
 del comprobante, transmisión en vivo y validación de ganadores en el servidor.
 
@@ -46,8 +46,8 @@ el detalle del pago debe decir **BINGO**) → 3) confirmación. Los cartones que
 El admin recibe un correo con el enlace a la compra, verifica con una lista de chequeo y aprueba; el cliente
 recibe un correo con el enlace a sus cartones.
 
-**Sorteo:** el admin canta balotas en *Bingo Master*; los cartones de los jugadores se marcan al instante.
-El botón **¡Bingo!** envía un reclamo que el **servidor** valida contra las balotas cantadas; el admin
+**Sorteo:** el admin canta bolas en *Bingo Master*; los cartones de los jugadores se marcan al instante.
+El botón **¡Bingo!** envía un reclamo que el **servidor** valida contra las bolas cantadas; el admin
 confirma el premio en *Ganadores* y aparece en *Resultados*.
 
 **Series de cartones:** cada carga es una serie (un ZIP de imágenes PNG, o una serie generada al azar).
@@ -86,7 +86,7 @@ Bingo/
     │   ├── app.js                 # Express: seguridad, rutas, web compilada con CSP
     │   ├── index.js               # arranque: BD, migraciones, sockets, tareas periódicas
     │   ├── db/                    # conexión (Supabase/PGlite), migrations/*.sql, seed de demo
-    │   ├── domain/bingo.js        # reglas del bingo de 75 balotas
+    │   ├── domain/bingo.js        # reglas del bingo de 75 bolas
     │   ├── modules/               # auth · events · reservations · draw · claims · series · admin
     │   ├── services/              # auditoría, archivos, configuración, tokens de un solo uso
     │   ├── middleware/            # autenticación, límites, validación

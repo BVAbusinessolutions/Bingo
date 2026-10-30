@@ -36,7 +36,7 @@ const FAQ = [
   ['¿Cómo sé si gané?', 'Tu cartón se ilumina cuando completas el patrón. Pulsa “¡Bingo!” y la Asociación confirmará tu premio.'],
   [
     '¿Puedo participar si vivo fuera de San José?',
-    'Sí. Además de jugar en el salón del evento, puedes jugar en línea desde cualquier lugar con internet: compras tus cartones aquí, sigues la transmisión y marcas tus números en “Jugar en vivo”, con las mismas balotas y reglas.',
+    'Sí. Además de jugar en el salón del evento, puedes jugar en línea desde cualquier lugar con internet: compras tus cartones aquí, sigues la transmisión y marcas tus números en “Jugar en vivo”, con las mismas bolas y reglas.',
   ],
   ['¿Cómo se entrega el premio mayor de la motocicleta?', `Cuando la Asociación confirma el bingo, te contacta para coordinar la entrega. ${MOTORCYCLE_REQUIREMENT}`],
   [

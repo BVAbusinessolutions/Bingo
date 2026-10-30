@@ -11,7 +11,7 @@ import { errorMessage } from '../../lib/format';
 
 import { LETTER_COLORS } from '../../constants/ballColors';
 
-/** Consola donde el administrador marca las balotas; el backend las difunde por Socket.io. */
+/** Consola donde el administrador marca las bolas; el backend las difunde por Socket.io. */
 export default function AdminDrawPage() {
   const { eventId, event, reloadEvents } = useAdmin();
   const [called, setCalled] = useState([]);
@@ -27,7 +27,7 @@ export default function AdminDrawPage() {
     setError('');
     try {
       setCalled((await fn()).called);
-      if (event?.status === 'SCHEDULED') reloadEvents(); // al cantar la 1.ª balota el evento pasa a EN VIVO
+      if (event?.status === 'SCHEDULED') reloadEvents(); // al cantar la 1.ª bola el evento pasa a EN VIVO
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -42,7 +42,7 @@ export default function AdminDrawPage() {
     <section className="space-y-4">
       <header>
         <h1 className="text-3xl font-black text-brand">Bingo Master</h1>
-        <p className="text-lg text-fg-muted">Toca la balota que salió. Los jugadores la ven al instante en sus cartones.</p>
+        <p className="text-lg text-fg-muted">Toca la bola que salió. Los jugadores la ven al instante en sus cartones.</p>
       </header>
 
       <div className="surface flex flex-wrap items-center gap-4 p-4">
@@ -63,7 +63,7 @@ export default function AdminDrawPage() {
         <div className="flex-1">
           <p className="text-xl font-black text-fg">{event?.name}</p>
           <p className="text-fg-muted">
-            {called.length}/75 balotas · se juega <b className="text-fg">{PATTERNS[event?.pattern]?.label}</b>
+            {called.length}/75 bolas · se juega <b className="text-fg">{PATTERNS[event?.pattern]?.label}</b>
           </p>
           {event && <StatusBadge status={event.status} />}
         </div>
@@ -74,7 +74,7 @@ export default function AdminDrawPage() {
 
       {closed && (
         <Alert tone="warning">
-          Este evento está {event.status === 'FINISHED' ? 'finalizado' : 'cancelado'}: ya no se pueden cantar balotas.
+          Este evento está {event.status === 'FINISHED' ? 'finalizado' : 'cancelado'}: ya no se pueden cantar bolas.
         </Alert>
       )}
       {error && <Alert tone="error">{error}</Alert>}

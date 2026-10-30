@@ -46,7 +46,7 @@ function useClaims(eventId) {
       try {
         const result = await claimsApi.create(eventId, card.id);
         setClaims((c) => ({ ...c, [result.serial]: result }));
-        return result; // el servidor ya validó el cartón contra las balotas oficiales
+        return result; // el servidor ya validó el cartón contra las bolas oficiales
       } catch (err) {
         setErrors((e) => ({ ...e, [card.id]: errorMessage(err) }));
         return null;
@@ -173,7 +173,7 @@ export default function LivePage() {
   const pattern = event?.pattern ?? 'FULL';
   const isLive = event?.status === 'LIVE';
   // Lo que cuenta para el ¡Bingo! es lo marcado en el cartón: automático = todo lo cantado;
-  // manual = solo las marcas de la persona que además fueron cantadas (nunca una balota no cantada).
+  // manual = solo las marcas de la persona que además fueron cantadas (nunca una bola no cantada).
   const marksFor = useCallback(
     (card) => countedMarks(autoMark, called, manualMarks[card.id] ?? EMPTY),
     [autoMark, called, manualMarks]
@@ -230,15 +230,17 @@ export default function LivePage() {
       )}
       {celebrating && <Celebration serial={celebrating} onDone={endCelebration} />}
 
-      <main id="contenido" className="container-page grid gap-5 pt-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {/* Celular y tablet: todo apilado (transmisión → tablero → cartones). Dos columnas solo desde xl,
+          donde a los cartones les queda espacio real; overflow-x-clip evita la barra horizontal. */}
+      <main id="contenido" className="container-page grid gap-5 overflow-x-clip pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Stream + tablero (fijo al hacer scroll en escritorio) */}
-        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start print:hidden">
+        <div className="min-w-0 space-y-4 xl:sticky xl:top-20 xl:self-start print:hidden">
           <LiveStream provider={event?.stream?.provider} videoId={event?.stream?.videoId} url={event?.stream?.url} title={event?.name} />
           <CalledNumbersBoard calledList={calledList} />
         </div>
 
         {/* Cartones comprados */}
-        <section aria-labelledby="my-cards" className="space-y-4">
+        <section aria-labelledby="my-cards" className="min-w-0 scroll-mt-24 space-y-4">
           <div className="surface flex flex-col gap-3 p-4 print:hidden">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -335,8 +337,8 @@ export default function LivePage() {
             </Alert>
           )}
 
-          {/* Zoom: grande = 1 columna (máx. legible), compacto = 2 columnas incluso en celular. min-w-0 evita desbordes. */}
-          <div className={`print-cards grid gap-4 ${bigCards ? 'mx-auto max-w-xl grid-cols-1' : 'grid-cols-2'}`}>
+          {/* Zoom: grande = 1 columna (máx. legible), compacto = 2 columnas desde 640 px (en celular no caben). */}
+          <div className={`print-cards grid gap-4 ${bigCards ? 'mx-auto w-full max-w-xl grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {cards.map((card) => {
               const claimed = claims[card.serial];
               return (
@@ -370,7 +372,7 @@ export default function LivePage() {
         </section>
       </main>
 
-      {/* Botón ¡BINGO! siempre a mano: aparece solo cuando un cartón completa el patrón con las balotas cantadas. */}
+      {/* Botón ¡BINGO! siempre a mano: aparece solo cuando un cartón completa el patrón con las bolas cantadas. */}
       {isLive && unclaimedWinners.length > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-20 print:hidden">
           <Button

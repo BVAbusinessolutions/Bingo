@@ -73,7 +73,7 @@ Los límites por aplicación **no detienen un DDoS volumétrico**. Para el día 
 - **Cartones:** número de serie único por evento (restricción en la base). Las reservas son atómicas, así que
   dos personas no pueden comprar el mismo cartón. Los cartones repetidos dentro de una serie se descartan al
   importarla.
-- **Ganadores:** el servidor valida cada reclamo contra las balotas cantadas. Además, después de cada balota
+- **Ganadores:** el servidor valida cada reclamo contra las bolas cantadas. Además, después de cada bola
   revisa **todos** los cartones vendidos, en línea y en el salón, y le muestra al admin en Bingo Master cuáles
   ya tienen bingo, los haya reclamado alguien o no.
 

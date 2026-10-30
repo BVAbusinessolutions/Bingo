@@ -88,7 +88,7 @@ export default function AdminDashboard() {
           <li>🟥 Vendidos {stats.sold}</li>
           <li>🟧 Reservados {stats.reserved}</li>
           <li>🟩 Disponibles {stats.available}</li>
-          <li className="ml-auto">Balotas cantadas: {stats.called}/75</li>
+          <li className="ml-auto">Bolas cantadas: {stats.called}/75</li>
         </ul>
       </section>
 

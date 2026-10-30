@@ -11,8 +11,8 @@ const CLAIM_LABELS = {
 };
 
 /**
- * Verificación automática: el servidor revisa TODOS los cartones vendidos (web y salón) contra las balotas
- * cantadas y lista los que ya tienen bingo, los haya cantado alguien o no. Se refresca con cada balota.
+ * Verificación automática: el servidor revisa TODOS los cartones vendidos (web y salón) contra las bolas
+ * cantadas y lista los que ya tienen bingo, los haya cantado alguien o no. Se refresca con cada bola.
  */
 export default function WinningCardsPanel({ eventId, calledCount }) {
   const [cards, setCards] = useState([]);
@@ -57,7 +57,7 @@ export default function WinningCardsPanel({ eventId, calledCount }) {
         </p>
       )}
       {cards.length === 0 ? (
-        <p className="text-fg-muted">Ningún cartón vendido completa el patrón todavía. Se verifica solo con cada balota.</p>
+        <p className="text-fg-muted">Ningún cartón vendido completa el patrón todavía. Se verifica solo con cada bola.</p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">
           {cards.map((c) => {

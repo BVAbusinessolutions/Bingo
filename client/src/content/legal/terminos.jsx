@@ -168,12 +168,12 @@ const SECTIONS = [
       <>
         <p>
           La Asociación procura que la plataforma funcione sin interrupciones, pero no puede garantizarlo ante fallas de internet, del
-          proveedor de transmisión, de energía o del dispositivo de cada persona. El registro oficial de balotas cantadas es el que guarda el
+          proveedor de transmisión, de energía o del dispositivo de cada persona. El registro oficial de bolas cantadas es el que guarda el
           sistema y respalda el acta del sorteo.
         </p>
         <p>
           La Asociación no responde por la imposibilidad de una persona de conectarse a la transmisión por causas ajenas a la plataforma.
-          Los cartones comprados participan igualmente y sus bingos se verifican de forma automática contra las balotas cantadas.
+          Los cartones comprados participan igualmente y sus bingos se verifican de forma automática contra las bolas cantadas.
         </p>
       </>
     ),

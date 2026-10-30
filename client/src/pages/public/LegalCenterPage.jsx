@@ -31,9 +31,9 @@ const DOCS = {
 
 // Cómo se garantiza la transparencia del sorteo (resumen del Centro Legal).
 const TRANSPARENCY = [
-  { icon: ListChecks, title: 'Verificación automática', text: 'El sistema revisa cada cartón vendido, en línea y en el salón, contra las balotas cantadas.' },
+  { icon: ListChecks, title: 'Verificación automática', text: 'El sistema revisa cada cartón vendido, en línea y en el salón, contra las bolas cantadas.' },
   { icon: Eye, title: 'Resultados públicos', text: 'Los ganadores confirmados se publican en Resultados con su número de cartón.' },
-  { icon: ShieldCheck, title: 'Bitácora inalterable', text: 'Cada balota, pago y premio queda registrado con fecha, hora y responsable.' },
+  { icon: ShieldCheck, title: 'Bitácora inalterable', text: 'Cada bola, pago y premio queda registrado con fecha, hora y responsable.' },
   { icon: Gavel, title: 'Normativa costarricense', text: 'Ley 8968 de datos personales, Ley 7472 del consumidor y Código Penal (Ley 9048).' },
 ];
 

@@ -10,25 +10,25 @@ const SECTIONS = [
     body: (
       <>
         <p>
-          El juego es uno solo: en el salón del evento y en la plataforma se juega con las mismas balotas. Por eso se aplican estas reglas
+          El juego es uno solo: en el salón del evento y en la plataforma se juega con las mismas bolas. Por eso se aplican estas reglas
           sin importar el canal:
         </p>
         <ul>
           <li>
-            Hay empate cuando dos o más cartones completan el patrón con <strong>la misma balota</strong> (la última que les faltaba). El
-            sistema registra la balota con la que cada cartón completó el patrón; ese registro decide, no el orden en que se cantó.
+            Hay empate cuando dos o más cartones completan el patrón con <strong>la misma bola</strong> (la última que les faltaba). El
+            sistema registra la bola con la que cada cartón completó el patrón; ese registro decide, no el orden en que se cantó.
           </li>
           <li>
-            Cuando se canta bingo (en el salón o en línea), se detiene el sorteo y no se extraen más balotas hasta verificarlo. Un bingo que
-            se reclame después de cantada la siguiente balota sigue siendo válido, pero la Asociación verificará con el registro en qué
-            balota se completó.
+            Cuando se canta bingo (en el salón o en línea), se detiene el sorteo y no se extraen más bolas hasta verificarlo. Un bingo que
+            se reclame después de cantada la siguiente bola sigue siendo válido, pero la Asociación verificará con el registro en qué
+            bola se completó.
           </li>
           <li>
             <strong>Premios divisibles</strong> (dinero, órdenes de compra): se reparten en partes iguales entre los cartones empatados.
           </li>
           <li>
-            <strong>Premios indivisibles</strong> (como la motocicleta): se desempata extrayendo una balota por cada cartón empatado; gana el
-            número más alto. Se repite con quienes vuelvan a empatar. Para quien juega en línea, la balota la extrae un representante de la
+            <strong>Premios indivisibles</strong> (como la motocicleta): se desempata extrayendo una bola por cada cartón empatado; gana el
+            número más alto. Se repite con quienes vuelvan a empatar. Para quien juega en línea, la bola la extrae un representante de la
             Asociación en su nombre, frente a la cámara y a la vista del público.
           </li>
           <li>Cada persona participa en el desempate con cada uno de sus cartones empatados.</li>
@@ -40,7 +40,7 @@ const SECTIONS = [
     title: 'Fallas técnicas durante el sorteo',
     body: (
       <ul>
-        <li>Si la transmisión se corta, el sorteo continúa en el salón y las balotas se siguen registrando en el sistema.</li>
+        <li>Si la transmisión se corta, el sorteo continúa en el salón y las bolas se siguen registrando en el sistema.</li>
         <li>Los cartones en línea se marcan con el registro oficial al reconectarse; ningún bingo se pierde por una desconexión.</li>
         <li>
           Si una falla impide jugar en línea por más de 15 minutos, la Asociación puede pausar el sorteo y lo informará en el salón, en la
@@ -121,9 +121,9 @@ const SECTIONS = [
     title: 'Auditoría del sorteo',
     body: (
       <ul>
-        <li>Cada balota, venta, aprobación de pago, reclamo y premio queda registrado en una bitácora inalterable con fecha, hora y responsable.</li>
+        <li>Cada bola, venta, aprobación de pago, reclamo y premio queda registrado en una bitácora inalterable con fecha, hora y responsable.</li>
         <li>El sorteo se transmite en vivo y se graba.</li>
-        <li>Al finalizar se levanta un acta con las balotas cantadas, los cartones ganadores y los premios.</li>
+        <li>Al finalizar se levanta un acta con las bolas cantadas, los cartones ganadores y los premios.</li>
         <li>Cualquier participante puede solicitar por escrito una copia del acta de su evento.</li>
       </ul>
     ),

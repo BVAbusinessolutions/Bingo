@@ -10,8 +10,8 @@ const CARD = [
   [3, 17, 31, 55, 68],
 ];
 
-describe('patrones de 75 balotas (deben coincidir con el servidor)', () => {
-  it('letras y etiquetas de balota', () => {
+describe('patrones de 75 bolas (deben coincidir con el servidor)', () => {
+  it('letras y etiquetas de bola', () => {
     expect([1, 16, 31, 46, 75].map(letterFor)).toEqual(['B', 'I', 'N', 'G', 'O']);
     expect(ballLabel(42)).toBe('N-42');
   });

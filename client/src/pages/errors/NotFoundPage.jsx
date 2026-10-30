@@ -5,7 +5,7 @@ import { BrandBadge } from '../../components/brand/BrandLogo';
 import { PATHS } from '../../routing/paths';
 import { usePageMeta } from '../../hooks/usePageMeta';
 
-// Las tres balotas del "404", con los colores de las columnas del cartón.
+// Las tres bolas del "404", con los colores de las columnas del cartón.
 const BALLS = [
   ['4', 'bg-sol-blue', '0ms'],
   ['0', 'bg-sol-red', '250ms'],
@@ -34,7 +34,7 @@ export default function NotFoundPage() {
           ))}
         </div>
         <p className="sr-only">Error 404.</p>
-        <h1 className="text-3xl font-black text-brand sm:text-4xl">¡Esta balota no salió!</h1>
+        <h1 className="text-3xl font-black text-brand sm:text-4xl">¡Esta bola no salió!</h1>
         <p className="text-lg text-fg-muted">
           La página que buscas no existe o cambió de lugar. Pero el bingo sigue: vuelve al inicio y elige tus cartones de la suerte.
         </p>

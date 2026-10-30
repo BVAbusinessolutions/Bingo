@@ -1,4 +1,4 @@
-// Bingo de 75 balotas: cartón 5x5 con columnas B-I-N-G-O y centro libre.
+// Bingo de 75 bolas: cartón 5x5 con columnas B-I-N-G-O y centro libre.
 // La cuadrícula es grid[fila][columna]; el centro (2,2) es null.
 // Mantener en sincronía con client/src/constants/patterns.js (el servidor es quien decide).
 import { randomInt } from 'node:crypto';
@@ -42,7 +42,7 @@ export const PATTERNS = Object.freeze({
   FULL: [ALL],
 });
 
-/** Cuántos números faltan para completar el patrón con las balotas cantadas (0 = bingo válido). */
+/** Cuántos números faltan para completar el patrón con las bolas cantadas (0 = bingo válido). */
 export function missingFor(grid, called, pattern) {
   const alternatives = PATTERNS[pattern] ?? PATTERNS.FULL;
   const calledSet = called instanceof Set ? called : new Set(called);

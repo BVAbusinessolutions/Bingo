@@ -2,19 +2,19 @@ import { COLUMN_RANGES, LETTERS, ballLabel, letterFor } from '../../constants/pa
 import { LETTER_COLORS } from '../../constants/ballColors';
 const colorFor = (n) => LETTER_COLORS[LETTERS.indexOf(letterFor(n))];
 
-/** Tablero de balotas de 75 agrupadas por letra, con la última balota grande y las anteriores. */
+/** Tablero de bolas de 75 agrupadas por letra, con la última bola grande y las anteriores. */
 export default function CalledNumbersBoard({ calledList }) {
   const called = new Set(calledList);
   const last = calledList.at(-1);
   const previous = calledList.slice(-6, -1).reverse();
 
   return (
-    <section aria-label="Balotas cantadas" className="surface p-4 ring-2 ring-sol-gold">
+    <section aria-label="Bolas cantadas" className="surface p-4 ring-2 ring-sol-gold">
       <div className="mb-4 flex items-center gap-4">
         <div
           aria-live="assertive"
           aria-atomic="true"
-          aria-label={last ? `Última balota: ${letterFor(last)} ${last}` : 'Aún no se ha cantado ninguna balota'}
+          aria-label={last ? `Última bola: ${letterFor(last)} ${last}` : 'Aún no se ha cantado ninguna bola'}
           className={`grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-white text-white shadow-lg ring-4 ring-sol-gold ${last ? colorFor(last) : 'bg-slate-400'}`}
         >
           {last ? (
@@ -28,7 +28,7 @@ export default function CalledNumbersBoard({ calledList }) {
         </div>
         <div className="min-w-0">
           <p className="font-extrabold uppercase tracking-wide text-fg-muted">
-            Última balota · <span className="text-fg">{calledList.length}</span>/75
+            Última bola · <span className="text-fg">{calledList.length}</span>/75
           </p>
           {previous.length > 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

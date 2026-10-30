@@ -14,12 +14,12 @@ export const PRIZES = Object.freeze([
     image: import.meta.env.VITE_PRIZE_IMAGE || '/img/premio-motocicleta.webp',
     imageAlt: 'Motocicleta, premio mayor del Bingo Benéfico Hogar Sol',
   },
-  { id: 'carton', icon: Ticket, title: 'Un cartón ya participa', text: 'Juega en el salón del evento o desde tu casa, con las mismas balotas y las mismas reglas.' },
+  { id: 'carton', icon: Ticket, title: 'Un cartón ya participa', text: 'Juega en el salón del evento o desde tu casa, con las mismas bolas y las mismas reglas.' },
   {
     id: 'verificacion',
     icon: ShieldCheck,
     title: 'Ganadores verificados',
-    text: 'El sistema revisa cada cartón contra las balotas cantadas y publica los ganadores al confirmarlos.',
+    text: 'El sistema revisa cada cartón contra las bolas cantadas y publica los ganadores al confirmarlos.',
   },
   { id: 'causa', icon: HeartHandshake, title: 'Ganas y ayudas', text: 'Lo recaudado apoya hogar, alimentación y educación para la niñez de Hogar Sol.' },
 ]);

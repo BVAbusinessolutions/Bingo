@@ -9,7 +9,7 @@ const STATES = {
 
 /**
  * Botón "¡Bingo!" bajo cada cartón, o el estado de su reclamo.
- * Queda bloqueado mientras el cartón no complete el patrón con las balotas cantadas (`missing` > 0);
+ * Queda bloqueado mientras el cartón no complete el patrón con las bolas cantadas (`missing` > 0);
  * aun habilitado, el servidor vuelve a validar el cartón contra el registro oficial antes de aceptar.
  * Un reclamo rechazado permite volver a intentar.
  */
@@ -59,7 +59,7 @@ export default function ClaimButton({ claim, canClaim, missing = 0, uncalled = 0
       )}
       {locked && hint && (
         <p role="alert" className="rounded-2xl bg-sol-red/10 p-3 text-center text-sm font-semibold text-fg">
-          Aún no completas el patrón con balotas cantadas oficialmente.
+          Aún no completas el patrón con bolas cantadas oficialmente.
           {uncalled > 0 && ` Tienes ${uncalled === 1 ? '1 número marcado' : `${uncalled} números marcados`} que todavía no ha salido.`}
         </p>
       )}

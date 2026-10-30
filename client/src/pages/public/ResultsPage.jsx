@@ -32,7 +32,7 @@ function EventResult({ event }) {
             <dd className="text-xl font-black text-brand">{PATTERNS[event.pattern]?.label}</dd>
           </div>
           <div className="rounded-2xl bg-muted p-4 text-center">
-            <dt className="text-sm font-bold text-fg-muted">Balotas cantadas</dt>
+            <dt className="text-sm font-bold text-fg-muted">Bolas cantadas</dt>
             <dd className="text-xl font-black text-brand">{event.calledCount} / 75</dd>
           </div>
         </dl>
@@ -54,7 +54,7 @@ function EventResult({ event }) {
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg font-black text-fg">{w.name}</span>
                     <span className="text-fg-muted">
-                      Cartón #{w.serial} · con {w.calledCount} balotas · {w.channel === 'SALON' ? 'en el salón' : 'en línea'}
+                      Cartón #{w.serial} · con {w.calledCount} bolas · {w.channel === 'SALON' ? 'en el salón' : 'en línea'}
                     </span>
                   </span>
                 </li>
@@ -131,7 +131,7 @@ export default function ResultsPage() {
   const [error, setError] = useState(false);
   usePageMeta({
     title: 'Resultados y ganadores',
-    description: 'Ganadores confirmados y balotas cantadas de cada Bingo Benéfico de la Asociación Infantil Hogar Sol.',
+    description: 'Ganadores confirmados y bolas cantadas de cada Bingo Benéfico de la Asociación Infantil Hogar Sol.',
   });
 
   const { event } = useCurrentEvent();

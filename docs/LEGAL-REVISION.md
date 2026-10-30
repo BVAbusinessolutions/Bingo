@@ -26,7 +26,7 @@ antes del evento del 15 de noviembre de 2026.
 | Custodia de la motocicleta si el ganador no tiene licencia | Hasta 90 días | `content/legal/reglamento.jsx` |
 | Gastos de traspaso, marchamo y seguro de la moto | A cargo del ganador, salvo que el anuncio diga otra cosa | `content/legal/reglamento.jsx` |
 | Destino de los premios no reclamados | Pasan a los programas de la Asociación según sus estatutos | `content/legal/contingencias.jsx` |
-| Desempate de premios indivisibles | Una balota por cartón empatado; gana la más alta | `content/legal/contingencias.jsx` |
+| Desempate de premios indivisibles | Una bola por cartón empatado; gana la más alta | `content/legal/contingencias.jsx` |
 | Reparto de premios divisibles | Partes iguales | `content/legal/contingencias.jsx` |
 | Devolución de pagos erróneos | 10 días hábiles | `content/legal/contingencias.jsx` |
 | Cancelación por fuerza mayor | Devolución del 100 % en 30 días; si se reprograma, se puede pedir la devolución dentro de 15 días | `content/legal/contingencias.jsx` |

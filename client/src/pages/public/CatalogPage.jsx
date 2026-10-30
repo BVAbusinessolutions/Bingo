@@ -123,6 +123,25 @@ export default function CatalogPage() {
       </div>
     );
   }
+  // En juego: la venta en línea se cierra a propósito (el servidor rechaza reservas con el bingo empezado).
+  if (event?.status === 'LIVE') {
+    return (
+      <div className="surface mx-auto mt-20 max-w-md space-y-3 p-6 text-center">
+        <p className="font-display text-2xl font-bold text-brand">{event.name}</p>
+        <p className="text-fg-muted">
+          ¡El bingo ya está en juego! La venta en línea cerró al cantarse la primera bola. Si ya tienes cartones, entra a jugar.
+        </p>
+        <div className="flex flex-col justify-center gap-2 sm:flex-row">
+          <Button className="h-11 min-h-11! rounded-full!" onClick={() => navigate(isAuthenticated ? PATHS.live : PATHS.login)}>
+            Jugar en vivo
+          </Button>
+          <Button variant="outline" className="h-11 min-h-11! rounded-full!" onClick={() => navigate(PATHS.results)}>
+            Ver resultados
+          </Button>
+        </div>
+      </div>
+    );
+  }
   if (!event || event.status !== 'SCHEDULED') {
     return <p className="mx-auto mt-20 max-w-md px-4 text-center text-fg-muted">No hay bingos con venta abierta en este momento.</p>;
   }
