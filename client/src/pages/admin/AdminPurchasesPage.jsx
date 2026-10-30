@@ -75,33 +75,43 @@ export default function AdminPurchasesPage() {
           <h1 className="text-3xl font-black text-brand">Compras</h1>
           <p className="text-lg text-fg-muted">{event?.name ?? 'Todas las compras'} · revisa los comprobantes y aprueba los pagos.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {/* Acciones y filtros con la misma medida: píldoras de 44 px, mismo radio y espaciado; en celular
+            las acciones ocupan columnas iguales y los filtros se acomodan en filas ordenadas. */}
+        <div className="flex w-full gap-2 sm:w-auto">
           {event && ['SCHEDULED', 'LIVE'].includes(event.status) && (
-            <Button variant="gold" icon={HandCoins} onClick={() => setSelling(true)}>
+            <Button variant="gold" icon={HandCoins} onClick={() => setSelling(true)} className="h-11 min-h-11! flex-1 rounded-full! px-4 text-sm sm:flex-none sm:text-base">
               Venta manual
             </Button>
           )}
-          <Button variant="outline" icon={Download} loading={exporting} onClick={exportCsv}>
+          <Button variant="outline" icon={Download} loading={exporting} onClick={exportCsv} className="h-11 min-h-11! flex-1 rounded-full! px-4 text-sm sm:flex-none sm:text-base">
             Exportar a Excel
           </Button>
-          <button onClick={load} className="surface grid h-12 w-12 place-items-center text-fg" aria-label="Actualizar lista">
-            <RefreshCw className="h-5 w-5" />
+          <button
+            type="button"
+            onClick={load}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-line bg-card text-fg transition hover:border-sol-blue active:scale-95 dark:hover:border-sol-gold"
+            aria-label="Actualizar lista"
+          >
+            <RefreshCw className="h-5 w-5" aria-hidden />
           </button>
         </div>
       </header>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="group" aria-label="Filtrar por estado">
           {FILTERS.map(([s, label]) => (
             <button
               key={s}
+              type="button"
               onClick={() => {
                 setStatus(s);
                 setItems(null);
               }}
               aria-pressed={status === s}
-              className={`min-h-11 rounded-full px-4 font-extrabold ${
-                status === s ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'surface text-fg-muted hover:text-fg'
+              className={`inline-flex h-11 items-center justify-center rounded-full border-2 px-4 text-sm font-extrabold transition active:scale-95 sm:text-base ${
+                status === s
+                  ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
+                  : 'border-line bg-card text-fg-muted hover:border-sol-blue hover:text-fg dark:hover:border-sol-gold'
               }`}
             >
               {label}
@@ -116,7 +126,7 @@ export default function AdminPurchasesPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nombre, cédula, comprobante o cartón"
-            className="min-h-12 w-full rounded-xl border-2 border-line bg-card pl-10 pr-3 text-fg outline-none focus:border-sol-blue dark:focus:border-sol-gold"
+            className="h-11 w-full rounded-full border-2 border-line bg-card pl-10 pr-4 text-fg outline-none focus:border-sol-blue dark:focus:border-sol-gold"
           />
         </label>
       </div>

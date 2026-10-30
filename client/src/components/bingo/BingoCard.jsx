@@ -1,7 +1,7 @@
 import { memo, useId, useMemo } from 'react';
 import { Star, Trophy } from 'lucide-react';
 import BrandLogo from '../brand/BrandLogo';
-import { LETTERS, PATTERNS, isFreeCell, missingFor } from '../../constants/patterns';
+import { LETTERS, PATTERNS, countedMarks, isFreeCell, missingFor } from '../../constants/patterns';
 
 /**
  * Cartón de bingo de 75 balotas (5x5, centro libre), con el diseño del cartón impreso de la Asociación.
@@ -63,7 +63,7 @@ function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip'
   // Lo que se ve marcado: automático = lo cantado; manual = todo lo que la persona marcó.
   const shown = autoMark ? called : manualMarks;
   // Para el patrón solo cuentan las marcas cantadas oficialmente (nunca un "bingo" falso).
-  const marked = useMemo(() => (autoMark ? called : new Set([...manualMarks].filter((n) => called.has(n)))), [autoMark, called, manualMarks]);
+  const marked = useMemo(() => countedMarks(autoMark, called, manualMarks), [autoMark, called, manualMarks]);
 
   const missing = missingFor(card.grid, marked, pattern);
   const won = showStatus && missing === 0;

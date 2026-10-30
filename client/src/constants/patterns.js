@@ -46,5 +46,11 @@ export function missingFor(grid, marked, patternId) {
 
 export const hasWon = (grid, marked, patternId) => missingFor(grid, marked, patternId) === 0;
 
+/**
+ * Marcas que cuentan para el patrón. Automático: todo lo cantado. Manual: solo lo que la persona marcó
+ * Y fue cantado oficialmente; marcar un número que no ha salido nunca habilita un "¡Bingo!".
+ */
+export const countedMarks = (autoMark, called, manualMarks) => (autoMark ? called : new Set([...manualMarks].filter((n) => called.has(n))));
+
 /** Celdas que forman el patrón (para resaltarlas en la ayuda visual). */
 export const patternCells = (patternId) => new Set((PATTERNS[patternId] ?? PATTERNS.FULL).groups.flat().map(([r, c]) => `${r}-${c}`));

@@ -52,7 +52,7 @@ export default function ClaimButton({ claim, canClaim, missing = 0, uncalled = 0
           loading={loading}
           disabled={!canClaim}
           onClick={onClaim}
-          className="w-full animate-pop rounded-full text-xl"
+          className={`w-full rounded-full text-xl ${canClaim ? 'animate-ready' : ''}`}
         >
           ¡Bingo! Reclamar premio
         </Button>

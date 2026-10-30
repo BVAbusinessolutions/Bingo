@@ -16,8 +16,8 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Celebration from '../../components/bingo/Celebration';
-import { missingFor, PATTERNS } from '../../constants/patterns';
-import { isSoundOn, playMark, playWin, setSoundOn } from '../../lib/sound';
+import { countedMarks, missingFor, PATTERNS } from '../../constants/patterns';
+import { isSoundOn, playMark, playReady, playWin, setSoundOn } from '../../lib/sound';
 import { MARKERS, readMarker, saveMarker } from '../../constants/markers';
 import { errorMessage } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
@@ -175,7 +175,7 @@ export default function LivePage() {
   // Lo que cuenta para el ¡Bingo! es lo marcado en el cartón: automático = todo lo cantado;
   // manual = solo las marcas de la persona que además fueron cantadas (nunca una balota no cantada).
   const marksFor = useCallback(
-    (card) => (autoMark ? called : new Set([...(manualMarks[card.id] ?? EMPTY)].filter((n) => called.has(n)))),
+    (card) => countedMarks(autoMark, called, manualMarks[card.id] ?? EMPTY),
     [autoMark, called, manualMarks]
   );
   const missingById = useMemo(
@@ -184,6 +184,17 @@ export default function LivePage() {
   );
   const winners = cards.filter((c) => missingById[c.id] === 0);
   const unclaimedWinners = winners.filter((c) => !claims[c.serial] || claims[c.serial].status === 'REJECTED');
+
+  // Aviso sonoro una sola vez por cartón, en el momento en que completa el patrón (el botón se habilita).
+  const readyKey = isLive ? unclaimedWinners.map((c) => c.id).join(',') : '';
+  const announcedRef = useRef(new Set());
+  useEffect(() => {
+    if (!readyKey) return;
+    const fresh = readyKey.split(',').filter((id) => !announcedRef.current.has(id));
+    if (fresh.length === 0) return;
+    fresh.forEach((id) => announcedRef.current.add(id));
+    playReady();
+  }, [readyKey]);
 
   const claimAndCelebrate = async (card) => {
     const result = await claim(card);

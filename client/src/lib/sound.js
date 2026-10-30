@@ -58,6 +58,15 @@ export function playMark(marked = true, marker = 'chip') {
   tone(ac, marked ? 880 : 520, t, 0.09, { type: 'triangle', gain: 0.1 });
 }
 
+/** Aviso positivo: un cartón acaba de completar el patrón y el botón ¡Bingo! se habilitó. */
+export function playReady() {
+  const ac = audio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  tone(ac, 784, t, 0.14, { type: 'sine', gain: 0.12 });
+  tone(ac, 1175, t + 0.12, 0.22, { type: 'sine', gain: 0.12 });
+}
+
 /** Fanfarria corta de victoria: arpegio mayor ascendente. */
 export function playWin() {
   const ac = audio();

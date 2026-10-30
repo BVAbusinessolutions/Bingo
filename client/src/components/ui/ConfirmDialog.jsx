@@ -54,10 +54,10 @@ export default function ConfirmDialog({
           {children}
         </div>
         <div className="relative flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-          <Button ref={cancelRef} variant="outline" className="h-11 min-h-11 rounded-full" onClick={onCancel}>
+          <Button ref={cancelRef} variant="outline" className="h-11 min-h-11! rounded-full!" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={confirmVariant} className="h-11 min-h-11 rounded-full" loading={loading} onClick={onConfirm}>
+          <Button variant={confirmVariant} className="h-11 min-h-11! rounded-full!" loading={loading} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

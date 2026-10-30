@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ballLabel, hasWon, letterFor, missingFor } from '../constants/patterns';
+import { ballLabel, countedMarks, hasWon, letterFor, missingFor } from '../constants/patterns';
 
 // Cartón de la imagen de la Asociación (serie 1001).
 const CARD = [
@@ -29,5 +29,26 @@ describe('patrones de 75 balotas (deben coincidir con el servidor)', () => {
     const all = CARD.flat().filter(Boolean);
     expect(missingFor(CARD, new Set(all.slice(2)), 'FULL')).toBe(2);
     expect(hasWon(CARD, new Set(all), 'FULL')).toBe(true);
+  });
+
+  it('cartón lleno exige exactamente las 24 casillas (el centro libre no cuenta)', () => {
+    const all = CARD.flat().filter(Boolean);
+    expect(all).toHaveLength(24);
+    expect(missingFor(CARD, new Set(), 'FULL')).toBe(24);
+  });
+
+  it('cuatro esquinas no se cumple con 3 esquinas ni con una línea', () => {
+    expect(missingFor(CARD, new Set([11, 63, 3]), 'FOUR_CORNERS')).toBe(1);
+    expect(hasWon(CARD, new Set([11, 27, 42, 52, 63]), 'FOUR_CORNERS')).toBe(false);
+  });
+
+  it('marcado manual: solo cuentan las marcas cantadas oficialmente', () => {
+    const called = new Set([11, 27, 42, 52]);
+    const manual = new Set([11, 27, 42, 52, 63]); // 63 marcado a mano, pero no ha salido
+    const counted = countedMarks(false, called, manual);
+    expect([...counted].sort((a, b) => a - b)).toEqual([11, 27, 42, 52]);
+    expect(hasWon(CARD, counted, 'LINE')).toBe(false); // el botón ¡Bingo! sigue bloqueado
+    expect(hasWon(CARD, countedMarks(false, new Set([...called, 63]), manual), 'LINE')).toBe(true);
+    expect(countedMarks(true, called, new Set())).toBe(called); // automático: todo lo cantado
   });
 });

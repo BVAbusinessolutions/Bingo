@@ -19,6 +19,7 @@ import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
 import { formatCRC } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
+import GlassSelect from '../ui/GlassSelect';
 import ErrorBoundary from './ErrorBoundary';
 
 const vibrate = () => {
@@ -141,23 +142,11 @@ export default function AdminLayout() {
 
   return (
     <div className="container-page grid min-h-[calc(100dvh-4.5rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
-      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start print:hidden">
+      {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
+      <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start print:hidden">
         <div className="surface space-y-2 p-4">
           <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
-          <label className="block">
-            <span className="text-sm font-bold text-fg-muted">Evento</span>
-            <select
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-card px-3 font-bold text-fg"
-            >
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <GlassSelect label="Evento" value={eventId} onChange={setEventId} options={events.map((e) => ({ value: e.id, label: e.name }))} />
         </div>
 
         <nav aria-label="Administración" className="surface flex gap-1 overflow-x-auto p-2 lg:flex-col lg:overflow-visible">
