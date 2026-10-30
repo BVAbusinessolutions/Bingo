@@ -8,6 +8,10 @@ const PROVIDERS = {
   vimeo: (id) => `https://player.vimeo.com/video/${id}?autoplay=1&muted=1`,
 };
 const SAFE_ID = /^[A-Za-z0-9_-]{2,64}$/;
+// Facebook Live: el servidor solo acepta URLs de www.facebook.com; se pasan al reproductor oficial como parámetro.
+const FACEBOOK_URL = /^https:\/\/www\.facebook\.com\/\S+$/;
+const facebookPlayer = (url) =>
+  `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&autoplay=true&mute=true&width=1280`;
 // Las URL de LL-HLS / WHEP ya fueron validadas por el servidor contra STREAM_ORIGINS; aquí solo se exige https.
 const SAFE_URL = /^https:\/\/\S+$/;
 
@@ -134,7 +138,10 @@ function LowLatencyPlayer({ provider, url, title }) {
 export default function LiveStream({ provider = 'youtube', videoId, url, title = 'Sorteo en vivo' }) {
   const lowLatency = (provider === 'hls' || provider === 'whep') && SAFE_URL.test(url ?? '');
   const build = PROVIDERS[provider];
-  const src = !lowLatency && build && SAFE_ID.test(videoId ?? '') ? build(videoId) : null;
+  const src =
+    provider === 'facebook'
+      ? FACEBOOK_URL.test(url ?? '') && facebookPlayer(url)
+      : !lowLatency && build && SAFE_ID.test(videoId ?? '') && build(videoId);
 
   return (
     <section aria-label={`Transmisión: ${title}`} className="overflow-hidden rounded-2xl bg-black shadow-xl ring-4 ring-sol-red">
@@ -146,7 +153,9 @@ export default function LiveStream({ provider = 'youtube', videoId, url, title =
         {lowLatency ? (
           <LowLatencyPlayer key={`${provider}:${url}`} provider={provider} url={url} title={title} />
         ) : src ? (
+          // key: si la administración cambia la fuente en pleno sorteo, el reproductor se reinicia limpio.
           <iframe
+            key={src}
             src={src}
             title={title}
             className="absolute inset-0 h-full w-full"

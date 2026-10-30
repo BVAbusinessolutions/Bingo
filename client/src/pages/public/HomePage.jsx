@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { CalendarDays, ChevronDown, CreditCard, HeartHandshake, MousePointerClick, PartyPopper, Radio, Ticket, Trophy, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CalendarDays, ChevronDown, ChevronRight, CreditCard, HeartHandshake, MousePointerClick, PartyPopper, Radio, Ticket, Trophy, UserPlus } from 'lucide-react';
 import { eventsApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
@@ -155,6 +156,9 @@ function LatestWinnerPanel({ state }) {
           </li>
         ))}
       </ol>
+      <Link to={PATHS.results} className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent underline-offset-4 hover:underline">
+        Ver todos los resultados <ChevronRight className="h-4 w-4" aria-hidden />
+      </Link>
     </div>
   );
 }
@@ -291,17 +295,27 @@ export default function HomePage() {
         </ol>
       </section>
 
-      {/* Impacto */}
-      <section aria-label="Nuestro impacto" className="bg-muted/60 py-16">
-        <div className="container-page grid gap-5 sm:grid-cols-3">
+      {/* Impacto: cifras limpias en vidrio, sin íconos encima, tres columnas idénticas */}
+      <section aria-labelledby="impact-title" className="relative overflow-hidden bg-muted/60 py-16">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_18rem_at_50%_0%,rgb(251_191_36/0.14),transparent)]"
+          aria-hidden
+        />
+        <h2 id="impact-title" className="sr-only">
+          Nuestro impacto
+        </h2>
+        <dl className="container-page relative grid gap-5 sm:grid-cols-3">
           {IMPACT.map(([n, label]) => (
-            <div key={label} className="surface lift reveal p-6 text-center">
-              <HeartHandshake className="mx-auto mb-2 h-8 w-8 text-sol-red" aria-hidden />
-              <div className="font-display text-4xl font-bold text-brand">{n}</div>
-              <div className="text-lg text-fg-muted">{label}</div>
+            <div
+              key={label}
+              className="glass-panel lift reveal flex min-h-40 flex-col items-center justify-center rounded-3xl px-6 py-8 text-center shadow-[0_18px_40px_rgb(2_6_23/0.08)]"
+            >
+              {/* dt antes que dd en el código (orden válido); se invierte solo a la vista */}
+              <dt className="order-2 mt-2 text-lg text-fg-muted">{label}</dt>
+              <dd className="order-1 font-display text-5xl font-bold tabular-nums text-brand">{n}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </section>
 
       {/* Último ganador: se despliega aquí mismo, sin cambiar de página */}

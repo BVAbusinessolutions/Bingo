@@ -60,6 +60,7 @@ describe('web compilada en producción', () => {
     assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/);
     assert.match(csp, /frame-ancestors 'none'/);
     assert.match(csp, /frame-src [^;]*https:\/\/www\.google\.com/); // mapa de Contacto
+    assert.match(csp, /frame-src [^;]*https:\/\/www\.facebook\.com/); // Facebook Live
   });
 
   it('robots.txt excluye las zonas privadas y apunta al sitemap', async () => {

@@ -9,7 +9,9 @@
       Ver `server/.env.example` (Gmail con contraseña de aplicación o un proveedor transaccional).
 - [ ] **Datos de cobro reales** (titular, SINPE Móvil, IBAN) en *Administración → Datos de cobro*.
 - [ ] **Coordenadas exactas del Salón Tinamaste** en `VITE_EVENT_VENUE_COORDS` (el mapa usa un valor aproximado).
-- [ ] **Transmisión:** id de video o URL del stream en el evento; si es LL-HLS/WHEP, su origen en `STREAM_ORIGINS`.
+- [ ] **Transmisión** (Administración → Eventos): YouTube Live (ID o URL), Facebook Live (URL pública del video en
+      facebook.com) o enlace HLS `.m3u8` / WebRTC; si es HLS/WHEP, su origen en `STREAM_ORIGINS`. Al guardar, quienes
+      están en la vista en vivo ven el cambio al instante sin recargar.
 - [ ] **Revisión legal** de reglamento, términos y privacidad (ver `docs/LEGAL-REVISION.md`).
 - [ ] **Confirmar con la Asociación** dos respuestas de Preguntas frecuentes: si los cartones se pueden
       transferir a otra persona y si se puede jugar fuera de San José.

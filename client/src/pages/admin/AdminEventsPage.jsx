@@ -32,10 +32,19 @@ const formFrom = (ev) => ({
   videoId: ev?.stream?.videoId ?? ev?.stream?.url ?? '',
 });
 
-// LL-HLS y WebRTC (WHEP) se configuran con una URL https; el resto con el id del video o canal.
-const URL_PROVIDERS = new Set(['hls', 'whep']);
+// Facebook, LL-HLS y WebRTC (WHEP) se configuran con una URL https; el resto con el id del video o canal.
+const URL_PROVIDERS = new Set(['facebook', 'hls', 'whep']);
 const STREAM_HINTS = {
-  youtube: ['ID del video', 'ej. jfKfPfyJRdk', 'Lo que va después de watch?v= (latencia de 3 a 10 s con "latencia ultrabaja").'],
+  youtube: [
+    'ID o URL del video',
+    'ej. https://www.youtube.com/live/jfKfPfyJRdk',
+    'Sirve el enlace completo o solo el ID (latencia de 3 a 10 s con "latencia ultrabaja").',
+  ],
+  facebook: [
+    'URL del video de Facebook Live',
+    'https://www.facebook.com/hogarsol/videos/…',
+    'En Facebook: video en vivo → Compartir → Copiar enlace. Debe ser público.',
+  ],
   twitch: ['Nombre del canal', 'ej. hogarsol', 'Latencia de 2 a 5 s.'],
   vimeo: ['ID del video', 'ej. 76979871', 'Latencia de 5 a 15 s.'],
   hls: ['URL .m3u8 (LL-HLS)', 'https://…/live/bingo.m3u8', 'Latencia de 2 a 4 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
@@ -123,15 +132,16 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
           hint="Se muestran en la portada, el reglamento y el enlace “Cómo llegar”."
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr]">
         <label className="block">
           <span className="font-bold text-fg">Transmisión</span>
           <select value={form.provider} onChange={set('provider')} className={selectCls}>
-            <option value="youtube">YouTube</option>
+            <option value="youtube">YouTube Live</option>
+            <option value="facebook">Facebook Live</option>
+            <option value="hls">Enlace HLS / reproductor propio (.m3u8)</option>
+            <option value="whep">WebRTC (ultra baja latencia)</option>
             <option value="twitch">Twitch</option>
             <option value="vimeo">Vimeo</option>
-            <option value="whep">WebRTC (ultra baja latencia)</option>
-            <option value="hls">LL-HLS (baja latencia)</option>
           </select>
         </label>
         <Field

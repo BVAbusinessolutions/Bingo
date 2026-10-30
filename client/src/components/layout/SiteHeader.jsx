@@ -18,12 +18,11 @@ const navLinkClass = ({ isActive }) =>
     isActive ? 'text-accent after:scale-x-100' : 'text-white/85 after:scale-x-0 hover:text-white hover:after:scale-x-100'
   }`;
 
-// Navegación principal (misma en escritorio y móvil).
+// Navegación principal (misma en escritorio y móvil). Premios y Resultados se consultan desde la portada
+// (premio mayor, último ganador) y desde el pie de página.
 const MAIN_LINKS = [
   { to: PATHS.home, label: 'Inicio', end: true },
   { to: PATHS.catalog, label: 'Comprar cartones' },
-  { to: PATHS.results, label: 'Resultados' },
-  { to: PATHS.prizes, label: 'Premios' },
   { to: PATHS.rules, label: 'Reglamento' },
   { to: PATHS.contact, label: 'Contacto' },
 ];

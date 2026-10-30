@@ -124,7 +124,8 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
 });
 
 // ---------------------------------------------------------------- Eventos
-// Transmisión: por id de video (YouTube/Twitch/Vimeo) o por URL https de baja latencia (LL-HLS / WebRTC-WHEP).
+// Transmisión: por id de video (YouTube/Twitch/Vimeo), por URL de Facebook Live o por URL https de baja latencia
+// (LL-HLS / WebRTC-WHEP).
 // Las URL solo pueden apuntar a orígenes de STREAM_ORIGINS: son los únicos que la CSP de la web permite.
 const allowedStreamUrl = (url) => {
   try {
@@ -133,8 +134,25 @@ const allowedStreamUrl = (url) => {
     return false;
   }
 };
+// YouTube acepta el id o la URL completa (watch?v=, youtu.be/, /live/, /embed/, /shorts/): se guarda solo el id.
+const youtubeId = (value) =>
+  value.match(/(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|live\/|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,64})/)?.[1] ?? value;
+const VIDEO_ID = /^[A-Za-z0-9_-]{2,64}$/;
+// Facebook Live: URL pública del video en facebook.com (los enlaces cortos fb.watch no funcionan en el reproductor).
+const FACEBOOK_URL = /^https:\/\/(?:www\.|web\.|m\.)?facebook\.com\/\S+$/;
+
 const streamSchema = z.discriminatedUnion('provider', [
-  z.object({ provider: z.enum(['youtube', 'twitch', 'vimeo']), videoId: z.string().regex(/^[A-Za-z0-9_-]{2,64}$/) }),
+  z.object({ provider: z.literal('youtube'), videoId: z.string().trim().max(300).transform(youtubeId).pipe(z.string().regex(VIDEO_ID)) }),
+  z.object({ provider: z.enum(['twitch', 'vimeo']), videoId: z.string().trim().regex(VIDEO_ID) }),
+  z.object({
+    provider: z.literal('facebook'),
+    url: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(FACEBOOK_URL, 'Debe ser la URL del video en facebook.com')
+      .transform((u) => u.replace(/^https:\/\/(?:web\.|m\.)?facebook\.com\//, 'https://www.facebook.com/')),
+  }),
   z.object({
     provider: z.enum(['hls', 'whep']),
     url: z

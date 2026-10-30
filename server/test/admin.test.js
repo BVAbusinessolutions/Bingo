@@ -134,6 +134,27 @@ describe('eventos', () => {
       .send({ stream: { provider: 'youtube', videoId: '"><script>' } });
     assert.equal(res.status, 400);
   });
+
+  const setStream = (stream) => api().patch(`/api/admin/events/${DEMO_EVENT_ID}`).set(auth(admin)).send({ stream });
+
+  it('YouTube acepta la URL completa de la transmisión y guarda solo el id', async () => {
+    for (const url of ['https://www.youtube.com/watch?v=jfKfPfyJRdk', 'https://youtu.be/jfKfPfyJRdk', 'https://www.youtube.com/live/jfKfPfyJRdk?si=x']) {
+      const res = await setStream({ provider: 'youtube', videoId: url });
+      assert.equal(res.status, 200, url);
+      assert.deepEqual(res.body.stream, { provider: 'youtube', videoId: 'jfKfPfyJRdk' });
+    }
+  });
+
+  it('Facebook Live: acepta solo URLs de facebook.com y las publica a la vista en vivo', async () => {
+    const ok = await setStream({ provider: 'facebook', url: 'https://m.facebook.com/hogarsol/videos/123456789/' });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(ok.body.stream, { provider: 'facebook', url: 'https://www.facebook.com/hogarsol/videos/123456789/' });
+    const pub = (await api().get('/api/events/current')).body;
+    assert.deepEqual(pub.stream, ok.body.stream);
+    for (const url of ['https://evil.example/facebook.com/x', 'https://fb.watch/abc', 'http://www.facebook.com/x']) {
+      assert.equal((await setStream({ provider: 'facebook', url })).status, 400, url);
+    }
+  });
 });
 
 describe('series de cartones', () => {
