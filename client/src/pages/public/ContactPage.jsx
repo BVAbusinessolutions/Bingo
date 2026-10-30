@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, Mail, MapPin, MessageCircle, Phone, Send, ShieldAlert, Smartphone } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Clock, HelpCircle, Lightbulb, Mail, MapPin, MessageCircle, Phone, Send, ShieldAlert, Smartphone } from 'lucide-react';
 import { contactApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -7,7 +7,7 @@ import Field from '../../components/ui/Field';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { CopyButton } from '../../components/payments/PaymentPieces';
-import { SITE } from '../../config/site';
+import { MOTORCYCLE_REQUIREMENT, PAYMENT_DETAIL, SITE } from '../../config/site';
 import { errorMessage } from '../../lib/format';
 
 const CHANNELS = [
@@ -34,7 +34,116 @@ const FAQ = [
     'Revisa la carpeta de correo no deseado. También puedes pedir un enlace nuevo desde el aviso amarillo al iniciar sesión.',
   ],
   ['¿Cómo sé si gané?', 'Tu cartón se ilumina cuando completas el patrón. Pulsa “¡Bingo!” y la Asociación confirmará tu premio.'],
+  [
+    '¿Puedo participar si vivo fuera de San José?',
+    'Sí. Además de jugar en el salón del evento, puedes jugar en línea desde cualquier lugar con internet: compras tus cartones aquí, sigues la transmisión y marcas tus números en “Jugar en vivo”, con las mismas balotas y reglas.',
+  ],
+  ['¿Cómo se entrega el premio mayor de la motocicleta?', `Cuando la Asociación confirma el bingo, te contacta para coordinar la entrega. ${MOTORCYCLE_REQUIREMENT}`],
+  [
+    '¿Qué requisitos debe cumplir mi comprobante de pago SINPE Móvil?',
+    `Debe ser por el monto exacto de tu compra, al número y titular que muestra la plataforma, y con la palabra “${PAYMENT_DETAIL}” en el detalle. Al enviarlo, escribe el número de comprobante y adjunta la foto o captura. Cada comprobante sirve para una sola compra.`,
+  ],
+  [
+    '¿Puedo regalar o transferir cartones a un familiar?',
+    'Los cartones quedan a nombre de la cuenta que los compró, y esa persona titular es quien responde por ellos y quien reclama el premio; la plataforma no permite traspasarlos a otra cuenta. Un familiar sí puede jugar con ellos acompañado de la persona titular (por ejemplo, menores de edad con su madre, padre o tutor).',
+  ],
 ];
+
+const SUGGESTION_KINDS = ['Sugerencia', 'Felicitación', 'Algo no funciona'];
+
+/** Buzón de sugerencias: llega a la Asociación por el mismo canal del formulario de contacto (tema SUGERENCIA). */
+function SuggestionBox() {
+  const { user } = useAuth();
+  const [form, setForm] = useState({ name: user?.name ?? '', email: user?.email ?? '', kind: SUGGESTION_KINDS[0], message: '', website: '' });
+  const [status, setStatus] = useState('idle'); // idle | sending | sent
+  const [error, setError] = useState('');
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (form.name.trim().length < 3 || !form.email.includes('@') || form.message.trim().length < 10) {
+      return setError('Escribe tu nombre, un correo válido y un comentario de al menos 10 caracteres.');
+    }
+    setStatus('sending');
+    setError('');
+    try {
+      await contactApi.send({ name: form.name, email: form.email, phone: '', topic: 'SUGERENCIA', message: `[${form.kind}] ${form.message}`, website: form.website });
+      setStatus('sent');
+      setForm((f) => ({ ...f, message: '' }));
+    } catch (err) {
+      setError(errorMessage(err, 'No pudimos enviar tu comentario. Intenta de nuevo en unos minutos.'));
+      setStatus('idle');
+    }
+  };
+
+  return (
+    <section aria-labelledby="buzon-title" className="surface relative overflow-hidden p-6 sm:p-8">
+      <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-sol-gold/20 blur-3xl" aria-hidden />
+      <div className="relative grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+        <div className="space-y-2">
+          <h2 id="buzon-title" className="flex items-center gap-2 font-display text-2xl font-semibold text-fg">
+            <Lightbulb className="h-7 w-7 text-sol-gold-dark dark:text-accent" aria-hidden /> Buzón de sugerencias
+          </h2>
+          <p className="text-fg-muted">¿Cómo podemos mejorar el bingo? Tu opinión llega directo a la Asociación y nos ayuda a hacerlo mejor para todos.</p>
+        </div>
+        {status === 'sent' ? (
+          <div role="status" className="flex animate-pop flex-col items-start gap-3">
+            <p className="flex items-center gap-2 text-lg font-semibold text-fg">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" aria-hidden /> ¡Gracias! Recibimos tu comentario.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setStatus('idle')}>
+              Enviar otro comentario
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-2">
+            <div role="radiogroup" aria-label="Tipo de comentario" className="flex flex-wrap gap-2 sm:col-span-2">
+              {SUGGESTION_KINDS.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.kind === k}
+                  onClick={() => setForm((f) => ({ ...f, kind: k }))}
+                  className={`inline-flex h-11 items-center rounded-full px-4 text-sm font-bold ring-1 transition active:scale-95 ${
+                    form.kind === k ? 'bg-sol-blue text-white ring-sol-blue dark:bg-sol-gold dark:text-sol-blue dark:ring-sol-gold' : 'text-fg ring-line hover:ring-sol-blue'
+                  }`}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+            <Field label="Nombre" value={form.name} onChange={set('name')} autoComplete="name" required />
+            <Field label="Correo" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
+            <label className="block sm:col-span-2">
+              <span className="font-semibold text-fg">Tu comentario</span>
+              <textarea
+                value={form.message}
+                onChange={set('message')}
+                rows={3}
+                maxLength={1400}
+                required
+                className="mt-1.5 w-full rounded-xl border-2 border-line bg-card p-3 text-fg"
+                placeholder="Cuéntanos tu idea, lo que te gustó o lo que no funcionó."
+              />
+            </label>
+            <input type="text" name="website" value={form.website} onChange={set('website')} tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+            {error && (
+              <Alert tone="error" className="sm:col-span-2">
+                {error}
+              </Alert>
+            )}
+            <div className="sm:col-span-2">
+              <Button type="submit" variant="gold" icon={Send} loading={status === 'sending'}>
+                Enviar comentario
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
 
 const EMPTY = { name: '', email: '', phone: '', topic: 'COMPRA', message: '', website: '' };
 
@@ -134,9 +243,15 @@ function SinpeInfo() {
 
   return (
     <section aria-labelledby="sinpe-title" className="relative overflow-hidden stage rounded-3xl p-6 ring-1 ring-white/10 sm:p-8">
-      <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-accent/20 blur-3xl" aria-hidden />
-      <h2 id="sinpe-title" className="relative flex items-center gap-2 font-display text-2xl font-semibold">
-        <Smartphone className="h-7 w-7 text-accent" aria-hidden /> Consulta SINPE Móvil
+      {/* Rojo de la Asociación: franja superior, ícono y sello "Oficial" (presencia de marca y confianza). */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-sol-red via-sol-red to-sol-gold" aria-hidden />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-sol-red/20 blur-3xl" aria-hidden />
+      <h2 id="sinpe-title" className="relative flex flex-wrap items-center gap-2 font-display text-2xl font-semibold">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-sol-red text-[#fff] shadow-[0_6px_18px_rgb(211_47_47/0.4)]">
+          <Smartphone className="h-6 w-6" aria-hidden />
+        </span>
+        Consulta SINPE Móvil
+        <span className="rounded-full bg-sol-red px-2.5 py-0.5 font-sans text-xs font-bold uppercase tracking-wider text-[#fff]">Oficial</span>
       </h2>
       <p className="relative mt-1 text-white/75">Estos son los únicos datos oficiales de cobro de la Asociación.</p>
       {!payment && !failed && <div className="relative mt-5 h-28 animate-pulse rounded-2xl bg-white/10" role="status" aria-label="Cargando datos de cobro" />}
@@ -156,7 +271,7 @@ function SinpeInfo() {
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wider text-white/60">Detalle del pago</dt>
             <dd className="mt-1 font-semibold">
-              Escribe <span className="rounded bg-accent px-1.5 font-bold text-navy-950">{payment.detail}</span>
+              Escribe <span className="rounded bg-sol-red px-1.5 font-bold text-[#fff]">{payment.detail}</span>
             </dd>
           </div>
           <div>
@@ -166,7 +281,7 @@ function SinpeInfo() {
         </dl>
       )}
       <p className="relative mt-4 flex items-start gap-2 text-sm text-white/75">
-        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-sol-red" aria-hidden />
         Paga siempre desde “Comprar cartones” y adjunta tu comprobante. La Asociación nunca te pedirá claves, códigos ni pagos por otros
         medios.
       </p>
@@ -242,18 +357,23 @@ export default function ContactPage() {
         <h2 id="faq-title" className="font-display text-2xl font-semibold text-fg">
           Preguntas frecuentes
         </h2>
-        {FAQ.map(([q, a]) => (
-          <details key={q} className="surface group p-5 open:ring-2 open:ring-accent/60">
-            <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 text-lg font-semibold text-fg">
-              {q}
-              <span aria-hidden className="text-2xl text-brand transition group-open:rotate-45">
-                +
-              </span>
-            </summary>
-            <p className="mt-3 text-lg text-fg-muted">{a}</p>
-          </details>
-        ))}
+        {/* Acordeón nativo (<details>): accesible con teclado y lector de pantalla sin JavaScript. */}
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="surface group overflow-hidden transition-shadow open:shadow-[0_0_0_2px_rgb(251_191_36/0.5),var(--card-glow)]">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-lg font-semibold text-fg [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-3">
+                  <HelpCircle className="h-5 w-5 shrink-0 text-brand" aria-hidden /> {q}
+                </span>
+                <ChevronDown aria-hidden className="h-5 w-5 shrink-0 text-brand transition-transform duration-300 group-open:rotate-180" />
+              </summary>
+              <p className="animate-fade-in px-5 pb-5 pl-13 text-base leading-relaxed text-fg-muted">{a}</p>
+            </details>
+          ))}
+        </div>
       </section>
+
+      <SuggestionBox />
     </main>
   );
 }

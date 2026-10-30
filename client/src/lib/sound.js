@@ -42,11 +42,20 @@ function tone(ac, freq, start, duration, { type = 'sine', gain = 0.12 } = {}) {
   osc.stop(start + duration + 0.02);
 }
 
-/** "Toc" breve al marcar (agudo) o desmarcar (grave) una casilla. */
-export function playMark(marked = true) {
+/**
+ * "Toc" breve al marcar (agudo) o desmarcar (grave) una casilla.
+ * Con el grano de maíz suena un doble "tic" seco, como un grano que rebota sobre el cartón.
+ */
+export function playMark(marked = true, marker = 'chip') {
   const ac = audio();
   if (!ac) return;
-  tone(ac, marked ? 880 : 520, ac.currentTime, 0.09, { type: 'triangle', gain: 0.1 });
+  const t = ac.currentTime;
+  if (marked && marker === 'corn') {
+    tone(ac, 1500, t, 0.035, { type: 'square', gain: 0.05 });
+    tone(ac, 1150, t + 0.07, 0.04, { type: 'square', gain: 0.035 });
+    return;
+  }
+  tone(ac, marked ? 880 : 520, t, 0.09, { type: 'triangle', gain: 0.1 });
 }
 
 /** Fanfarria corta de victoria: arpegio mayor ascendente. */

@@ -40,6 +40,43 @@
   --color-fg-muted: var(--fg-muted);
   --color-fg-subtle: var(--fg-subtle);
   --color-brand: var(--brand);
+
+  /* Balotas por columna (B I N G O) y color de la ficha de marcado: cambian con los filtros de daltonismo */
+  --color-ball-b: var(--ball-b);
+  --color-ball-i: var(--ball-i);
+  --color-ball-n: var(--ball-n);
+  --color-ball-g: var(--ball-g);
+  --color-ball-o: var(--ball-o);
+  --color-mark: var(--mark);
+}
+
+/* Paleta de balotas: todas con texto blanco legible (contraste >= 4.5:1). */
+:root {
+  --ball-b: #0e4a8e;
+  --ball-i: #d32f2f;
+  --ball-n: #047857;
+  --ball-g: #b45309;
+  --ball-o: #6d28d9;
+  --mark: #d32f2f;
+}
+/* Protanopía y deuteranopía (rojo-verde): azul, naranja, morado, gris y negro, sin pares rojo/verde. */
+html[data-cvd='protan'],
+html[data-cvd='deutan'] {
+  --ball-b: #0b5394;
+  --ball-i: #b35900;
+  --ball-n: #5b2a86;
+  --ball-g: #4b5563;
+  --ball-o: #111827;
+  --mark: #0b5394;
+}
+/* Tritanopía (azul-amarillo): rojo, verde azulado, magenta, gris y marrón. */
+html[data-cvd='tritan'] {
+  --ball-b: #b91c1c;
+  --ball-i: #0f766e;
+  --ball-n: #9d174d;
+  --ball-g: #374151;
+  --ball-o: #7c2d12;
+  --mark: #b91c1c;
 }
 
 :root {
@@ -107,17 +144,18 @@
   --stage-bg: none;
 }
 
+/* Alto contraste estricto de noche: negro sólido con bordes y acentos amarillo neón. */
 .dark[data-contrast='high'] {
   --page: #000000;
   --card: #000000;
   --muted: #161616;
-  --line: #ffffff;
+  --line: #ffe500;
   --fg: #ffffff;
   --fg-muted: #f5f5f5;
   --fg-subtle: #d4d4d4;
-  --brand: #ffd84d;
-  --card-glow: 0 0 0 2px #ffffff;
+  --brand: #ffe500;
+  --card-glow: 0 0 0 2px #ffe500;
   --glass-fill: var(--card);
-  --glass-edge: linear-gradient(#ffffff, #ffffff);
+  --glass-edge: linear-gradient(#ffe500, #ffe500);
   --page-glow: none;
 }

@@ -100,7 +100,8 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
       </div>
 
       <div role="group" aria-label="Filtrar por estado" className="flex flex-wrap gap-2">
-        {FILTERS.map(([key, label]) => (
+        {/* Sin ventas ni reservas reales no se muestran "Vendidos 0" / "Reservados 0": solo lo que existe. */}
+        {FILTERS.filter(([key]) => key === 'ALL' || key === 'AVAILABLE' || counts[key] > 0).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -119,7 +120,7 @@ export default function CardSelector({ cards, selected, now, onToggle, maxSelect
 
       {/* Leyenda */}
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-fg-muted">
-        {['AVAILABLE', 'RESERVED', 'VERIFYING', 'SOLD'].map((s) => (
+        {['AVAILABLE', 'RESERVED', 'VERIFYING', 'SOLD'].filter((s) => s === 'AVAILABLE' || cards.some((c) => c.status === s)).map((s) => (
           <li key={s} className="flex items-center gap-1">
             <span aria-hidden>{CARD_STATUS[s].emoji}</span> {CARD_STATUS[s].label}
           </li>

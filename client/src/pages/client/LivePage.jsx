@@ -153,8 +153,10 @@ export default function LivePage() {
   // El sonido va fuera del actualizador de estado (en StrictMode React lo ejecuta dos veces).
   const marksRef = useRef(manualMarks);
   marksRef.current = manualMarks;
+  const markerRef = useRef(marker);
+  markerRef.current = marker;
   const toggle = useCallback((cardId, n) => {
-    playMark(!marksRef.current[cardId]?.has(n));
+    playMark(!marksRef.current[cardId]?.has(n), markerRef.current);
     setManualMarks((prev) => {
       const next = new Set(prev[cardId]);
       if (next.has(n)) next.delete(n);
@@ -203,7 +205,8 @@ export default function LivePage() {
       {askAutoMark && (
         <ConfirmDialog
           title="¿Activar el marcado automático?"
-          confirmLabel="Activar"
+          icon={Sparkles}
+          confirmLabel="Activar marcado"
           onConfirm={() => {
             setAutoMark(true);
             setAskAutoMark(false);

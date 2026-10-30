@@ -30,13 +30,15 @@ export default function LegalDocument({ title, intro, sections }) {
 
       <nav aria-label={`Contenido de ${title}`} className="surface mt-6 p-5 print:hidden">
         <h3 className="mb-2 font-semibold text-fg">Contenido</h3>
-        <ol className="grid list-decimal gap-1 pl-6 marker:font-bold marker:text-brand sm:grid-cols-2">
+        {/* Número propio de ancho fijo (no el marcador de lista, que en dos columnas se montaba sobre la
+            columna izquierda): 1 a 10 quedan alineados con la misma sangría. */}
+        <ol className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
           {sections.map((s, i) => (
-            <li key={s.title}>
-              <a
-                href={`#seccion-${i + 1}`}
-                className="inline-flex min-h-9 items-center font-medium text-sol-blue underline-offset-4 hover:underline dark:text-accent"
-              >
+            <li key={s.title} className="flex min-h-10 items-baseline gap-2 py-1.5">
+              <span className="w-7 shrink-0 text-right font-bold tabular-nums text-brand" aria-hidden>
+                {i + 1}.
+              </span>
+              <a href={`#seccion-${i + 1}`} className="font-medium text-sol-blue underline-offset-4 hover:underline dark:text-accent">
                 {s.title}
               </a>
             </li>
@@ -47,10 +49,12 @@ export default function LegalDocument({ title, intro, sections }) {
       <div className="mt-8 space-y-8">
         {sections.map((s, i) => (
           <section key={s.title} id={`seccion-${i + 1}`} className="scroll-mt-28">
-            <h3 className="font-display text-2xl font-semibold text-fg">
-              {i + 1}. {s.title}
+            <h3 className="flex gap-2 font-display text-2xl font-semibold text-fg">
+              <span className="shrink-0 tabular-nums text-brand">{i + 1}.</span> {s.title}
             </h3>
-            <div className="mt-2 space-y-3 text-lg leading-relaxed text-fg-muted [&_h3]:pt-2 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-fg [&_li]:ml-6 [&_li]:list-disc [&_ol>li]:list-decimal [&_strong]:text-fg">
+            {/* Listas con sangría propia (pl) y marcador por dentro del margen: los números nunca se montan
+                sobre el renglón anterior, y cada punto queda separado (mt). */}
+            <div className="mt-2 space-y-3 text-lg leading-relaxed text-fg [&_h3]:pt-2 [&_h3]:text-xl [&_h3]:font-semibold [&_li]:mt-2 [&_li]:pl-1 [&_li]:marker:font-bold [&_li]:marker:text-brand [&_ol]:list-decimal [&_ol]:pl-8 [&_strong]:text-fg [&_ul]:list-disc [&_ul]:pl-7">
               {s.body}
             </div>
           </section>

@@ -4,10 +4,22 @@ const STORAGE_KEY = 'hs-theme';
 const TEXT_SIZE_KEY = 'hs-text-size';
 const CONTRAST_KEY = 'hs-contrast';
 const MOTION_KEY = 'hs-motion';
+const CVD_KEY = 'hs-cvd';
+const FONT_KEY = 'hs-font';
 const ThemeContext = createContext(null);
 
 /** Tamaños de letra disponibles; index.html aplica el guardado antes de pintar. */
 export const TEXT_SIZES = Object.freeze(['normal', 'large', 'xlarge']);
+/** Filtros de visión del color (daltonismo): cambian la paleta de balotas y fichas (tokens.css). */
+export const CVD_MODES = Object.freeze(['none', 'protan', 'deutan', 'tritan']);
+
+const DYSLEXIA_FONT_URL = 'https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&display=swap';
+/** Descarga la fuente para dislexia solo la primera vez que alguien la activa. */
+function loadDyslexiaFont() {
+  if (document.getElementById('font-dyslexia')) return;
+  const link = Object.assign(document.createElement('link'), { id: 'font-dyslexia', rel: 'stylesheet', href: DYSLEXIA_FONT_URL });
+  document.head.append(link);
+}
 
 const readStorage = (key, allowed) => {
   try {
@@ -38,6 +50,29 @@ export function ThemeProvider({ children }) {
   const [textSize, setTextSizeState] = useState(() => readStorage(TEXT_SIZE_KEY, TEXT_SIZES) ?? 'normal');
   const [highContrast, setHighContrastState] = useState(() => readStorage(CONTRAST_KEY, ['high']) === 'high');
   const [reduceMotion, setReduceMotionState] = useState(() => readStorage(MOTION_KEY, ['reduce']) === 'reduce');
+  const [cvd, setCvdState] = useState(() => readStorage(CVD_KEY, CVD_MODES) ?? 'none');
+  const [dyslexiaFont, setDyslexiaFontState] = useState(() => readStorage(FONT_KEY, ['dyslexia']) === 'dyslexia');
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (cvd === 'none') delete root.dataset.cvd;
+    else root.dataset.cvd = cvd;
+    if (dyslexiaFont) {
+      loadDyslexiaFont();
+      root.dataset.font = 'dyslexia';
+    } else delete root.dataset.font;
+  }, [cvd, dyslexiaFont]);
+
+  const setCvd = useCallback((next) => {
+    if (!CVD_MODES.includes(next)) return;
+    setCvdState(next);
+    writeStorage(CVD_KEY, next);
+  }, []);
+
+  const setDyslexiaFont = useCallback((on) => {
+    setDyslexiaFontState(on);
+    writeStorage(FONT_KEY, on ? 'dyslexia' : 'normal');
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -100,8 +135,12 @@ export function ThemeProvider({ children }) {
       setHighContrast,
       reduceMotion,
       setReduceMotion,
+      cvd,
+      setCvd,
+      dyslexiaFont,
+      setDyslexiaFont,
     }),
-    [theme, setTheme, toggleTheme, textSize, setTextSize, highContrast, setHighContrast, reduceMotion, setReduceMotion]
+    [theme, setTheme, toggleTheme, textSize, setTextSize, highContrast, setHighContrast, reduceMotion, setReduceMotion, cvd, setCvd, dyslexiaFont, setDyslexiaFont]
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -20,6 +20,7 @@ export const CONTACT_TOPICS = Object.freeze({
   PREMIO: 'Premios y ganadores',
   CUENTA: 'Mi cuenta',
   DATOS: 'Mis datos personales (Ley 8968)',
+  SUGERENCIA: 'Buzón de sugerencias',
   OTRO: 'Otro tema',
 });
 

@@ -52,6 +52,9 @@
         if (s === 'large' || s === 'xlarge') document.documentElement.dataset.textSize = s;
         if (localStorage.getItem('hs-contrast') === 'high') document.documentElement.dataset.contrast = 'high';
         if (localStorage.getItem('hs-motion') === 'reduce') document.documentElement.dataset.motion = 'reduce';
+        var cvd = localStorage.getItem('hs-cvd');
+        if (cvd === 'protan' || cvd === 'deutan' || cvd === 'tritan') document.documentElement.dataset.cvd = cvd;
+        if (localStorage.getItem('hs-font') === 'dyslexia') document.documentElement.dataset.font = 'dyslexia';
       } catch (e) {}
     </script>
   </head>

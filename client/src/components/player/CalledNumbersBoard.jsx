@@ -1,6 +1,5 @@
 import { COLUMN_RANGES, LETTERS, ballLabel, letterFor } from '../../constants/patterns';
-
-const LETTER_COLORS = ['bg-sol-blue', 'bg-sol-red', 'bg-emerald-600', 'bg-amber-500', 'bg-violet-600'];
+import { LETTER_COLORS } from '../../constants/ballColors';
 const colorFor = (n) => LETTER_COLORS[LETTERS.indexOf(letterFor(n))];
 
 /** Tablero de balotas de 75 agrupadas por letra, con la última balota grande y las anteriores. */

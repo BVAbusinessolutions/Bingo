@@ -162,6 +162,20 @@ h3 {
   }
 }
 
+/*
+ * Tipografía para dislexia (menú de accesibilidad): Lexend, diseñada para fluidez lectora, con más
+ * espacio entre letras, palabras y renglones. La fuente se descarga solo al activar la opción.
+ */
+html[data-font='dyslexia'] {
+  --font-sans: 'Lexend', 'Verdana', ui-sans-serif, sans-serif;
+  --font-display: 'Lexend', 'Verdana', ui-sans-serif, sans-serif;
+}
+html[data-font='dyslexia'] body {
+  letter-spacing: 0.03em;
+  word-spacing: 0.12em;
+  line-height: 1.8;
+}
+
 /* Alto contraste: foco más grueso y enlaces de texto siempre subrayados. */
 html[data-contrast='high'] :focus-visible {
   outline: 4px solid currentColor;

@@ -13,7 +13,9 @@ function PrizePhoto({ src, alt }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) return null;
   return (
-    <figure className="relative overflow-hidden rounded-2xl bg-white/5 p-1.5 ring-1 ring-white/20 shadow-[0_0_0_1px_rgb(251_191_36/0.18),0_18px_40px_rgb(2_6_23/0.45)] backdrop-blur-[16px]">
+    // Marco de vidrio con filo dorado y elevación; la foto (PNG recortado, fondo transparente) va en contain
+    // sobre un halo suave, así la moto nunca se corta.
+    <figure className="relative overflow-hidden rounded-2xl border border-sol-gold/50 bg-[radial-gradient(ellipse_at_50%_60%,rgb(251_191_36/0.25),transparent_70%)] p-2 shadow-[0_0_0_1px_rgb(251_191_36/0.25),0_20px_45px_rgb(2_6_23/0.35)] backdrop-blur-[16px] transition-shadow duration-500 group-hover:shadow-[0_0_0_1px_rgb(251_191_36/0.5),0_26px_60px_rgb(2_6_23/0.4)]">
       <img
         src={src}
         alt={alt}
@@ -22,7 +24,7 @@ function PrizePhoto({ src, alt }) {
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className="aspect-[16/10] w-full rounded-xl object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        className="aspect-[16/10] w-full object-contain drop-shadow-[0_14px_18px_rgb(2_6_23/0.35)] transition-transform duration-700 group-hover:-translate-y-1 group-hover:scale-[1.03]"
       />
       {/* Brillo diagonal sutil sobre la foto */}
       <span

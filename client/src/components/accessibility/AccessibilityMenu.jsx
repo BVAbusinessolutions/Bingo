@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Contrast, PersonStanding, Moon, RotateCcw, Sparkles, Sun, Type, Volume2, VolumeX, X } from 'lucide-react';
+import { BookOpen, Contrast, Eye, PersonStanding, Moon, RotateCcw, Sparkles, Sun, Type, Volume2, VolumeX, X } from 'lucide-react';
+import { LETTERS } from '../../constants/patterns';
+import { LETTER_COLORS } from '../../constants/ballColors';
 import { TEXT_SIZES, useTheme } from '../../context/ThemeContext';
 import { useSpeech } from './useSpeech';
 import { A11Y_TOGGLE_EVENT, announceAccessibilityState } from './a11yEvents';
@@ -23,6 +25,13 @@ function trapFocus(e, container) {
     first.focus();
   }
 }
+
+const CVD_OPTIONS = [
+  ['none', 'Normal', 'Colores de la marca'],
+  ['protan', 'Protanopía', 'Dificultad con el rojo'],
+  ['deutan', 'Deuteranopía', 'Dificultad con el verde'],
+  ['tritan', 'Tritanopía', 'Dificultad azul-amarillo'],
+];
 
 const SIZE_LABELS = {
   normal: ['A', 'Letra normal', 'text-base'],
@@ -134,6 +143,8 @@ export default function AccessibilityMenu() {
     theme.setTextSize('normal');
     theme.setHighContrast(false);
     theme.setReduceMotion(false);
+    theme.setCvd('none');
+    theme.setDyslexiaFont(false);
     speech.stop();
   };
 
@@ -229,8 +240,8 @@ export default function AccessibilityMenu() {
         <div className="grid gap-2">
           <Switch
             icon={Contrast}
-            label="Alto contraste"
-            description="Texto y bordes más marcados."
+            label="Alto contraste estricto"
+            description="Colores sólidos; en modo noche, negro con bordes amarillo neón."
             checked={theme.highContrast}
             onChange={theme.setHighContrast}
           />
@@ -241,7 +252,51 @@ export default function AccessibilityMenu() {
             checked={theme.reduceMotion}
             onChange={theme.setReduceMotion}
           />
+          <Switch
+            icon={BookOpen}
+            label="Letra para dislexia"
+            description="Tipografía amplia y más espacio entre letras y renglones."
+            checked={theme.dyslexiaFont}
+            onChange={theme.setDyslexiaFont}
+          />
         </div>
+
+        <fieldset>
+          <legend className="mb-2 flex items-center gap-2 font-extrabold text-fg">
+            <Eye className="h-5 w-5 text-brand" aria-hidden /> Visión del color
+          </legend>
+          <p className="mb-2 text-sm text-fg-muted">Cambia los colores de balotas y fichas por otros fáciles de distinguir.</p>
+          <div role="radiogroup" aria-label="Filtro de visión del color" className="grid grid-cols-2 gap-2">
+            {CVD_OPTIONS.map(([value, label, hint]) => {
+              const active = theme.cvd === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => theme.setCvd(value)}
+                  className={`flex min-h-12 flex-col items-start justify-center rounded-xl border-2 px-3 py-1.5 text-left transition ${
+                    active
+                      ? 'border-sol-blue bg-sol-blue text-white dark:border-sol-gold dark:bg-sol-gold dark:text-sol-blue'
+                      : 'border-line text-fg hover:border-sol-blue'
+                  }`}
+                >
+                  <span className="font-extrabold leading-tight">{label}</span>
+                  <span className="text-xs leading-tight opacity-80">{hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Muestra de la paleta activa: B I N G O con sus colores */}
+          <div className="mt-2 flex gap-1.5" aria-hidden>
+            {LETTERS.map((l, i) => (
+              <span key={l} className={`grid h-8 flex-1 place-items-center rounded-lg text-sm font-black text-[#fff] ${LETTER_COLORS[i]}`}>
+                {l}
+              </span>
+            ))}
+          </div>
+        </fieldset>
 
         {speech.supported && (
           <div className="space-y-1">

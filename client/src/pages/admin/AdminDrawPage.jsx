@@ -9,7 +9,7 @@ import WinningCardsPanel from '../../components/admin/WinningCardsPanel';
 import { COLUMN_RANGES, LETTERS, PATTERNS, letterFor } from '../../constants/patterns';
 import { errorMessage } from '../../lib/format';
 
-const LETTER_COLORS = ['bg-sol-blue', 'bg-sol-red', 'bg-emerald-600', 'bg-amber-500', 'bg-violet-600'];
+import { LETTER_COLORS } from '../../constants/ballColors';
 
 /** Consola donde el administrador marca las balotas; el backend las difunde por Socket.io. */
 export default function AdminDrawPage() {
