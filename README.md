@@ -77,7 +77,7 @@ Bingo/
 ├── docs/DESPLIEGUE.md             # guía Supabase + Render + correo
 ├── docs/SEGURIDAD.md              # HTTPS, cifrado, rate limit/DDoS, antifraude
 ├── docs/LEGAL-REVISION.md         # decisiones legales a confirmar antes del evento
-├── pendientes/TAREAS-PENDIENTES.md
+├── docs/PENDIENTES.md             # lo que falta para producción (lista única)
 ├── client/src/
 │   ├── app/                       # App + providers (tema, router, sesión, avisos)
 │   ├── routing/                   # AppRouter, private-routes (seguridad), paths, redirects
