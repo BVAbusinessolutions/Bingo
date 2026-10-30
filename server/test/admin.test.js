@@ -48,6 +48,23 @@ describe('sorteo y reclamos', () => {
     assert.deepEqual(undo.body.called, []);
   });
 
+  it('las rutas de administración rechazan a clientes (403) y a visitantes sin sesión (401)', async () => {
+    const client = await login(...CLIENTE);
+    const paths = [
+      '/api/admin/events',
+      `/api/admin/events/${DEMO_EVENT_ID}/stats`,
+      '/api/admin/reservations',
+      '/api/admin/claims',
+      '/api/admin/settings/payment',
+      '/api/admin/users',
+    ];
+    for (const path of paths) {
+      assert.equal((await api().get(path).set(auth(client.token))).status, 403, path);
+      assert.equal((await api().get(path)).status, 401, path);
+    }
+    assert.equal((await api().put('/api/admin/settings/payment').set(auth(client.token)).send({})).status, 403);
+  });
+
   it('un cliente no puede cantar balotas', async () => {
     const client = await login(...CLIENTE);
     assert.equal((await api().post(`/api/events/${DEMO_EVENT_ID}/draw/call`).set(auth(client.token)).send({ number: 8 })).status, 403);
@@ -138,7 +155,11 @@ describe('eventos', () => {
   const setStream = (stream) => api().patch(`/api/admin/events/${DEMO_EVENT_ID}`).set(auth(admin)).send({ stream });
 
   it('YouTube acepta la URL completa de la transmisión y guarda solo el id', async () => {
-    for (const url of ['https://www.youtube.com/watch?v=jfKfPfyJRdk', 'https://youtu.be/jfKfPfyJRdk', 'https://www.youtube.com/live/jfKfPfyJRdk?si=x']) {
+    for (const url of [
+      'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+      'https://youtu.be/jfKfPfyJRdk',
+      'https://www.youtube.com/live/jfKfPfyJRdk?si=x',
+    ]) {
       const res = await setStream({ provider: 'youtube', videoId: url });
       assert.equal(res.status, 200, url);
       assert.deepEqual(res.body.stream, { provider: 'youtube', videoId: 'jfKfPfyJRdk' });
@@ -154,6 +175,30 @@ describe('eventos', () => {
     for (const url of ['https://evil.example/facebook.com/x', 'https://fb.watch/abc', 'http://www.facebook.com/x']) {
       assert.equal((await setStream({ provider: 'facebook', url })).status, 400, url);
     }
+  });
+
+  it('Twitch y Kick aceptan el canal o su enlace y guardan solo el nombre del canal', async () => {
+    const twitch = await setStream({ provider: 'twitch', videoId: 'https://www.twitch.tv/hogarsol/' });
+    assert.deepEqual(twitch.body.stream, { provider: 'twitch', videoId: 'hogarsol' });
+    const kick = await setStream({ provider: 'kick', videoId: 'https://kick.com/hogar_sol' });
+    assert.equal(kick.status, 200);
+    assert.deepEqual(kick.body.stream, { provider: 'kick', videoId: 'hogar_sol' });
+    assert.deepEqual((await setStream({ provider: 'kick', videoId: 'hogarsol' })).body.stream, { provider: 'kick', videoId: 'hogarsol' });
+    for (const videoId of ['https://evil.example/kick.com/x', 'canal con espacios', 'https://kick.com/a/b']) {
+      assert.equal((await setStream({ provider: 'kick', videoId })).status, 400, videoId);
+    }
+  });
+
+  it('TikTok LIVE: la cuenta (@usuario o enlace) se guarda como enlace al directo; otros dominios no', async () => {
+    for (const value of ['@hogarsol', 'https://www.tiktok.com/@hogarsol', 'https://m.tiktok.com/@hogarsol/live']) {
+      const res = await setStream({ provider: 'tiktok', url: value });
+      assert.equal(res.status, 200, value);
+      assert.deepEqual(res.body.stream, { provider: 'tiktok', url: 'https://www.tiktok.com/@hogarsol/live' });
+    }
+    for (const url of ['https://evil.example/@hogarsol', 'javascript:alert(1)', '@a b']) {
+      assert.equal((await setStream({ provider: 'tiktok', url })).status, 400, url);
+    }
+    await setStream({ provider: 'youtube', videoId: 'jfKfPfyJRdk' });
   });
 });
 
@@ -293,6 +338,47 @@ describe('usuarios, bitácora y configuración', () => {
     const [any] = (await api().get('/api/admin/reservations').set(auth(admin))).body;
     assert.equal(any.payment.bank, 'Banco de Costa Rica');
     assert.equal(any.payment.detail, 'Bingo');
+    // Sin titular propio, la línea SINPE es de la misma Asociación.
+    assert.equal(any.payment.sinpeHolder, payment.holder);
+    assert.equal(any.payment.swift, '');
+  });
+
+  it('SINPE y transferencia por separado: titular de la línea SINPE y BIC/SWIFT opcionales y validados', async () => {
+    const base = {
+      holder: 'Asociación Infantil Hogar Sol',
+      holderId: '3-002-123456',
+      sinpePhone: '6027-1658',
+      bank: 'Banco Nacional de Costa Rica',
+      iban: 'CR05 0152 0200 1026 2840 66',
+    };
+    const res = await api()
+      .put('/api/admin/settings/payment')
+      .set(auth(admin))
+      .send({ ...base, sinpeHolder: 'María Pérez (tesorera)', swift: 'bncrcrsj' });
+    assert.equal(res.status, 200);
+    const saved = (await api().get('/api/admin/settings/payment').set(auth(admin))).body;
+    assert.equal(saved.sinpeHolder, 'María Pérez (tesorera)');
+    assert.equal(saved.swift, 'BNCRCRSJ');
+    const pub = (await api().get('/api/contact/payment')).body;
+    assert.equal(pub.sinpeHolder, 'María Pérez (tesorera)');
+    assert.equal(pub.holder, base.holder);
+    assert.equal(pub.swift, 'BNCRCRSJ');
+    assert.equal(
+      (
+        await api()
+          .put('/api/admin/settings/payment')
+          .set(auth(admin))
+          .send({ ...base, swift: 'NO-VALE' })
+      ).status,
+      400
+    );
+    // Vacío en el panel = vuelve a ser la Asociación (el panel recibe el valor guardado, no el calculado).
+    await api()
+      .put('/api/admin/settings/payment')
+      .set(auth(admin))
+      .send({ ...base, sinpeHolder: '', swift: '' });
+    assert.equal((await api().get('/api/admin/settings/payment').set(auth(admin))).body.sinpeHolder, '');
+    assert.equal((await api().get('/api/contact/payment')).body.sinpeHolder, base.holder);
   });
 
   it('las tablas tienen RLS activado (Supabase no las expone)', async () => {

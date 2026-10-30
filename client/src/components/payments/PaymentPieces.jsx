@@ -3,6 +3,7 @@ import { AlertTriangle, Building2, Clock, Copy, FileText, Smartphone, Upload, X 
 import { useCountdown } from '../../hooks/useCountdown';
 import { formatCRC } from '../../lib/format';
 import { PAYMENT_DETAIL } from '../../config/site';
+import { useNotifications } from '../../context/NotificationsContext';
 
 export const MAX_FILE = 5 * 1024 * 1024;
 const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
@@ -29,15 +30,19 @@ export function ReservationTimer({ expiresAt, onExpire }) {
   );
 }
 
+/** Copia con un toque; confirma con el texto del botón y un aviso (toast), útil en celular. */
 export function CopyButton({ value, label, className = '' }) {
   const [copied, setCopied] = useState(false);
+  const { notify } = useNotifications();
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      notify({ tone: 'success', title: 'Copiado', text: `${label}: ${value}`, duration: 3000 });
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // portapapeles no disponible (http sin localhost): se puede copiar a mano
+      notify({ tone: 'error', title: 'No se pudo copiar', text: `Selecciona y copia a mano: ${value}`, duration: 5000 });
     }
   };
   return (
@@ -58,14 +63,16 @@ export function CopyButton({ value, label, className = '' }) {
   );
 }
 
-function CopyRow({ label, value }) {
+// Teléfonos e IBAN se copian sin espacios ni guiones (así los aceptan las apps bancarias); los nombres, tal cual.
+function CopyRow({ label, value, compact = false }) {
+  if (!value) return null;
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="min-w-0">
         <p className="text-sm font-bold text-fg-muted">{label}</p>
         <p className="break-all text-lg font-black text-fg">{value}</p>
       </div>
-      <CopyButton value={value.replace(/\s/g, label === 'Titular' ? ' ' : '')} label={label} />
+      <CopyButton value={compact ? value.replace(/[\s-]/g, '') : value} label={label} />
     </div>
   );
 }
@@ -107,7 +114,7 @@ export function PaymentInstructions({ method, setMethod, reservation }) {
       <div role="tablist" aria-label="Método de pago" className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1.5">
         {[
           ['SINPE', Smartphone, 'SINPE Móvil'],
-          ['TRANSFER', Building2, 'Transferencia u otro'],
+          ['TRANSFER', Building2, 'Transferencia / IBAN'],
         ].map(([m, Icon, label]) => (
           <button
             key={m}
@@ -124,7 +131,8 @@ export function PaymentInstructions({ method, setMethod, reservation }) {
         ))}
       </div>
 
-      <div role="tabpanel" className="rounded-2xl border-2 border-line p-4">
+      {/* key: al cambiar de método, los botones "Copiar" empiezan limpios (no arrastran el "¡Copiado!" anterior). */}
+      <div key={method} role="tabpanel" className="rounded-2xl border-2 border-line p-4">
         <p className="text-lg text-fg">
           {method === 'SINPE' ? 'Envía exactamente' : 'Transfiere exactamente'}{' '}
           <b className="text-2xl text-sol-red dark:text-sol-gold">{formatCRC(reservation.total)}</b>{' '}
@@ -132,15 +140,19 @@ export function PaymentInstructions({ method, setMethod, reservation }) {
         </p>
         <div className="mt-1 divide-y divide-line">
           {method === 'SINPE' ? (
-            <CopyRow label="Teléfono SINPE Móvil" value={p.sinpePhone} />
+            <>
+              <CopyRow label="Teléfono SINPE Móvil" value={p.sinpePhone} compact />
+              <CopyRow label="Titular" value={p.sinpeHolder || p.holder} />
+            </>
           ) : (
             <>
-              <CopyRow label="Cuenta IBAN" value={p.iban} />
               <CopyRow label="Banco" value={p.bank} />
-              <CopyRow label="Cédula jurídica" value={p.holderId} />
+              <CopyRow label="Cuenta IBAN (colones)" value={p.iban} compact />
+              <CopyRow label="Cédula jurídica" value={p.holderId} compact />
+              <CopyRow label="Titular" value={p.holder} />
+              <CopyRow label="BIC / SWIFT" value={p.swift} />
             </>
           )}
-          <CopyRow label="Titular" value={p.holder} />
         </div>
       </div>
 

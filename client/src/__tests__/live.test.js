@@ -30,6 +30,21 @@ describe('fuentes de transmisión', () => {
     expect(streamSource({ provider: 'facebook', url: 'javascript:alert(1)' })).toBeNull();
   });
 
+  it('Kick usa su reproductor oficial con el nombre del canal', () => {
+    expect(streamSource({ provider: 'kick', videoId: 'hogarsol' })).toEqual({
+      kind: 'iframe',
+      src: 'https://player.kick.com/hogarsol?autoplay=true&muted=true',
+    });
+    expect(streamSource({ provider: 'kick', videoId: 'a/b' })).toBeNull();
+  });
+
+  it('TikTok LIVE no se incrusta: solo da el enlace al directo de tiktok.com', () => {
+    const url = 'https://www.tiktok.com/@hogarsol/live';
+    expect(streamSource({ provider: 'tiktok', url })).toEqual({ kind: 'external', href: url });
+    expect(streamSource({ provider: 'tiktok', url: 'https://evil.example/@hogarsol/live' })).toBeNull();
+    expect(streamSource({ provider: 'tiktok', url: 'javascript:alert(1)' })).toBeNull();
+  });
+
   it('HLS y WebRTC usan el reproductor propio solo con https', () => {
     expect(streamSource({ provider: 'hls', url: 'https://stream.example.com/live.m3u8' })).toEqual({ kind: 'lowLatency' });
     expect(streamSource({ provider: 'whep', url: 'http://stream.example.com/whep' })).toBeNull();

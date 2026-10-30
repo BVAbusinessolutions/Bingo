@@ -36,6 +36,8 @@ describe('recaudación', () => {
     assert.equal(stats.approvedCards, 2);
     assert.equal(stats.revenue, stats.approvedCards * (await one('select price from app.events where id = $1', [DEMO_EVENT_ID])).price);
     assert.ok(stats.conversionPct > 0 && stats.conversionPct <= 100);
+    // Gráfico de ventas por método: lo cobrado por transferencia, nada por SINPE.
+    assert.deepEqual(stats.byMethod, { SINPE: { orders: 0, amount: 0 }, TRANSFER: { orders: 1, amount: r.body.total } });
     const row = await one('select payment_method from app.reservations where id = $1', [r.body.id]);
     assert.equal(row.payment_method, 'TRANSFER', 'el método que confirmó la administración');
   });

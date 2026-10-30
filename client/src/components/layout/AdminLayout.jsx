@@ -22,7 +22,9 @@ import PageLoader from '../ui/PageLoader';
 import GlassSelect from '../ui/GlassSelect';
 import ErrorBoundary from './ErrorBoundary';
 import BingoAlert from '../admin/BingoAlert';
+import AdminTopBar from './AdminTopBar';
 import { playAdminAlert } from '../../lib/sound';
+import { useHashScroll } from '../../hooks/useHashScroll';
 
 const vibrate = () => {
   try {
@@ -71,6 +73,7 @@ export default function AdminLayout() {
   const [bingoClaims, setBingoClaims] = useState([]); // reclamos de ¡Bingo! aún no vistos (ventana emergente)
   const [revision, setRevision] = useState(0); // sube con cada aviso en tiempo real -> las vistas recargan
   const { socket } = useSocket('/admin');
+  useHashScroll(); // cada sección del panel empieza arriba
 
   const reloadEvents = useCallback(
     () =>
@@ -146,52 +149,64 @@ export default function AdminLayout() {
 
   const event = events.find((e) => e.id === eventId);
 
+  // Shell propio y aislado del sitio público: cabecera de gestión, barra lateral y contenido; sin pie de página.
   return (
-    <div className="container-page grid min-h-[calc(100dvh-4.5rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
-      {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
-      <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start print:hidden">
-        <div className="surface space-y-2 p-4">
-          <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
-          <GlassSelect label="Evento" value={eventId} onChange={setEventId} options={events.map((e) => ({ value: e.id, label: e.name }))} />
+    <div className="min-h-screen">
+      <a href="#contenido-admin" className="skip-link">
+        Saltar al contenido
+      </a>
+      <AdminTopBar />
+      <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
+        {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-22 lg:self-start print:hidden">
+          <div className="surface space-y-2 p-4">
+            <p className="text-sm font-extrabold uppercase tracking-widest text-sol-red dark:text-sol-gold">Administración</p>
+            <GlassSelect
+              label="Evento"
+              value={eventId}
+              onChange={setEventId}
+              options={events.map((e) => ({ value: e.id, label: e.name }))}
+            />
+          </div>
+
+          <nav aria-label="Administración" className="surface flex gap-1 overflow-x-auto p-2 lg:flex-col lg:overflow-visible">
+            {tabs.map(({ to, end, label, Icon, badge }) => (
+              <NavLink
+                key={label}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex min-h-12 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 font-extrabold transition ${
+                    isActive ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'text-fg-muted hover:bg-muted hover:text-fg'
+                  }`
+                }
+              >
+                <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                <span className="flex-1">{label}</span>
+                {badge > 0 && (
+                  <span
+                    className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white"
+                    aria-label={`${badge} pendientes`}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+
+        <div id="contenido-admin" tabIndex={-1} className="min-w-0 outline-none">
+          <ErrorBoundary resetKey={pathname}>
+            <Suspense fallback={<PageLoader />}>
+              <Outlet context={{ events, event, eventId, setEventId, reloadEvents, reloadCounters, revision, pending }} />
+            </Suspense>
+          </ErrorBoundary>
         </div>
 
-        <nav aria-label="Administración" className="surface flex gap-1 overflow-x-auto p-2 lg:flex-col lg:overflow-visible">
-          {tabs.map(({ to, end, label, Icon, badge }) => (
-            <NavLink
-              key={label}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex min-h-12 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 font-extrabold transition ${
-                  isActive ? 'bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue' : 'text-fg-muted hover:bg-muted hover:text-fg'
-                }`
-              }
-            >
-              <Icon className="h-5 w-5 shrink-0" aria-hidden />
-              <span className="flex-1">{label}</span>
-              {badge > 0 && (
-                <span
-                  className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white"
-                  aria-label={`${badge} pendientes`}
-                >
-                  {badge}
-                </span>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="min-w-0">
-        <ErrorBoundary resetKey={pathname}>
-          <Suspense fallback={<PageLoader />}>
-            <Outlet context={{ events, event, eventId, setEventId, reloadEvents, reloadCounters, revision, pending }} />
-          </Suspense>
-        </ErrorBoundary>
+        {toast && <AdminToast toast={toast} onClose={closeToast} />}
+        {bingoClaims.length > 0 && <BingoAlert claims={bingoClaims} onClose={closeBingo} />}
       </div>
-
-      {toast && <AdminToast toast={toast} onClose={closeToast} />}
-      {bingoClaims.length > 0 && <BingoAlert claims={bingoClaims} onClose={closeBingo} />}
     </div>
   );
 }

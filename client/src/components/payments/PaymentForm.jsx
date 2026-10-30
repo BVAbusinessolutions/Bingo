@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import Field from '../ui/Field';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { DetailTextAlert, FileInput, MAX_FILE, PaymentInstructions, ReservationTimer } from './PaymentPieces';
 import { paymentConfirmSchema, validate } from '../../lib/validation';
 import { errorMessage, formatCRC } from '../../lib/format';
@@ -76,6 +77,8 @@ export default function PaymentForm({ reservation, onChange }) {
   const [file, setFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const refresh = useCallback(async () => onChange(await reservationsApi.get(reservation.id)), [onChange, reservation.id]);
 
@@ -101,9 +104,19 @@ export default function PaymentForm({ reservation, onChange }) {
     }
   };
 
+  // Confirmación en un diálogo propio (accesible), no con el cuadro nativo del navegador.
+  const askCancel = useCallback(() => setConfirmCancel(true), []);
+  const keepPurchase = useCallback(() => setConfirmCancel(false), []);
   const cancel = async () => {
-    if (!window.confirm('¿Cancelar la compra y liberar los cartones?')) return;
-    onChange(await reservationsApi.cancel(reservation.id));
+    setCancelling(true);
+    try {
+      onChange(await reservationsApi.cancel(reservation.id));
+    } catch (err) {
+      setErrors({ server: errorMessage(err) });
+    } finally {
+      setCancelling(false);
+      setConfirmCancel(false);
+    }
   };
 
   const bind = (name) => ({
@@ -148,7 +161,22 @@ export default function PaymentForm({ reservation, onChange }) {
         </StepSection>
       </form>
 
-      <OrderSummary reservation={reservation} onExpire={refresh} busy={busy} onCancel={cancel} />
+      <OrderSummary reservation={reservation} onExpire={refresh} busy={busy} onCancel={askCancel} />
+
+      {confirmCancel && (
+        <ConfirmDialog
+          title="¿Cancelar la compra?"
+          icon={Trash2}
+          cancelLabel="Seguir comprando"
+          confirmLabel="Sí, cancelar"
+          confirmVariant="danger"
+          loading={cancelling}
+          onConfirm={cancel}
+          onCancel={keepPurchase}
+        >
+          Los cartones apartados se liberan y otra persona podrá comprarlos. Si ya pagaste, no canceles: sube tu comprobante.
+        </ConfirmDialog>
+      )}
     </div>
   );
 }

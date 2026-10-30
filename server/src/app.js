@@ -18,7 +18,13 @@ import contactRoutes from './modules/contact/contact.routes.js';
 import metricsRoutes from './modules/metrics/metrics.routes.js';
 import { drawRouter } from './modules/draw/draw.js';
 
-const STREAM_FRAMES = ['https://www.youtube-nocookie.com', 'https://player.twitch.tv', 'https://player.vimeo.com', 'https://www.facebook.com'];
+const STREAM_FRAMES = [
+  'https://www.youtube-nocookie.com',
+  'https://player.twitch.tv',
+  'https://player.kick.com',
+  'https://player.vimeo.com',
+  'https://www.facebook.com',
+];
 // Mapa del lugar en Contacto (Google Maps embebido, sin clave de API).
 const MAP_FRAMES = ['https://www.google.com'];
 

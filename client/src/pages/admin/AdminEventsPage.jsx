@@ -32,8 +32,8 @@ const formFrom = (ev) => ({
   videoId: ev?.stream?.videoId ?? ev?.stream?.url ?? '',
 });
 
-// Facebook, LL-HLS y WebRTC (WHEP) se configuran con una URL https; el resto con el id del video o canal.
-const URL_PROVIDERS = new Set(['facebook', 'hls', 'whep']);
+// Facebook, TikTok, LL-HLS y WebRTC (WHEP) se configuran con una URL; el resto con el id del video o el canal.
+const URL_PROVIDERS = new Set(['facebook', 'tiktok', 'hls', 'whep']);
 const STREAM_HINTS = {
   youtube: [
     'ID o URL del video',
@@ -45,7 +45,13 @@ const STREAM_HINTS = {
     'https://www.facebook.com/hogarsol/videos/…',
     'En Facebook: video en vivo → Compartir → Copiar enlace. Debe ser público.',
   ],
-  twitch: ['Nombre del canal', 'ej. hogarsol', 'Latencia de 2 a 5 s.'],
+  twitch: ['Canal de Twitch', 'ej. hogarsol o https://www.twitch.tv/hogarsol', 'Latencia de 2 a 5 s.'],
+  kick: ['Canal de Kick', 'ej. hogarsol o https://kick.com/hogarsol', 'Latencia de 2 a 5 s.'],
+  tiktok: [
+    'Cuenta de TikTok',
+    'ej. @hogarsol',
+    'TikTok no permite incrustar sus directos: el jugador verá un botón "Ver en TikTok" y jugará sus cartones aquí.',
+  ],
   vimeo: ['ID del video', 'ej. 76979871', 'Latencia de 5 a 15 s.'],
   hls: ['URL .m3u8 (LL-HLS)', 'https://…/live/bingo.m3u8', 'Latencia de 2 a 4 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
   whep: ['URL WHEP (WebRTC)', 'https://…/whep/bingo', 'Latencia menor a 1 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
@@ -141,6 +147,8 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
             <option value="hls">Enlace HLS / reproductor propio (.m3u8)</option>
             <option value="whep">WebRTC (ultra baja latencia)</option>
             <option value="twitch">Twitch</option>
+            <option value="kick">Kick</option>
+            <option value="tiktok">TikTok LIVE (enlace)</option>
             <option value="vimeo">Vimeo</option>
           </select>
         </label>

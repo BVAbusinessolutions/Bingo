@@ -12,7 +12,16 @@ const router = Router();
 router.get('/payment', async (req, res) => {
   const p = await getPayment();
   res.set('Cache-Control', 'public, max-age=300');
-  res.json({ holder: p.holder, holderId: p.holderId, sinpePhone: p.sinpePhone, bank: p.bank, iban: p.iban, detail: p.detail });
+  res.json({
+    holder: p.holder,
+    holderId: p.holderId,
+    sinpePhone: p.sinpePhone,
+    sinpeHolder: p.sinpeHolder || p.holder,
+    bank: p.bank,
+    iban: p.iban,
+    swift: p.swift,
+    detail: p.detail,
+  });
 });
 
 export const CONTACT_TOPICS = Object.freeze({

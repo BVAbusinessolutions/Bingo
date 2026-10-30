@@ -7,10 +7,12 @@
 - [ ] **Correo real (SMTP).** Sin `SMTP_HOST` en `server/.env` los correos (verificación de cuenta, recuperar
       contraseña, avisos de compra) solo se imprimen en la consola del servidor y nadie los recibe.
       Ver `server/.env.example` (Gmail con contraseña de aplicación o un proveedor transaccional).
-- [ ] **Datos de cobro reales** (titular, SINPE Móvil, IBAN) en *Administración → Datos de cobro*.
+- [ ] **Datos de cobro reales** en *Administración → Datos de cobro*: SINPE Móvil (teléfono y, si no es la
+      Asociación, titular de la línea) y transferencia (banco, IBAN, cédula jurídica, titular y BIC/SWIFT opcional).
 - [ ] **Coordenadas exactas del Salón Tinamaste** en `VITE_EVENT_VENUE_COORDS` (el mapa usa un valor aproximado).
 - [ ] **Transmisión** (Administración → Eventos): YouTube Live (ID o URL), Facebook Live (URL pública del video en
-      facebook.com) o enlace HLS `.m3u8` / WebRTC; si es HLS/WHEP, su origen en `STREAM_ORIGINS`. Al guardar, quienes
+      facebook.com), Twitch o Kick (canal), TikTok LIVE (@cuenta: TikTok no permite incrustar sus directos, así que
+      el jugador ve un botón "Ver en TikTok" y juega sus cartones en la web) o enlace HLS `.m3u8` / WebRTC; si es HLS/WHEP, su origen en `STREAM_ORIGINS`. Al guardar, quienes
       están en la vista en vivo ven el cambio al instante sin recargar.
       El video de los datos de demostración (`jfKfPfyJRdk`) ya no se puede insertar: YouTube muestra
       "Video Unavailable" hasta que se ponga el de la transmisión real.

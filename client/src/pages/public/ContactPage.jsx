@@ -79,7 +79,7 @@ function SuggestionBox() {
   };
 
   return (
-    <section aria-labelledby="buzon-title" className="surface relative overflow-hidden p-6 sm:p-8">
+    <section id={CONTACT_ANCHORS.suggestions} aria-labelledby="buzon-title" className="surface relative overflow-hidden p-6 outline-none sm:p-8">
       <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-sol-gold/20 blur-3xl" aria-hidden />
       <div className="relative grid gap-6 lg:grid-cols-[1fr_1.4fr]">
         <div className="space-y-2">
@@ -263,12 +263,12 @@ function SinpeInfo() {
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wider text-white/60">Número SINPE Móvil</dt>
             <dd className="mt-1 flex items-center gap-2 font-display text-2xl font-bold text-accent">
-              {payment.sinpePhone} <CopyButton value={payment.sinpePhone.replace(/\D/g, '')} label="Copiar número SINPE" />
+              {payment.sinpePhone} <CopyButton value={payment.sinpePhone.replace(/\D/g, '')} label="Número SINPE Móvil" />
             </dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wider text-white/60">A nombre de</dt>
-            <dd className="mt-1 font-semibold">{payment.holder}</dd>
+            <dd className="mt-1 font-semibold">{payment.sinpeHolder || payment.holder}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wider text-white/60">Detalle del pago</dt>
@@ -310,7 +310,8 @@ export default function ContactPage() {
           {[
             [`#${CONTACT_ANCHORS.map}`, MapPin, 'Ir al mapa'],
             [`#${CONTACT_ANCHORS.faq}`, HelpCircle, 'Preguntas frecuentes'],
-            [PATHS.rules, ScrollText, 'Ver reglamento'],
+            [`#${CONTACT_ANCHORS.suggestions}`, Lightbulb, 'Buzón de sugerencias'],
+            [PATHS.legal, ScrollText, 'Centro legal'],
           ].map(([to, Icon, label]) => (
             <Link
               key={label}

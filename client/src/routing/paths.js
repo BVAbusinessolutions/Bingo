@@ -46,5 +46,5 @@ export const PATHS = Object.freeze({
 /** Construye una ruta con parámetros: toPath(PATHS.purchaseDetail, { id }) -> /mis-compras/abc */
 export const toPath = (pattern, params) => pattern.replace(/:(\w+)/g, (_, key) => encodeURIComponent(params[key]));
 
-/** Anclas de la página de Contacto (enlaces "Cómo llegar", "Ir al mapa" y "Preguntas frecuentes"). */
-export const CONTACT_ANCHORS = Object.freeze({ map: 'mapa-salon', faq: 'preguntas-frecuentes' });
+/** Anclas de la página de Contacto ("Cómo llegar", "Ir al mapa", "Preguntas frecuentes" y "Buzón de sugerencias"). */
+export const CONTACT_ANCHORS = Object.freeze({ map: 'mapa-salon', faq: 'preguntas-frecuentes', suggestions: 'buzon-sugerencias' });

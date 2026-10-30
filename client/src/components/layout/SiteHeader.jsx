@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, Menu, Receipt, Shield, UserRound, X } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, Receipt, UserRound, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { ROLES } from '../../constants/roles';
 import { PATHS } from '../../routing/paths';
 import { BrandBadge } from '../brand/BrandLogo';
 import AccessibilityButton from '../accessibility/AccessibilityButton';
@@ -20,7 +19,7 @@ const navLinkClass = ({ isActive }) =>
   }`;
 
 
-function UserMenu({ user, isAdmin, onLogout }) {
+function UserMenu({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const close = useCallback(() => setOpen(false), []);
@@ -62,11 +61,6 @@ function UserMenu({ user, isAdmin, onLogout }) {
           <Link role="menuitem" to={PATHS.myPurchases} className={itemCls}>
             <Receipt className="h-5 w-5 text-brand" aria-hidden /> Mis compras
           </Link>
-          {isAdmin && (
-            <Link role="menuitem" to={PATHS.admin} className={itemCls}>
-              <Shield className="h-5 w-5 text-brand" aria-hidden /> Administración
-            </Link>
-          )}
           <hr className="my-1 border-line" />
           <button role="menuitem" type="button" onClick={onLogout} className={`${itemCls} w-full text-sol-red dark:text-red-300`}>
             <LogOut className="h-5 w-5" aria-hidden /> Cerrar sesión
@@ -78,7 +72,7 @@ function UserMenu({ user, isAdmin, onLogout }) {
 }
 
 export default function SiteHeader() {
-  const { isAuthenticated, role, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   // Cerrar sesión pide confirmación: un toque accidental en el menú ya no saca a la persona de su cuenta.
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -95,7 +89,6 @@ export default function SiteHeader() {
     }
   };
   const { pathname } = useLocation();
-  const isAdmin = role === ROLES.ADMIN;
   const canPlayLive = useCanPlayLive();
   const links = canPlayLive ? [...MAIN_LINKS, { to: PATHS.live, label: 'Jugar en vivo' }] : MAIN_LINKS;
 
@@ -120,11 +113,11 @@ export default function SiteHeader() {
     };
   }, [open, closeMenu]);
 
+  // Igual para clientes y administradores: el acceso al panel está en la franja AdminReturnBar, no aquí.
   const accountLinks = isAuthenticated
     ? [
         { to: PATHS.myPurchases, label: 'Mis compras' },
         { to: PATHS.profile, label: 'Mi perfil' },
-        ...(isAdmin ? [{ to: PATHS.admin, label: 'Administración' }] : []),
       ]
     : [];
 
@@ -160,7 +153,7 @@ export default function SiteHeader() {
           <AccessibilityButton />
           <div className="hidden items-center gap-2 xl:flex">
             {isAuthenticated ? (
-              <UserMenu user={user} isAdmin={isAdmin} onLogout={askLogout} />
+              <UserMenu user={user} onLogout={askLogout} />
             ) : (
               <>
                 <Link

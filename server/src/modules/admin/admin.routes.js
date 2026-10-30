@@ -9,7 +9,7 @@ import { notifyAdmins } from '../../realtime.js';
 import { sendMail } from '../../utils/mailer.js';
 import { audit, actorFrom } from '../../services/audit.js';
 import { getFile, sendFile } from '../../services/files.js';
-import { getPayment, updatePayment } from '../../services/settings.js';
+import { getPaymentSettings, updatePayment } from '../../services/settings.js';
 import { HttpError } from '../../utils/httpError.js';
 import { env } from '../../config/env.js';
 import { toCsv } from '../../utils/csv.js';
@@ -96,6 +96,14 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
          where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method is not null) as approved_orders,
        (select count(*)::int from app.reservations
          where event_id = $1 and not (status = 'APPROVED' and decided_by is null)) as started_orders,
+       (select count(*)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'SINPE') as sinpe_orders,
+       (select coalesce(sum(total), 0)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'SINPE') as sinpe_amount,
+       (select count(*)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'TRANSFER') as transfer_orders,
+       (select coalesce(sum(total), 0)::int from app.reservations
+         where event_id = $1 and status = 'APPROVED' and decided_by is not null and payment_method = 'TRANSFER') as transfer_amount,
        (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL}) as active_users,
        (select count(*)::int from app.users where role = 'CLIENTE' and ${USABLE_ACCOUNT_SQL} and email_verified) as verified_users,
        (select coalesce(sum(visits), 0)::int from app.site_visits) as visits_total,
@@ -116,6 +124,11 @@ router.get('/events/:eventId/stats', findEvent, async (req, res) => {
     startedOrders: t.started_orders,
     // Compras iniciadas que terminaron con el pago aprobado (0 a 100).
     conversionPct: t.started_orders ? Math.round((t.approved_orders / t.started_orders) * 100) : 0,
+    // Ventas verificadas por método de cobro (gráfico del panel).
+    byMethod: {
+      SINPE: { orders: t.sinpe_orders, amount: t.sinpe_amount },
+      TRANSFER: { orders: t.transfer_orders, amount: t.transfer_amount },
+    },
     activeUsers: t.active_users,
     verifiedUsers: t.verified_users,
     visitsTotal: t.visits_total,
@@ -138,12 +151,27 @@ const allowedStreamUrl = (url) => {
 const youtubeId = (value) =>
   value.match(/(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|live\/|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,64})/)?.[1] ?? value;
 const VIDEO_ID = /^[A-Za-z0-9_-]{2,64}$/;
+// Twitch y Kick: nombre del canal o el enlace del canal (twitch.tv/hogarsol, kick.com/hogarsol).
+const CHANNEL_URL = { twitch: /^https?:\/\/(?:www\.)?twitch\.tv\/([A-Za-z0-9_-]{2,64})\/?$/i, kick: /^https?:\/\/(?:www\.)?kick\.com\/([A-Za-z0-9_-]{2,64})\/?$/i };
+const channelName = (provider) => (value) => value.match(CHANNEL_URL[provider])?.[1] ?? value;
+// TikTok LIVE no tiene reproductor para incrustar: se guarda el enlace al directo de la cuenta y se abre en TikTok.
+const tiktokLive = (value) => {
+  const user = value.match(/^(?:https:\/\/(?:www\.|m\.)?tiktok\.com\/)?@([A-Za-z0-9_.]{2,24})(?:\/live)?\/?$/i)?.[1];
+  return user ? `https://www.tiktok.com/@${user}/live` : value;
+};
+const TIKTOK_LIVE_URL = /^https:\/\/www\.tiktok\.com\/@[A-Za-z0-9_.]{2,24}\/live$/;
 // Facebook Live: URL pública del video en facebook.com (los enlaces cortos fb.watch no funcionan en el reproductor).
 const FACEBOOK_URL = /^https:\/\/(?:www\.|web\.|m\.)?facebook\.com\/\S+$/;
 
 const streamSchema = z.discriminatedUnion('provider', [
   z.object({ provider: z.literal('youtube'), videoId: z.string().trim().max(300).transform(youtubeId).pipe(z.string().regex(VIDEO_ID)) }),
-  z.object({ provider: z.enum(['twitch', 'vimeo']), videoId: z.string().trim().regex(VIDEO_ID) }),
+  z.object({ provider: z.literal('twitch'), videoId: z.string().trim().max(300).transform(channelName('twitch')).pipe(z.string().regex(VIDEO_ID)) }),
+  z.object({ provider: z.literal('kick'), videoId: z.string().trim().max(300).transform(channelName('kick')).pipe(z.string().regex(VIDEO_ID)) }),
+  z.object({ provider: z.literal('vimeo'), videoId: z.string().trim().regex(VIDEO_ID) }),
+  z.object({
+    provider: z.literal('tiktok'),
+    url: z.string().trim().max(300).transform(tiktokLive).pipe(z.string().regex(TIKTOK_LIVE_URL, 'Debe ser la cuenta de TikTok, ej. @hogarsol')),
+  }),
   z.object({
     provider: z.literal('facebook'),
     url: z
@@ -763,9 +791,19 @@ const paymentSchema = z.object({
     .string()
     .trim()
     .regex(/^CR[0-9\s]{20,30}$/i),
+  // Opcionales: titular de la línea SINPE si no es la cuenta de la Asociación, y BIC/SWIFT del banco
+  // para transferencias desde el exterior.
+  sinpeHolder: z.string().trim().max(120).optional().default(''),
+  swift: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^(?:[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)?$/, 'BIC/SWIFT de 8 u 11 caracteres')
+    .optional()
+    .default(''),
 });
 
-router.get('/settings/payment', async (req, res) => res.json(await getPayment()));
+router.get('/settings/payment', async (req, res) => res.json(await getPaymentSettings()));
 
 router.put('/settings/payment', validateBody(paymentSchema), async (req, res) => {
   const payment = await updatePayment(req.body, req.user.id);

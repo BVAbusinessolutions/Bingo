@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Radio, RefreshCw, Volume2 } from 'lucide-react';
+import { ExternalLink, Radio, RefreshCw, Volume2 } from 'lucide-react';
 import { streamSource } from './streamSource';
 
 /**
@@ -136,6 +136,23 @@ export default function LiveStream({ provider = 'youtube', videoId, url, title =
       <div className="relative aspect-video">
         {lowLatency ? (
           <LowLatencyPlayer key={`${provider}:${url}`} provider={provider} url={url} title={title} />
+        ) : source?.kind === 'external' ? (
+          // TikTok LIVE no se puede incrustar: el directo se abre en TikTok y el cartón sigue aquí, en tiempo real.
+          <div className="absolute inset-0 grid place-items-center bg-linear-to-br from-slate-900 to-black px-4 text-center text-white">
+            <div className="max-w-sm space-y-4">
+              <p className="text-lg font-bold">La transmisión de este sorteo es en TikTok LIVE.</p>
+              <a
+                href={source.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-sol-gold px-5 font-black text-sol-blue shadow-lg transition hover:brightness-110"
+              >
+                <ExternalLink className="h-5 w-5" aria-hidden /> Ver en TikTok
+                <span className="sr-only">(se abre en otra pestaña)</span>
+              </a>
+              <p className="text-sm text-slate-300">Tus cartones y las bolas cantadas siguen actualizándose en esta página.</p>
+            </div>
+          </div>
         ) : src ? (
           // key: si la administración cambia la fuente en pleno sorteo, el reproductor se reinicia limpio.
           <iframe

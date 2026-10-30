@@ -111,5 +111,7 @@ export const env = {
     iban: process.env.PAYMENT_IBAN || 'CR00 0000 0000 0000 0000 00',
     bank: process.env.PAYMENT_BANK || 'Banco Nacional de Costa Rica',
     holderId: process.env.PAYMENT_HOLDER_ID || '3-002-000000',
+    sinpeHolder: process.env.PAYMENT_SINPE_HOLDER || '',
+    swift: process.env.PAYMENT_SWIFT || '',
   },
 };

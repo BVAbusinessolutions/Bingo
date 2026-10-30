@@ -4,6 +4,7 @@ import { ArrowRight, Clock, Coins, Eye, Hourglass, Ticket, TrendingUp, Users } f
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
+import DonutChart from '../../components/admin/DonutChart';
 import { formatCRC, formatDate } from '../../lib/format';
 
 function Stat({ Icon, label, value, sub, accent }) {
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
   if (!stats) return <div className="surface h-40 animate-pulse" />;
 
   const soldPct = stats.total ? Math.round((stats.sold / stats.total) * 100) : 0;
+  const byMethod = stats.byMethod ?? { SINPE: { orders: 0, amount: 0 }, TRANSFER: { orders: 0, amount: 0 } };
 
   return (
     <div className="space-y-5">
@@ -106,27 +108,50 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Inventario */}
-      <section className="surface space-y-2 p-4" aria-label="Inventario de cartones">
-        <div className="flex justify-between text-sm">
-          <span className="font-bold text-fg">Inventario</span>
-          <span className="text-fg-muted">{stats.available} disponibles</span>
+      {/* Analítica: inventario, cobro por método y conversión (solo compras verificadas por una persona) */}
+      <section aria-labelledby="charts-title" className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="charts-title" className="text-sm font-extrabold uppercase tracking-widest text-fg-muted">
+            Analítica del evento
+          </h2>
+          <p className="text-sm text-fg-muted">Bolas cantadas: {stats.called}/75</p>
         </div>
-        <div
-          className="flex h-4 overflow-hidden rounded-full bg-muted"
-          role="img"
-          aria-label={`${stats.sold} vendidos, ${stats.reserved} reservados, ${stats.available} disponibles`}
-        >
-          <div className="bg-sol-red" style={{ width: `${(stats.sold / stats.total) * 100}%` }} />
-          <div className="bg-orange-400" style={{ width: `${(stats.reserved / stats.total) * 100}%` }} />
-          <div className="bg-emerald-500" style={{ width: `${(stats.available / stats.total) * 100}%` }} />
+        <div className="grid gap-3 lg:grid-cols-3">
+          <DonutChart
+            title="Inventario de cartones"
+            description={`${stats.total} cartones en el evento`}
+            center={{ value: `${soldPct}%`, label: 'vendido' }}
+            items={[
+              { key: 'sold', label: 'Vendidos', value: stats.sold, color: 'var(--series-1)' },
+              { key: 'reserved', label: 'Apartados', value: stats.reserved, color: 'var(--series-2)' },
+              { key: 'available', label: 'Disponibles', value: stats.available, color: 'var(--series-3)' },
+            ]}
+          />
+          <DonutChart
+            title="Ventas por método de pago"
+            description={`${byMethod.SINPE.orders + byMethod.TRANSFER.orders} compras aprobadas`}
+            format={formatCRC}
+            center={{ value: formatCRC(stats.revenue), label: 'recaudado' }}
+            items={[
+              { key: 'sinpe', label: 'SINPE Móvil', value: byMethod.SINPE.amount, color: 'var(--series-1)' },
+              { key: 'transfer', label: 'Transferencia', value: byMethod.TRANSFER.amount, color: 'var(--series-2)' },
+            ]}
+          />
+          <DonutChart
+            title="Conversión de compras"
+            description={`${stats.startedOrders} compras iniciadas`}
+            center={{ value: `${stats.conversionPct}%`, label: 'aprobadas' }}
+            items={[
+              { key: 'approved', label: 'Aprobadas', value: stats.approvedOrders, color: 'var(--series-1)' },
+              {
+                key: 'other',
+                label: 'No concretadas o en curso',
+                value: Math.max(stats.startedOrders - stats.approvedOrders, 0),
+                color: 'var(--series-2)',
+              },
+            ]}
+          />
         </div>
-        <ul className="flex flex-wrap gap-x-4 text-xs text-fg-muted">
-          <li>🟥 Vendidos {stats.sold}</li>
-          <li>🟧 Reservados {stats.reserved}</li>
-          <li>🟩 Disponibles {stats.available}</li>
-          <li className="ml-auto">Bolas cantadas: {stats.called}/75</li>
-        </ul>
       </section>
 
       {/* Cola de verificación */}

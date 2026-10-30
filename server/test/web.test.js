@@ -61,6 +61,7 @@ describe('web compilada en producción', () => {
     assert.match(csp, /frame-ancestors 'none'/);
     assert.match(csp, /frame-src [^;]*https:\/\/www\.google\.com/); // mapa de Contacto
     assert.match(csp, /frame-src [^;]*https:\/\/www\.facebook\.com/); // Facebook Live
+    assert.match(csp, /frame-src [^;]*https:\/\/player\.kick\.com/); // Kick
   });
 
   it('el hash CSP de los scripts en línea coincide con el del navegador aunque index.html tenga CRLF', async () => {
