@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Hand, LogOut, PartyPopper, Printer, Sparkles, Trophy, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Hand, LogOut, PartyPopper, Printer, Sparkles, Trophy, Volume2, VolumeX, Wifi, WifiOff, ZoomIn, ZoomOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationsContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
@@ -14,7 +14,10 @@ import { BrandBadge } from '../../components/brand/BrandLogo';
 import AccessibilityButton from '../../components/accessibility/AccessibilityButton';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { hasWon, PATTERNS } from '../../constants/patterns';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import Celebration from '../../components/bingo/Celebration';
+import { missingFor, PATTERNS } from '../../constants/patterns';
+import { isSoundOn, playMark, playWin, setSoundOn } from '../../lib/sound';
 import { errorMessage } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
 
@@ -42,8 +45,10 @@ function useClaims(eventId) {
       try {
         const result = await claimsApi.create(eventId, card.id);
         setClaims((c) => ({ ...c, [result.serial]: result }));
+        return result; // el servidor ya validó el cartón contra las balotas oficiales
       } catch (err) {
         setErrors((e) => ({ ...e, [card.id]: errorMessage(err) }));
+        return null;
       } finally {
         setPending((p) => ({ ...p, [card.id]: false }));
       }
@@ -53,6 +58,12 @@ function useClaims(eventId) {
 
   return { claims, pending, errors, claim };
 }
+
+// Botones de la barra de controles: misma altura (44 px), forma de píldora y vidrio.
+const PILL =
+  'inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold ring-1 backdrop-blur-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
+const PILL_ON = `${PILL} bg-sol-blue text-white ring-sol-blue dark:bg-sol-gold dark:text-sol-blue dark:ring-sol-gold`;
+const PILL_OFF = `${PILL} bg-card/60 text-fg ring-line hover:ring-sol-blue dark:hover:ring-sol-gold`;
 
 function LiveHeader({ connected, onLogout }) {
   return (
@@ -89,7 +100,7 @@ function LiveHeader({ connected, onLogout }) {
 export default function LivePage() {
   const { logout } = useAuth();
   const { socket, connected } = useSocket('/draw');
-  const { event: currentEvent, loading } = useCurrentEvent();
+  const { event: currentEvent, loading, error: eventError } = useCurrentEvent();
   const eventId = currentEvent?.id;
 
   const [event, setEvent] = useState(null);
@@ -98,6 +109,10 @@ export default function LivePage() {
   const [autoMark, setAutoMark] = useState(true);
   const [manualMarks, setManualMarks] = useState({}); // { [cardId]: Set<number> }
   const [error, setError] = useState('');
+  const [soundOn, setSoundState] = useState(isSoundOn);
+  const [bigCards, setBigCards] = useState(true); // zoom: cartones grandes (1 columna) o compactos (2)
+  const [celebrating, setCelebrating] = useState(null); // serie del cartón ganador recién aceptado
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const { claims, pending, errors, claim } = useClaims(eventId);
 
   const called = useMemo(() => new Set(calledList), [calledList]);
@@ -131,7 +146,11 @@ export default function LivePage() {
     };
   }, [socket, eventId]);
 
+  // El sonido va fuera del actualizador de estado (en StrictMode React lo ejecuta dos veces).
+  const marksRef = useRef(manualMarks);
+  marksRef.current = manualMarks;
   const toggle = useCallback((cardId, n) => {
+    playMark(!marksRef.current[cardId]?.has(n));
     setManualMarks((prev) => {
       const next = new Set(prev[cardId]);
       if (next.has(n)) next.delete(n);
@@ -140,14 +159,44 @@ export default function LivePage() {
     });
   }, []);
 
+  const toggleSound = () => {
+    setSoundOn(!soundOn);
+    setSoundState(!soundOn);
+  };
+
   const pattern = event?.pattern ?? 'FULL';
   const isLive = event?.status === 'LIVE';
-  const winners = cards.filter((c) => hasWon(c.grid, called, pattern));
+  // Lo que cuenta para el ¡Bingo! es lo marcado en el cartón: automático = todo lo cantado;
+  // manual = solo las marcas de la persona que además fueron cantadas (nunca una balota no cantada).
+  const marksFor = useCallback(
+    (card) => (autoMark ? called : new Set([...(manualMarks[card.id] ?? EMPTY)].filter((n) => called.has(n)))),
+    [autoMark, called, manualMarks]
+  );
+  const missingById = useMemo(
+    () => Object.fromEntries(cards.map((c) => [c.id, missingFor(c.grid, marksFor(c), pattern)])),
+    [cards, marksFor, pattern]
+  );
+  const winners = cards.filter((c) => missingById[c.id] === 0);
   const unclaimedWinners = winners.filter((c) => !claims[c.serial] || claims[c.serial].status === 'REJECTED');
+
+  const claimAndCelebrate = async (card) => {
+    const result = await claim(card);
+    if (result) {
+      playWin();
+      setCelebrating(card.serial);
+    }
+  };
+  const endCelebration = useCallback(() => setCelebrating(null), []);
 
   return (
     <div className="min-h-screen pb-12">
-      <LiveHeader connected={connected} onLogout={logout} />
+      <LiveHeader connected={connected} onLogout={() => setConfirmLogout(true)} />
+      {confirmLogout && (
+        <ConfirmDialog title="¿Cerrar sesión?" confirmLabel="Cerrar sesión" confirmVariant="danger" onConfirm={logout} onCancel={() => setConfirmLogout(false)}>
+          Saldrás del sorteo en vivo. Tus cartones quedan guardados y podrás volver a entrar.
+        </ConfirmDialog>
+      )}
+      {celebrating && <Celebration serial={celebrating} onDone={endCelebration} />}
 
       <main id="contenido" className="container-page grid gap-5 pt-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* Stream + tablero (fijo al hacer scroll en escritorio) */}
@@ -169,21 +218,36 @@ export default function LivePage() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setAutoMark((v) => !v)}
-                aria-pressed={autoMark}
-                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 font-extrabold transition ${
-                  autoMark ? 'bg-sol-blue text-white dark:bg-sol-blue-light' : 'bg-sol-gold text-sol-blue'
-                }`}
-              >
+            <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Controles de los cartones">
+              <button type="button" onClick={() => setAutoMark((v) => !v)} aria-pressed={autoMark} className={autoMark ? PILL_ON : PILL_OFF}>
                 {autoMark ? <Sparkles className="h-5 w-5" aria-hidden /> : <Hand className="h-5 w-5" aria-hidden />}
                 {autoMark ? 'Marcado automático' : 'Marcado manual'}
               </button>
-              <Button variant="outline" icon={Printer} onClick={() => window.print()} disabled={cards.length === 0}>
-                Imprimir
-              </Button>
+              <button
+                type="button"
+                onClick={toggleSound}
+                aria-pressed={soundOn}
+                aria-label={soundOn ? 'Silenciar efectos de sonido' : 'Activar efectos de sonido'}
+                className={soundOn ? PILL_ON : PILL_OFF}
+              >
+                {soundOn ? <Volume2 className="h-5 w-5" aria-hidden /> : <VolumeX className="h-5 w-5" aria-hidden />}
+                <span className="hidden sm:inline">Sonido</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBigCards((v) => !v)}
+                aria-pressed={bigCards}
+                aria-label={bigCards ? 'Ver cartones más pequeños' : 'Ver cartones más grandes'}
+                className={PILL_OFF}
+                disabled={cards.length < 2}
+              >
+                {bigCards ? <ZoomOut className="h-5 w-5" aria-hidden /> : <ZoomIn className="h-5 w-5" aria-hidden />}
+                <span className="hidden sm:inline">{bigCards ? 'Alejar' : 'Acercar'}</span>
+              </button>
+              <button type="button" onClick={() => window.print()} disabled={cards.length === 0} className={PILL_OFF}>
+                <Printer className="h-5 w-5" aria-hidden />
+                <span className="hidden sm:inline">Imprimir</span>
+              </button>
             </div>
           </div>
 
@@ -199,7 +263,10 @@ export default function LivePage() {
             </div>
           )}
           {error && <Alert tone="error">{error}</Alert>}
-          {!loading && !currentEvent && <Alert>No hay ningún bingo programado por ahora.</Alert>}
+          {!loading && !currentEvent && eventError && (
+            <Alert tone="error">No pudimos conectar con el servidor. Reintentamos solos en unos segundos.</Alert>
+          )}
+          {!loading && !currentEvent && !eventError && <Alert>No hay ningún bingo programado por ahora.</Alert>}
           {eventId && !error && cards.length === 0 && (
             <Alert
               title="Aún no tienes cartones aprobados para este bingo"
@@ -213,11 +280,12 @@ export default function LivePage() {
             </Alert>
           )}
 
-          <div className="print-cards grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+          {/* Zoom: grande = 1 columna (máx. legible), compacto = 2 columnas incluso en celular. min-w-0 evita desbordes. */}
+          <div className={`print-cards grid gap-4 ${bigCards ? 'mx-auto max-w-xl grid-cols-1' : 'grid-cols-2'}`}>
             {cards.map((card) => {
-              const won = winners.includes(card);
+              const claimed = claims[card.serial];
               return (
-                <div key={card.id} className="space-y-2">
+                <div key={card.id} className="min-w-0 space-y-2">
                   <BingoCard
                     card={card}
                     called={called}
@@ -226,14 +294,15 @@ export default function LivePage() {
                     pattern={pattern}
                     onToggle={toggle}
                   />
-                  {(won || claims[card.serial]) && (
+                  {(isLive || claimed) && (
                     <div className="print:hidden">
                       <ClaimButton
-                        claim={claims[card.serial]}
+                        claim={claimed}
                         canClaim={isLive}
+                        missing={missingById[card.id]}
                         loading={pending[card.id]}
                         error={errors[card.id]}
-                        onClaim={() => claim(card)}
+                        onClaim={() => claimAndCelebrate(card)}
                       />
                     </div>
                   )}
@@ -252,7 +321,7 @@ export default function LivePage() {
             size="lg"
             icon={PartyPopper}
             loading={pending[unclaimedWinners[0].id]}
-            onClick={() => claim(unclaimedWinners[0])}
+            onClick={() => claimAndCelebrate(unclaimedWinners[0])}
             className="w-full max-w-md animate-pop border-4 border-white text-2xl shadow-2xl"
             aria-label={`¡Bingo! Reclamar premio con el cartón número ${unclaimedWinners[0].serial}`}
           >

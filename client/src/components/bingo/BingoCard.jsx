@@ -74,7 +74,7 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
                 {n}
                 {isMarked && (
                   <span
-                    className="pointer-events-none absolute inset-[8%] rounded-full bg-sol-red/55 ring-[0.6cqw] ring-sol-red mix-blend-multiply"
+                    className="pointer-events-none absolute inset-[8%] animate-stamp rounded-full bg-sol-red/55 ring-[0.6cqw] ring-sol-red mix-blend-multiply"
                     aria-hidden
                   />
                 )}
