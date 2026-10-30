@@ -41,6 +41,7 @@ Cuentas de demostración (solo desarrollo, **nunca** se crean en producción):
 | `npm run create-admin` | Crea o promueve un administrador (pide los datos por consola) |
 | `npm run backup` | Respaldo de toda la base en `server/backups/*.json.gz` |
 | `npm run demo:cartones` | Solo desarrollo: 3 cartones de prueba para `cliente@hogarsol.org` (`-- --vivo`, `-- --venta`, `-- --reiniciar`) |
+| `npm run demo:cartones` | Solo desarrollo: 3 cartones de prueba para `cliente@hogarsol.org` (`-- --vivo`, `-- --venta`, `-- --reiniciar`) |
 
 ## Cómo funciona
 
