@@ -38,5 +38,9 @@ export const AGE_NOTE = `Las cuentas las registran personas mayores de 18 años;
 export const MOTORCYCLE_REQUIREMENT =
   'Para el retiro de la motocicleta se requiere presentar cédula física al día y licencia de conducir vigente de la persona ganadora mayor de edad o de su representante legal, según la legislación de Costa Rica.';
 
+/** Plazo único para coordinar el retiro y presentar requisitos de todos los premios (texto aprobado). */
+export const PRIZE_DEADLINE_NOTE =
+  'Los ganadores en línea reciben nuestro contacto dentro de 3 días hábiles. Se cuenta con un plazo de 3 días hábiles para coordinar el retiro y la presentación de requisitos de todos los premios, incluida la motocicleta.';
+
 /** Palabra obligatoria en el detalle del SINPE Móvil o la transferencia (la misma que valida el panel). */
 export const PAYMENT_DETAIL = 'Bingo';

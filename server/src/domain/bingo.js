@@ -42,6 +42,9 @@ export const PATTERNS = Object.freeze({
   FULL: [ALL],
 });
 
+/** Nombre de cada modalidad para avisos y correos (el cliente usa los mismos en constants/patterns.js). */
+export const PATTERN_LABELS = Object.freeze({ LINE: 'Línea', FOUR_CORNERS: 'Cuatro esquinas', X: 'Letra X', FULL: 'Cartón lleno' });
+
 /** Cuántos números faltan para completar el patrón con las bolas cantadas (0 = bingo válido). */
 export function missingFor(grid, called, pattern) {
   const alternatives = PATTERNS[pattern] ?? PATTERNS.FULL;

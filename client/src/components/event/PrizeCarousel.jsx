@@ -63,13 +63,13 @@ export default function PrizeCarousel({ images, alt }) {
               <img
                 src={src}
                 alt={i === 0 ? alt : `${alt}, otra vista`}
-                width="1400"
-                height="1000"
+                width="1600"
+                height="900"
                 loading={i === 0 ? 'eager' : 'lazy'}
                 decoding="async"
                 draggable={false}
                 onError={() => setFailed((f) => new Set(f).add(src))}
-                className="aspect-[16/10] w-full select-none object-contain drop-shadow-[0_14px_18px_rgb(2_6_23/0.35)]"
+                className="aspect-video w-full select-none object-contain drop-shadow-[0_14px_18px_rgb(2_6_23/0.35)]"
               />
             </div>
           ))}

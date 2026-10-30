@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, Clock, HelpCircle, Lightbulb, Mail, MapPin, MessageCircle, Phone, Send, ShieldAlert, Smartphone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, ChevronDown, Clock, HelpCircle, Lightbulb, Mail, MapPin, MessageCircle, Phone, ScrollText, Send, ShieldAlert, Smartphone } from 'lucide-react';
 import { contactApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -9,6 +10,7 @@ import Alert from '../../components/ui/Alert';
 import { CopyButton } from '../../components/payments/PaymentPieces';
 import { MOTORCYCLE_REQUIREMENT, PAYMENT_DETAIL, SITE } from '../../config/site';
 import { errorMessage } from '../../lib/format';
+import { CONTACT_ANCHORS, PATHS } from '../../routing/paths';
 
 const CHANNELS = [
   { icon: MessageCircle, label: 'WhatsApp', value: 'Escríbenos por WhatsApp', href: `https://wa.me/${SITE.whatsapp}`, external: true },
@@ -303,6 +305,22 @@ export default function ContactPage() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-sol-red dark:text-accent">Estamos para ayudarte</p>
         <h1 className="font-display text-3xl font-bold text-fg sm:text-4xl">Contacto</h1>
         <p className="mt-1 max-w-2xl text-lg text-fg-muted">¿Tienes dudas sobre tu compra, un premio o tus datos? Escríbenos o llámanos.</p>
+        {/* Accesos rápidos: llevan al bloque centrado y resaltado (useHashScroll), sin saltar al pie de página. */}
+        <nav aria-label="Accesos rápidos" className="mt-4 flex flex-wrap gap-2">
+          {[
+            [`#${CONTACT_ANCHORS.map}`, MapPin, 'Ir al mapa'],
+            [`#${CONTACT_ANCHORS.faq}`, HelpCircle, 'Preguntas frecuentes'],
+            [PATHS.rules, ScrollText, 'Ver reglamento'],
+          ].map(([to, Icon, label]) => (
+            <Link
+              key={label}
+              to={to}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-card px-4 font-semibold text-fg transition hover:border-accent hover:text-brand"
+            >
+              <Icon className="h-4 w-4 text-brand" aria-hidden /> {label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -325,7 +343,8 @@ export default function ContactPage() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <ContactForm />
         <div className="space-y-4">
-          <div className="surface overflow-hidden rounded-2xl">
+          {/* Destino de "Cómo llegar" e "Ir al mapa": se centra en pantalla y se resalta al llegar. */}
+          <div id={CONTACT_ANCHORS.map} className="surface overflow-hidden rounded-2xl outline-none">
             <iframe
               title={`Mapa: ${SITE.eventVenue}`}
               src={`https://www.google.com/maps?q=${mapQuery}&z=16&output=embed`}
@@ -353,7 +372,7 @@ export default function ContactPage() {
 
       <SinpeInfo />
 
-      <section aria-labelledby="faq-title" className="space-y-3">
+      <section id={CONTACT_ANCHORS.faq} aria-labelledby="faq-title" className="space-y-3 rounded-2xl outline-none">
         <h2 id="faq-title" className="font-display text-2xl font-semibold text-fg">
           Preguntas frecuentes
         </h2>

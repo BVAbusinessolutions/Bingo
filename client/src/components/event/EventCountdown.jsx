@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import { CalendarDays, Clock, MapPin } from 'lucide-react';
 import { useCountdown } from '../../hooks/useCountdown';
 import { COSTA_RICA_TZ } from '../../config/site';
+import { CONTACT_ANCHORS, PATHS } from '../../routing/paths';
 
 const dateFmt = new Intl.DateTimeFormat('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: COSTA_RICA_TZ });
 const timeFmt = new Intl.DateTimeFormat('es-CR', { hour: 'numeric', minute: '2-digit', timeZone: COSTA_RICA_TZ });
@@ -14,7 +16,6 @@ export const eventTimeLabel = (iso) => timeFmt.format(new Date(iso));
 /** "Salón de Eventos de Tinamaste, Higuito" (lo que se haya configurado en el panel). */
 export const eventPlace = (event) => [event?.venue, event?.venueArea].filter(Boolean).join(', ');
 
-const mapsUrl = (place) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place}, Costa Rica`)}`;
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -57,7 +58,7 @@ export default function EventCountdown({ startsAt, compact = false, onDoneSlot =
   );
 }
 
-/** Fecha, hora y lugar del evento (con enlace para llegar si el panel definió el lugar). */
+/** Fecha, hora y lugar del evento (con enlace al mapa del salón si el panel definió el lugar). */
 export function EventFacts({ event, className = '' }) {
   const place = eventPlace(event);
   return (
@@ -75,14 +76,13 @@ export function EventFacts({ event, className = '' }) {
           <MapPin className="mt-1 h-5 w-5 shrink-0 text-brand" aria-hidden />
           <span>
             {place} ·{' '}
-            <a
-              href={mapsUrl(place)}
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Lleva al mapa del salón en Contacto (centrado y resaltado), no a otra pestaña ni al pie de página. */}
+            <Link
+              to={`${PATHS.contact}#${CONTACT_ANCHORS.map}`}
               className="font-semibold text-sol-blue underline underline-offset-4 dark:text-accent"
             >
               Cómo llegar
-            </a>
+            </Link>
           </span>
         </li>
       )}

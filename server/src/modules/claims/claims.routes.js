@@ -6,10 +6,14 @@ import { authenticate } from '../../middleware/auth.js';
 import { claimLimiter, validateBody } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
 import { notifyAdminsByMail } from '../../utils/mailer.js';
-import { isWinningCard } from '../../domain/bingo.js';
+import { PATTERN_LABELS, isWinningCard } from '../../domain/bingo.js';
 import { CLAIM_SELECT, adminClaimView, claimView, findClaim } from './claims.service.js';
 
 const router = Router({ mergeParams: true });
+
+/** Fecha y hora exactas del reclamo en hora de Costa Rica (para el correo de la Asociación). */
+const crDateTime = (d) =>
+  new Intl.DateTimeFormat('es-CR', { timeZone: 'America/Costa_Rica', dateStyle: 'full', timeStyle: 'medium' }).format(new Date(d));
 
 const requireEvent = async (req, res, next) => {
   if (!/^[a-z0-9-]{3,64}$/.test(req.params.eventId)) return res.status(404).json({ error: 'NOT_FOUND' });
@@ -58,10 +62,27 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
     : one(`${CLAIM_SELECT} where cl.card_id = $1 and cl.status <> 'REJECTED'`, [card.id]));
   if (!created) return res.json(claimView(claim));
 
-  notifyAdmins('claim:new', adminClaimView(claim));
+  const patternLabel = PATTERN_LABELS[event.pattern] ?? event.pattern;
+  notifyAdmins('claim:new', { ...adminClaimView(claim), pattern: event.pattern, patternLabel });
+
+  // Correo a la Asociación (ADMIN_NOTIFY_EMAILS) con todo lo necesario para auditar el reclamo.
+  const accountCards = await query(
+    "select serial from app.cards where event_id = $1 and owner_id = $2 and status = 'SOLD' order by serial",
+    [event.id, req.user.id]
+  );
   notifyAdminsByMail({
-    subject: `🏆 ¡Bingo reclamado! Cartón #${card.serial}`,
-    text: `Un jugador reclamó bingo en ${event.name} con el cartón #${card.serial} tras ${called.length} bolas.\nEl sistema ya verificó el patrón; confirma el premio desde el panel.`,
+    subject: `🏆 ¡BINGO CANTADO! Cartón N.° ${card.serial} · ${patternLabel}`,
+    text: [
+      `¡BINGO CANTADO! en ${event.name}.`,
+      `Usuario: ${claim.player_name ?? 'Sin nombre'} (${claim.player_email ?? req.user.email})`,
+      `Cartón N.°: ${card.serial}`,
+      `Modalidad: ${patternLabel}`,
+      `Hora exacta: ${crDateTime(claim.created_at)} (hora de Costa Rica)`,
+      `Bolas cantadas al reclamar: ${called.length}`,
+      `Cartones de esta cuenta en el evento (${accountCards.length}): ${accountCards.map((c) => `#${c.serial}`).join(', ')}`,
+      '',
+      'El sistema ya verificó el cartón contra las bolas cantadas. Confirma el premio desde el panel.',
+    ].join('\n'),
     action: { label: 'Revisar reclamo', url: `${env.clientOrigin}/admin/ganadores` },
   });
   res.status(201).json(claimView(claim));

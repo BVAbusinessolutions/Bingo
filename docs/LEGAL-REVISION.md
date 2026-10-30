@@ -21,9 +21,9 @@ antes del evento del 15 de noviembre de 2026.
 |---|---|---|
 | Quedan excluidos la Junta Directiva, el personal del sorteo y sus familiares hasta 2.º grado | Sí | `content/legal/terminos.jsx` |
 | Una sola cuenta por persona | Sí | `content/legal/terminos.jsx` |
-| Plazo para reclamar premios | 30 días naturales (90 para la motocicleta) | `content/legal/reglamento.jsx`, `content/legal/contingencias.jsx` |
+| Plazo para reclamar premios | 3 días hábiles para coordinar el retiro y presentar requisitos (todos los premios, incluida la motocicleta) | `content/legal/reglamento.jsx`, `content/legal/contingencias.jsx` |
 | Contacto con ganadores en línea | Dentro de 3 días hábiles | `content/legal/reglamento.jsx` |
-| Custodia de la motocicleta si el ganador no tiene licencia | Hasta 90 días | `content/legal/reglamento.jsx` |
+| Custodia de la motocicleta si el ganador no tiene licencia | Sin custodia extra: mismo plazo de 3 días hábiles. **Validar:** el traspaso ante notario y la licencia pueden tardar más | `content/legal/reglamento.jsx` |
 | Gastos de traspaso, marchamo y seguro de la moto | A cargo del ganador, salvo que el anuncio diga otra cosa | `content/legal/reglamento.jsx` |
 | Destino de los premios no reclamados | Pasan a los programas de la Asociación según sus estatutos | `content/legal/contingencias.jsx` |
 | Desempate de premios indivisibles | Una bola por cartón empatado; gana la más alta | `content/legal/contingencias.jsx` |

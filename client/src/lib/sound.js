@@ -19,8 +19,8 @@ export function setSoundOn(on) {
   }
 }
 
-function audio() {
-  if (!isSoundOn()) return null;
+function audio(force = false) {
+  if (!force && !isSoundOn()) return null;
   const Ctx = window.AudioContext ?? window.webkitAudioContext;
   if (!Ctx) return null;
   ctx ??= new Ctx();
@@ -74,4 +74,18 @@ export function playWin() {
   const t = ac.currentTime;
   [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(ac, f, t + i * 0.11, 0.28, { type: 'triangle', gain: 0.14 }));
   tone(ac, 1046.5, t + 0.48, 0.6, { type: 'sine', gain: 0.1 });
+}
+
+/**
+ * Alerta para administración cuando alguien canta ¡Bingo!: tres timbres insistentes.
+ * Suena aunque el jugador haya silenciado los efectos en este navegador (es un aviso operativo).
+ */
+export function playAdminAlert() {
+  const ac = audio(true);
+  if (!ac) return;
+  const t = ac.currentTime;
+  [0, 0.32, 0.64].forEach((d) => {
+    tone(ac, 880, t + d, 0.16, { type: 'square', gain: 0.08 });
+    tone(ac, 1320, t + d + 0.14, 0.16, { type: 'square', gain: 0.08 });
+  });
 }

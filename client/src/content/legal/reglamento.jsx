@@ -2,7 +2,7 @@
 // deben confirmarlos la Junta Directiva y la asesoría legal antes del evento.
 import { PATHS } from '../../routing/paths';
 import { ContactEmail } from '../../components/layout/LegalLayout';
-import { AGE_NOTE, legalIdText, MOTORCYCLE_REQUIREMENT, PAYMENT_DETAIL, SITE } from '../../config/site';
+import { AGE_NOTE, legalIdText, MOTORCYCLE_REQUIREMENT, PAYMENT_DETAIL, PRIZE_DEADLINE_NOTE, SITE } from '../../config/site';
 import { eventDateLabel, eventTimeLabel } from '../../components/event/EventCountdown';
 
 /** Lugar del evento tal como lo configuró el panel: "Salón de Eventos de Tinamaste, Higuito". */
@@ -160,9 +160,9 @@ const SECTIONS = ({ event } = {}) => [
           </li>
         </ul>
         <p>
-          Si la persona ganadora no tiene la licencia al día, la Asociación custodiará el premio hasta por <strong>90 días naturales</strong>{' '}
-          para que la obtenga. Vencido ese plazo, se aplica la regla de premios no reclamados de la Política de contingencias. El premio no
-          puede cambiarse por dinero.
+          Los requisitos se presentan dentro del plazo de <strong>3 días hábiles</strong> para coordinar el retiro, igual que en el
+          resto de los premios. Si en ese plazo no se presenta la licencia de conducir vigente, se aplica la regla de premios no reclamados
+          de la Política de contingencias. El premio no puede cambiarse por dinero.
         </p>
       </>
     ),
@@ -185,8 +185,7 @@ const SECTIONS = ({ event } = {}) => [
           entrega física del premio requiere presentar el documento original.
         </li>
         <li>
-          <strong>Plazo para reclamar:</strong> <strong>30 días naturales</strong> desde el evento (90 días en el caso de la motocicleta, por
-          el trámite de licencia y traspaso).
+          <strong>Plazo para reclamar:</strong> {PRIZE_DEADLINE_NOTE}
         </li>
         <li>Se levanta un acta de entrega firmada por la persona ganadora y un representante de la Asociación.</li>
         <li>Los premios son personales e intransferibles y no se canjean por dinero, salvo que el anuncio diga lo contrario.</li>

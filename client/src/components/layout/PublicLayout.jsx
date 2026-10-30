@@ -6,9 +6,11 @@ import EmailVerificationNotice from './EmailVerificationNotice';
 import PageLoader from '../ui/PageLoader';
 import ErrorBoundary from './ErrorBoundary';
 import { PATHS } from '../../routing/paths';
+import { useHashScroll } from '../../hooks/useHashScroll';
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
+  useHashScroll(); // enlaces con ancla: desplazamiento suave y centrado al destino
   // El panel de administración es una aplicación de pantalla completa: sin pie de página.
   const isAdmin = pathname === PATHS.admin || pathname.startsWith(`${PATHS.admin}/`);
   return (

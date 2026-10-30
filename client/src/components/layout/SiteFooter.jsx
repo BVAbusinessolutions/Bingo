@@ -92,7 +92,8 @@ export default function SiteFooter() {
       {/* Una sola línea discreta: copyright + nota de edad, sin bloques vacíos a los lados. */}
       <div className="border-t border-white/10">
         <p className="container-page flex flex-wrap items-center gap-x-2 gap-y-1 py-3 text-xs text-white/55">
-          <span className="whitespace-nowrap">
+          {/* Sin nowrap en celular: a 320 px el nombre completo no cabe en una línea y desbordaba 5 px. */}
+          <span className="sm:whitespace-nowrap">
             © {new Date().getFullYear()} {SITE.name}
             {SITE.legalId && ` · Cédula jurídica ${SITE.legalId}`}
           </span>
@@ -100,7 +101,8 @@ export default function SiteFooter() {
             |
           </span>
           <Scale className="h-3.5 w-3.5 shrink-0 text-accent/70" aria-hidden />
-          <span className="min-w-0 flex-1">{AGE_NOTE}</span>
+          {/* Ancho mínimo: si no cabe junto al ©, baja completa a la línea siguiente en vez de comprimirse. */}
+          <span className="min-w-[min(100%,14rem)] flex-1">{AGE_NOTE}</span>
         </p>
       </div>
     </footer>

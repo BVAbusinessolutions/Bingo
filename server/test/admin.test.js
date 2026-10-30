@@ -2,6 +2,7 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ADMIN,
+  outbox,
   CLIENTE,
   DEMO_EVENT_ID,
   TINY_PNG,
@@ -82,6 +83,14 @@ describe('sorteo y reclamos', () => {
       api().post(`/api/events/${DEMO_EVENT_ID}/claims`).set(auth(client.token)).send({ cardId: winner.id }),
     ]);
     assert.equal(a.body.id, b.body.id, 'dos reclamos simultáneos del mismo cartón quedan en uno');
+
+    // Correo a la Asociación: ganador, cartón, modalidad, hora exacta y los cartones de la cuenta.
+    const mail = outbox.findLast((m) => m.subject.includes('¡BINGO CANTADO!'));
+    assert.ok(mail.subject.includes(`Cartón N.° ${winner.serial} · Cartón lleno`), mail.subject);
+    assert.match(mail.text, /Usuario: Cliente Demo \(cliente@hogarsol\.org\)/);
+    assert.match(mail.text, /Modalidad: Cartón lleno/);
+    assert.match(mail.text, /Hora exacta: .+\(hora de Costa Rica\)/);
+    for (const c of mine) assert.match(mail.text, new RegExp(`#${c.serial}`));
 
     const claims = (await api().get('/api/admin/claims').set(auth(admin))).body;
     assert.equal(claims.length, 1);

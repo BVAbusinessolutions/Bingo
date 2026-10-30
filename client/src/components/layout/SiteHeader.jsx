@@ -142,14 +142,15 @@ export default function SiteHeader() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-accent/70 to-transparent" aria-hidden />
       <div className="container-page flex h-[4.5rem] items-center justify-between gap-3">
         <Link to={PATHS.home} className="group flex min-w-0 items-center gap-2 leading-tight sm:gap-3" aria-label="Hogar Sol, inicio">
-          {/* max-h-10 + object-contain: el logo cabe completo en la placa sin recortarse ni desbordar la barra. */}
+          {/* Placa de 44 px con 4 px de aire: el techo del logo no toca las esquinas redondeadas y nunca se recorta. */}
           <BrandBadge
-            className="h-11 w-11 animate-pop rounded-xl p-0.5 transition duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-[0_0_0_2px_rgb(251_191_36/0.6),0_0_22px_rgb(251_191_36/0.45)]"
-            logoClassName="block h-10 max-h-10 w-10 object-contain"
+            className="h-11 w-11 animate-pop rounded-xl p-1 transition duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-[0_0_0_2px_rgb(251_191_36/0.6),0_0_22px_rgb(251_191_36/0.45)]"
+            logoClassName="block h-9 max-h-9 w-9 object-contain"
           />
-          {/* Bloque de marca de 40 px como máximo: con texto grande o Lexend nunca empuja ni se sale de la barra. */}
-          <span className="flex max-h-10 min-w-0 flex-col justify-center overflow-hidden whitespace-nowrap font-display text-base font-bold leading-none sm:text-lg">
-            <span className="hidden pb-1 text-[0.7rem] font-semibold leading-none text-white/75 sm:block">Asociación Infantil</span>
+          {/* Bloque de marca de 40 px como máximo. Recorta solo a lo ancho (overflow-x-clip) y con interlineado
+              holgado: antes, leading-none + overflow-hidden cortaba la cola de la "g" de Hogar. */}
+          <span className="flex max-h-10 min-w-0 flex-col justify-center overflow-x-clip whitespace-nowrap font-display text-base font-bold leading-[1.2] sm:text-lg">
+            <span className="hidden text-[0.7rem] font-semibold leading-tight text-white/75 sm:block">Asociación Infantil</span>
             Hogar Sol
           </span>
         </Link>

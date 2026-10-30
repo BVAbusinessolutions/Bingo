@@ -31,11 +31,12 @@ export default function LegalDocument({ title, intro, sections }) {
       <nav aria-label={`Contenido de ${title}`} className="surface mt-6 p-5 print:hidden">
         <h3 className="mb-2 font-semibold text-fg">Contenido</h3>
         {/* Número propio de ancho fijo (no el marcador de lista, que en dos columnas se montaba sobre la
-            columna izquierda): 1 a 10 quedan alineados con la misma sangría. */}
-        <ol className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+            columna izquierda): 1 a 10 quedan alineados con la misma sangría. El ancho va en em para que "10."
+            siga cabiendo con letra A++ o Lexend (con un ancho en rem se salía y desfasaba el título). */}
+        <ol className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
           {sections.map((s, i) => (
-            <li key={s.title} className="flex min-h-10 items-baseline gap-2 py-1.5">
-              <span className="w-7 shrink-0 text-right font-bold tabular-nums text-brand" aria-hidden>
+            <li key={s.title} className="flex min-h-10 items-baseline gap-2">
+              <span className="w-[2.2em] shrink-0 text-right font-bold tabular-nums text-brand" aria-hidden>
                 {i + 1}.
               </span>
               <a href={`#seccion-${i + 1}`} className="font-medium text-sol-blue underline-offset-4 hover:underline dark:text-accent">

@@ -21,6 +21,8 @@ import { formatCRC } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
 import GlassSelect from '../ui/GlassSelect';
 import ErrorBoundary from './ErrorBoundary';
+import BingoAlert from '../admin/BingoAlert';
+import { playAdminAlert } from '../../lib/sound';
 
 const vibrate = () => {
   try {
@@ -66,6 +68,7 @@ export default function AdminLayout() {
   const [pending, setPending] = useState(0);
   const [pendingClaims, setPendingClaims] = useState(0);
   const [toast, setToast] = useState(null);
+  const [bingoClaims, setBingoClaims] = useState([]); // reclamos de ¡Bingo! aún no vistos (ventana emergente)
   const [revision, setRevision] = useState(0); // sube con cada aviso en tiempo real -> las vistas recargan
   const { socket } = useSocket('/admin');
 
@@ -106,8 +109,10 @@ export default function AdminLayout() {
       vibrate();
       refresh();
     };
+    // ¡Bingo!: ventana emergente con sonido (no un simple aviso) para que nadie lo pase por alto.
     const onClaim = (c) => {
-      setToast({ title: '🏆 ¡Bingo reclamado!', text: `${c.player?.name ?? 'Un jugador'} · cartón #${c.serial}`, to: 'ganadores' });
+      setBingoClaims((list) => (list.some((x) => x.id === c.id) ? list : [...list, c]));
+      playAdminAlert();
       vibrate();
       refresh();
     };
@@ -124,6 +129,7 @@ export default function AdminLayout() {
   }, [socket, reloadCounters]);
 
   const closeToast = useCallback(() => setToast(null), []);
+  const closeBingo = useCallback(() => setBingoClaims([]), []);
 
   const tabs = [
     { to: '', end: true, label: 'Panel', Icon: LayoutDashboard },
@@ -185,6 +191,7 @@ export default function AdminLayout() {
       </div>
 
       {toast && <AdminToast toast={toast} onClose={closeToast} />}
+      {bingoClaims.length > 0 && <BingoAlert claims={bingoClaims} onClose={closeBingo} />}
     </div>
   );
 }

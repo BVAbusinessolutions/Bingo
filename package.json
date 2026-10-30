@@ -2,7 +2,7 @@
   "name": "hogar-sol-bingo",
   "private": true,
   "version": "1.0.0",
-  "description": "Bingo BenÃ©fico FundaciÃ³n Hogar Sol (cliente + servidor)",
+  "description": "Bingo Benéfico Fundación Hogar Sol (cliente + servidor)",
   "scripts": {
     "setup": "npm install && npm install --prefix server && npm install --prefix client && node scripts/ensure-env.mjs",
     "dev": "npm run dev --prefix client",

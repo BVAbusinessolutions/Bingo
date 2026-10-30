@@ -3,6 +3,7 @@ import PrizesShowcase from '../../components/event/PrizesShowcase';
 import Button from '../../components/ui/Button';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { PATHS } from '../../routing/paths';
+import { PRIZE_DEADLINE_NOTE } from '../../config/site';
 
 // Resumen de las reglas de entrega (el texto completo está en el Reglamento y en Contingencias).
 const DELIVERY = [
@@ -19,7 +20,7 @@ const DELIVERY = [
   {
     icon: CalendarCheck,
     title: 'Plazos',
-    text: 'Los ganadores en línea reciben nuestro contacto dentro de 3 días hábiles. Hay 30 días naturales para retirar el premio (90 para la motocicleta).',
+    text: PRIZE_DEADLINE_NOTE,
   },
   {
     icon: Scale,

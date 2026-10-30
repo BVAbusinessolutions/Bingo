@@ -1,38 +1,16 @@
-import { Sparkles } from 'lucide-react';
 import MainPrizeCard from './MainPrizeCard';
 import { PRIZES } from '../../config/prizes';
 
-/** Cinta animada con los premios e incentivos. La copia duplicada (para el bucle infinito) se oculta a lectores de pantalla. */
-function PrizeTicker() {
-  // Dos vueltas por copia para que la cinta llene pantallas anchas sin huecos.
-  const items = [...PRIZES, ...PRIZES].map(({ id, icon: Icon, title }, i) => (
-    <span key={`${id}-${i}`} className="mx-6 inline-flex items-center gap-2 whitespace-nowrap font-display text-lg font-semibold">
-      <Icon className="h-6 w-6 text-accent" aria-hidden /> {title}
-      <Sparkles className="ml-6 h-4 w-4 text-accent/60" aria-hidden />
-    </span>
-  ));
-  return (
-    <div className="group relative overflow-hidden border-y border-white/10 bg-white/[0.03] py-3 text-white">
-      <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused]">
-        <div className="flex">{items}</div>
-        <div className="flex" aria-hidden>
-          {items}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /**
- * Sección de premios sobre fondo azul marino: cinta animada, premio mayor en vidrio (MainPrizeCard)
- * e incentivos. `withCta` agrega "Comprar cartones" en la tarjeta del premio mayor.
+ * Sección de premios sobre fondo azul marino: premio mayor en vidrio (MainPrizeCard) e incentivos.
+ * Sin cinta rodante: generaba desbordes horizontales y se encimaba con la barra al hacer scroll.
+ * `withCta` agrega "Comprar cartones" en la tarjeta del premio mayor.
  */
 export default function PrizesShowcase({ withCta = true, title = 'Premios' }) {
   const others = PRIZES.filter((p) => !p.main);
 
   return (
     <section aria-labelledby="prizes-title" className="stage relative overflow-hidden">
-      <PrizeTicker />
       <div className="container-page relative grid items-center gap-6 py-14 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
         <h2 id="prizes-title" className="sr-only">
           {title}

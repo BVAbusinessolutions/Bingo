@@ -32,18 +32,24 @@ export default function Celebration({ serial, onDone }) {
   }, [onDone]);
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden print:hidden" aria-hidden>
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden print:hidden">
       {pieces.map((p, i) => (
         <span
           key={i}
+          aria-hidden
           className={`absolute -top-4 block h-3 w-2 animate-confetti will-change-transform ${p.round ? 'rounded-full' : 'rounded-[2px]'}`}
           style={{ left: p.left, backgroundColor: p.color, animationDelay: p.delay, '--fall': p.fall, '--drift': p.drift, '--spin': p.spin }}
         />
       ))}
       <div className="absolute inset-0 grid place-items-center p-6">
-        <p className="flex animate-pop bg-navy-950/85 ring-1 ring-accent/40 backdrop-blur-md items-center gap-3 rounded-3xl px-8 py-5 text-center font-display text-3xl font-black text-sol-gold shadow-neon">
-          <PartyPopper className="h-9 w-9" /> ¡BINGO! · #{serial}
-        </p>
+        <div role="status" className="animate-pop rounded-3xl bg-navy-950/85 px-8 py-5 text-center shadow-neon ring-1 ring-accent/40 backdrop-blur-md">
+          <p className="flex items-center justify-center gap-3 font-display text-3xl font-black text-sol-gold">
+            <PartyPopper className="h-9 w-9" aria-hidden /> ¡BINGO! · #{serial}
+          </p>
+          <p className="mt-2 flex items-center justify-center gap-2 text-lg font-semibold text-white">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" aria-hidden /> Comprobando Bingo con la organización...
+          </p>
+        </div>
       </div>
     </div>,
     document.body

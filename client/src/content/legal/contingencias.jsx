@@ -55,8 +55,8 @@ const SECTIONS = [
       <>
         <ul>
           <li>
-            Los premios se custodian a nombre de la persona ganadora durante el plazo para reclamar: <strong>30 días naturales</strong>{' '}
-            desde el evento, o <strong>90 días naturales</strong> en el caso de la motocicleta.
+            Los premios se custodian a nombre de la persona ganadora durante el plazo para reclamar: <strong>3 días hábiles</strong>{' '}
+            desde el contacto de la Asociación para coordinar el retiro y presentar los requisitos, también en el caso de la motocicleta.
           </li>
           <li>La Asociación intentará contactar a la persona ganadora por correo y teléfono al menos tres veces dentro de ese plazo.</li>
           <li>

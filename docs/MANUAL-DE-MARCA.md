@@ -84,10 +84,11 @@ Reglas:
 - Librería única: **lucide-react** (trazo de 2 px, esquinas redondeadas).
 - Tamaños: 16 px junto a texto pequeño, 20 px en botones, 24 px en tarjetas y 32–48 px en ilustraciones.
 - Los íconos decorativos llevan `aria-hidden`. Los botones que solo tienen ícono llevan `aria-label`.
-- Ajustes visuales: ícono neutro `ScanEye` (ojo con marco) en un botón redondo translúcido de la barra
-  (`AccessibilityButton`). No se usa el ícono de silla de ruedas: los ajustes sirven a todo el público.
-- El premio mayor se muestra con su **fotografía real**, nunca con un ícono. Los íconos de premios solo van en la
-  cinta animada.
+- Ajustes visuales: silueta humana universal de accesibilidad (`PersonStanding`) en un botón redondo translúcido
+  de la barra (`AccessibilityButton`). No se usa el ícono de silla de ruedas: los ajustes sirven a todo el público.
+- El premio mayor se muestra con su **fotografía real** (carrusel 16:9, `object-contain`), nunca con un ícono. Los
+  íconos de premios solo van en la lista de incentivos. No se usan cintas de texto rodante (marquee): desbordan
+  en pantallas angostas.
 
 ## 5. Tipografía
 
