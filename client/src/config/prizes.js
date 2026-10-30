@@ -11,7 +11,10 @@ export const PRIZES = Object.freeze([
     title: 'Motocicleta',
     text: 'El gran premio del Bingo Benéfico Hogar Sol.',
     main: true,
-    image: import.meta.env.VITE_PRIZE_IMAGE || '/img/premio-motocicleta.webp',
+    // VITE_PRIZE_IMAGE (una sola foto) reemplaza la galería por defecto.
+    images: import.meta.env.VITE_PRIZE_IMAGE
+      ? [import.meta.env.VITE_PRIZE_IMAGE]
+      : ['/img/premio-motocicleta.webp', '/img/premio-motocicleta-2.webp', '/img/premio-motocicleta-3.webp'],
     imageAlt: 'Motocicleta, premio mayor del Bingo Benéfico Hogar Sol',
   },
   { id: 'carton', icon: Ticket, title: 'Un cartón ya participa', text: 'Juega en el salón del evento o desde tu casa, con las mismas bolas y las mismas reglas.' },

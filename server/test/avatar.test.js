@@ -19,6 +19,7 @@ describe('foto de perfil', () => {
     const img = await api().get(first.body.avatarUrl);
     assert.equal(img.status, 200);
     assert.equal(img.headers['content-type'], 'image/png');
+    assert.equal(img.headers['cross-origin-resource-policy'], 'cross-origin');
 
     const second = await upload(token, TINY_PNG);
     assert.notEqual(second.body.avatarUrl, first.body.avatarUrl);

@@ -1,39 +1,9 @@
-import { useState } from 'react';
 import { BadgeCheck, IdCard, Ticket } from 'lucide-react';
 import Button from '../ui/Button';
+import PrizeCarousel from './PrizeCarousel';
 import { MAIN_PRIZE } from '../../config/prizes';
 import { MOTORCYCLE_REQUIREMENT } from '../../config/site';
 import { PATHS } from '../../routing/paths';
-
-/**
- * Fotografía HD del premio en un marco de vidrio con filo luminoso. Si el archivo no existe o no carga,
- * el marco desaparece y la tarjeta queda solo con el texto (nunca un ícono de relleno ni una imagen rota).
- */
-function PrizePhoto({ src, alt }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return null;
-  return (
-    // Marco de vidrio con filo dorado y elevación; la foto (PNG recortado, fondo transparente) va en contain
-    // sobre un halo suave, así la moto nunca se corta.
-    <figure className="relative overflow-hidden rounded-2xl border border-sol-gold/50 bg-[radial-gradient(ellipse_at_50%_60%,rgb(251_191_36/0.25),transparent_70%)] p-2 shadow-[0_0_0_1px_rgb(251_191_36/0.25),0_20px_45px_rgb(2_6_23/0.35)] backdrop-blur-[16px] transition-shadow duration-500 group-hover:shadow-[0_0_0_1px_rgb(251_191_36/0.5),0_26px_60px_rgb(2_6_23/0.4)]">
-      <img
-        src={src}
-        alt={alt}
-        width="1600"
-        height="1000"
-        loading="lazy"
-        decoding="async"
-        onError={() => setFailed(true)}
-        className="aspect-[16/10] w-full object-contain drop-shadow-[0_14px_18px_rgb(2_6_23/0.35)] transition-transform duration-700 group-hover:-translate-y-1 group-hover:scale-[1.03]"
-      />
-      {/* Brillo diagonal sutil sobre la foto */}
-      <span
-        className="pointer-events-none absolute inset-1.5 rounded-xl bg-linear-to-tr from-transparent via-white/0 to-white/15"
-        aria-hidden
-      />
-    </figure>
-  );
-}
 
 /**
  * Premio mayor (la motocicleta) en vidrio translúcido con brillo dorado. Va sobre fondo azul marino.
@@ -50,7 +20,7 @@ export default function MainPrizeCard({ withCta = true, className = '' }) {
       <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-sol-blue-light/30 blur-3xl" aria-hidden />
 
       <div className="relative space-y-5">
-        <PrizePhoto src={MAIN_PRIZE.image} alt={MAIN_PRIZE.imageAlt} />
+        <PrizeCarousel images={MAIN_PRIZE.images} alt={MAIN_PRIZE.imageAlt} />
 
         <div>
           <p className="inline-flex items-center rounded-full bg-accent/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent ring-1 ring-accent/30">

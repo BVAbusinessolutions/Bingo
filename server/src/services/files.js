@@ -43,5 +43,8 @@ export function sendFile(res, file, { cache = false } = {}) {
   res.set('Content-Security-Policy', 'sandbox');
   res.set('X-Content-Type-Options', 'nosniff');
   res.set('Cache-Control', cache ? 'public, max-age=86400, immutable' : 'private, no-store');
+  // Imágenes públicas (avatares, cartones): se pueden mostrar aunque la web viva en otro dominio que la API.
+  // Los comprobantes (privados) conservan same-origin.
+  if (cache) res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   return res.send(file.data);
 }

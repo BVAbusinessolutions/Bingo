@@ -147,8 +147,9 @@ export default function SiteHeader() {
             className="h-11 w-11 animate-pop rounded-xl p-0.5 transition duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-[0_0_0_2px_rgb(251_191_36/0.6),0_0_22px_rgb(251_191_36/0.45)]"
             logoClassName="block h-10 max-h-10 w-10 object-contain"
           />
-          <span className="min-w-0 font-display text-base font-bold sm:text-lg">
-            <span className="hidden text-[0.7rem] font-semibold text-white/70 sm:block">Asociación Infantil</span>
+          {/* Bloque de marca de 40 px como máximo: con texto grande o Lexend nunca empuja ni se sale de la barra. */}
+          <span className="flex max-h-10 min-w-0 flex-col justify-center overflow-hidden whitespace-nowrap font-display text-base font-bold leading-none sm:text-lg">
+            <span className="hidden pb-1 text-[0.7rem] font-semibold leading-none text-white/75 sm:block">Asociación Infantil</span>
             Hogar Sol
           </span>
         </Link>
