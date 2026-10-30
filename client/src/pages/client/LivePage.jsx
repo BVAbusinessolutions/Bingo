@@ -18,6 +18,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Celebration from '../../components/bingo/Celebration';
 import { missingFor, PATTERNS } from '../../constants/patterns';
 import { isSoundOn, playMark, playWin, setSoundOn } from '../../lib/sound';
+import { MARKERS, readMarker, saveMarker } from '../../constants/markers';
 import { errorMessage } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
 
@@ -106,7 +107,10 @@ export default function LivePage() {
   const [event, setEvent] = useState(null);
   const [cards, setCards] = useState([]);
   const [calledList, setCalledList] = useState([]);
-  const [autoMark, setAutoMark] = useState(true);
+  // Apagado por defecto: la persona marca sus números; el automático es una ayuda que se activa con aviso.
+  const [autoMark, setAutoMark] = useState(false);
+  const [askAutoMark, setAskAutoMark] = useState(false);
+  const [marker, setMarker] = useState(readMarker);
   const [manualMarks, setManualMarks] = useState({}); // { [cardId]: Set<number> }
   const [error, setError] = useState('');
   const [soundOn, setSoundState] = useState(isSoundOn);
@@ -196,6 +200,20 @@ export default function LivePage() {
           Saldrás del sorteo en vivo. Tus cartones quedan guardados y podrás volver a entrar.
         </ConfirmDialog>
       )}
+      {askAutoMark && (
+        <ConfirmDialog
+          title="¿Activar el marcado automático?"
+          confirmLabel="Activar"
+          onConfirm={() => {
+            setAutoMark(true);
+            setAskAutoMark(false);
+          }}
+          onCancel={() => setAskAutoMark(false)}
+        >
+          El marcado automático es una herramienta de asistencia. Recomendamos verificar manualmente tus números para asegurar una experiencia de
+          juego óptima.
+        </ConfirmDialog>
+      )}
       {celebrating && <Celebration serial={celebrating} onDone={endCelebration} />}
 
       <main id="contenido" className="container-page grid gap-5 pt-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -219,10 +237,33 @@ export default function LivePage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Controles de los cartones">
-              <button type="button" onClick={() => setAutoMark((v) => !v)} aria-pressed={autoMark} className={autoMark ? PILL_ON : PILL_OFF}>
+              <button
+                type="button"
+                onClick={() => (autoMark ? setAutoMark(false) : setAskAutoMark(true))}
+                aria-pressed={autoMark}
+                className={autoMark ? PILL_ON : PILL_OFF}
+              >
                 {autoMark ? <Sparkles className="h-5 w-5" aria-hidden /> : <Hand className="h-5 w-5" aria-hidden />}
                 {autoMark ? 'Marcado automático' : 'Marcado manual'}
               </button>
+              <label className={`${PILL_OFF} cursor-pointer pr-2`}>
+                <span className="sr-only sm:not-sr-only">Marcador</span>
+                <select
+                  value={marker}
+                  onChange={(e) => {
+                    setMarker(e.target.value);
+                    saveMarker(e.target.value);
+                  }}
+                  aria-label="Estilo del marcador"
+                  className="h-9 cursor-pointer rounded-full bg-transparent pr-1 font-extrabold text-fg outline-none"
+                >
+                  {Object.entries(MARKERS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 onClick={toggleSound}
@@ -290,6 +331,7 @@ export default function LivePage() {
                     card={card}
                     called={called}
                     autoMark={autoMark}
+                    marker={marker}
                     manualMarks={manualMarks[card.id] ?? EMPTY}
                     pattern={pattern}
                     onToggle={toggle}
@@ -300,6 +342,7 @@ export default function LivePage() {
                         claim={claimed}
                         canClaim={isLive}
                         missing={missingById[card.id]}
+                        uncalled={autoMark ? 0 : [...(manualMarks[card.id] ?? EMPTY)].filter((n) => !called.has(n)).length}
                         loading={pending[card.id]}
                         error={errors[card.id]}
                         onClaim={() => claimAndCelebrate(card)}

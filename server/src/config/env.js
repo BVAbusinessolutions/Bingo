@@ -89,6 +89,7 @@ export const env = {
     pgliteDir: process.env.PGLITE_DIR ?? path.join(serverRoot, '.data', 'pglite'),
   },
   seedDemoData: !isProd && process.env.SEED_DEMO !== 'false',
+  seedDemoPurchases: !isProd && process.env.SEED_DEMO_PURCHASES === 'true',
   // Correos a los que llega el aviso de cada compra nueva (separados por coma)
   adminNotifyEmails: (process.env.ADMIN_NOTIFY_EMAILS ?? '')
     .split(',')

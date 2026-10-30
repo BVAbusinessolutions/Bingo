@@ -14,7 +14,8 @@ export default function BrandLogo({ decorative = false, className = '', ...props
       height={201}
       decoding="async"
       draggable={false}
-      className={`h-auto select-none ${className}`}
+      // h-auto solo sin tamaño propio: si se combinara con h-10/h-full, el orden del CSS decidiría la altura.
+      className={`select-none ${className || 'h-auto'}`}
       {...props}
     />
   );
@@ -27,7 +28,7 @@ export default function BrandLogo({ decorative = false, className = '', ...props
 export function BrandBadge({ className = '', logoClassName = 'h-full w-auto', decorative = true }) {
   return (
     <span
-      className={`inline-grid shrink-0 place-items-center rounded-2xl bg-white p-1 shadow-[0_4px_14px_rgb(2_6_23/0.25)] ring-1 ring-white/40 ${className}`}
+      className={`inline-grid shrink-0 place-items-center rounded-2xl bg-[#fff] p-1 shadow-[0_4px_14px_rgb(2_6_23/0.25)] ${className}`}
     >
       <BrandLogo decorative={decorative} className={logoClassName} />
     </span>

@@ -57,7 +57,11 @@ export async function seedDemoData() {
   const seriesId = await createGeneratedSeries({ name: 'Serie de prueba (generada)', count: 300, startSerial: 1001 }, actor);
   await assignSeriesToEvent(DEMO_EVENT_ID, seriesId, actor);
 
-  await demoPurchase(users['cliente@hogarsol.org'].id, DEMO_EVENT_ID, ['1001', '1002', '1003', '1004'], users['cliente@hogarsol.org']);
-  await demoPurchase(users['jugador@hogarsol.org'].id, DEMO_EVENT_ID, ['1005', '1006'], users['jugador@hogarsol.org']);
-  logger.info('db.demo_seeded', { users: DEMO_USERS.length, cards: 300 });
+  // El inventario arranca en 0 vendidos. Las compras de prueba (para probar "Jugar en vivo" con las
+  // cuentas demo) solo se crean con SEED_DEMO_PURCHASES=true.
+  if (env.seedDemoPurchases) {
+    await demoPurchase(users['cliente@hogarsol.org'].id, DEMO_EVENT_ID, ['1001', '1002', '1003', '1004'], users['cliente@hogarsol.org']);
+    await demoPurchase(users['jugador@hogarsol.org'].id, DEMO_EVENT_ID, ['1005', '1006'], users['jugador@hogarsol.org']);
+  }
+  logger.info('db.demo_seeded', { users: DEMO_USERS.length, cards: 300, demoPurchases: env.seedDemoPurchases });
 }

@@ -133,7 +133,7 @@ function SinpeInfo() {
   }, []);
 
   return (
-    <section aria-labelledby="sinpe-title" className="relative overflow-hidden rounded-3xl bg-navy-950 p-6 text-white ring-1 ring-white/10 sm:p-8">
+    <section aria-labelledby="sinpe-title" className="relative overflow-hidden stage rounded-3xl p-6 ring-1 ring-white/10 sm:p-8">
       <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-accent/20 blur-3xl" aria-hidden />
       <h2 id="sinpe-title" className="relative flex items-center gap-2 font-display text-2xl font-semibold">
         <Smartphone className="h-7 w-7 text-accent" aria-hidden /> Consulta SINPE Móvil

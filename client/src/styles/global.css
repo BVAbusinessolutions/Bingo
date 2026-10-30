@@ -99,6 +99,29 @@ h3 {
     background-color: var(--color-card);
   }
 }
+/*
+ * Escenario de marca (portada, premios, último ganador, SINPE). Noche: azul marino con halos.
+ * Día: degradado claro continuo con la página, y dentro se reasignan "blanco" -> azul marino y
+ * "acento" -> ámbar oscuro, así text-white, ring-white/15, border-white/80, glass, etc. siguen
+ * siendo legibles sin reescribir cada componente. Lo que deba ser blanco siempre usa #fff literal.
+ */
+@utility stage {
+  background-color: var(--stage-color);
+  background-image: var(--stage-bg);
+  color: var(--color-white);
+}
+:root:not(.dark):not([data-contrast='high']) .stage {
+  --color-white: #0f172a;
+  --color-accent: #b45309;
+  --color-accent-strong: #d97706;
+  --shadow-neon: 0 0 0 1px rgb(245 158 11 / 0.25), 0 18px 40px rgb(15 23 42 / 0.12);
+}
+:root:not(.dark):not([data-contrast='high']) .stage :is(.glass, .glass-border) {
+  background: rgb(255 255 255 / 0.75);
+  border: 1px solid rgb(245 158 11 / 0.25);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 12px 32px rgb(15 23 42 / 0.08);
+}
+
 /* Borde con gradiente sutil (blanco -> dorado) para tarjetas de vidrio. */
 @utility glass-border {
   border: 1px solid transparent;

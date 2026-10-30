@@ -41,15 +41,16 @@ export default function EventCountdown({ startsAt, compact = false, onDoneSlot =
         <div
           key={label}
           aria-hidden
-          className={`overflow-hidden rounded-2xl bg-navy-950 text-center shadow-inner ring-1 ring-white/10 ${compact ? 'p-1.5' : 'p-2 sm:p-3'}`}
+          className={`overflow-hidden rounded-2xl bg-navy-950 text-center shadow-inner ring-1 ring-sol-gold/20 ${compact ? 'p-1.5' : 'p-2 sm:p-3'}`}
         >
-          <div className={`font-display font-bold tabular-nums text-accent ${compact ? 'text-2xl' : 'text-3xl sm:text-5xl'}`}>
+          {/* Ficha siempre oscura: colores fijos (sol-gold, slate-200) que el escenario claro no reasigna. */}
+          <div className={`font-display font-bold tabular-nums text-sol-gold ${compact ? 'text-2xl' : 'text-3xl sm:text-5xl'}`}>
             {/* La key cambia con el valor: cada cambio repite la pequeña animación de "caída". */}
             <span key={v} className="inline-block animate-tick">
               {String(v).padStart(2, '0')}
             </span>
           </div>
-          <div className={`font-semibold uppercase tracking-wider text-white/80 ${compact ? 'text-[0.65rem]' : 'text-xs sm:text-sm'}`}>{label}</div>
+          <div className={`font-semibold uppercase tracking-wider text-slate-200 ${compact ? 'text-[0.65rem]' : 'text-xs sm:text-sm'}`}>{label}</div>
         </div>
       ))}
     </div>

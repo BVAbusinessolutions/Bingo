@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CheckCircle2, Hourglass, Lock, PartyPopper, XCircle } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -12,7 +13,8 @@ const STATES = {
  * aun habilitado, el servidor vuelve a validar el cartón contra el registro oficial antes de aceptar.
  * Un reclamo rechazado permite volver a intentar.
  */
-export default function ClaimButton({ claim, canClaim, missing = 0, loading, error, onClaim }) {
+export default function ClaimButton({ claim, canClaim, missing = 0, uncalled = 0, loading, error, onClaim }) {
+  const [hint, setHint] = useState(false);
   const state = STATES[claim?.status];
   if (state) {
     const [cls, Icon, text] = state;
@@ -32,7 +34,14 @@ export default function ClaimButton({ claim, canClaim, missing = 0, loading, err
         </p>
       )}
       {locked ? (
-        <Button variant="outline" icon={Lock} disabled className="w-full rounded-full">
+        // Bloqueado pero pulsable (aria-disabled): al tocarlo explica por qué todavía no se puede cantar.
+        <Button
+          variant="outline"
+          icon={Lock}
+          aria-disabled="true"
+          onClick={() => setHint(true)}
+          className="w-full cursor-not-allowed rounded-full opacity-70"
+        >
           ¡Bingo! · {missing === 1 ? 'te falta 1' : `faltan ${missing}`}
         </Button>
       ) : (
@@ -48,7 +57,13 @@ export default function ClaimButton({ claim, canClaim, missing = 0, loading, err
           ¡Bingo! Reclamar premio
         </Button>
       )}
-      {!locked && !canClaim && <p className="text-center text-sm text-fg-muted">Podrás reclamar cuando el sorteo esté en vivo.</p>}
+      {locked && hint && (
+        <p role="alert" className="rounded-2xl bg-sol-red/10 p-3 text-center text-sm font-semibold text-fg">
+          Aún no completas el patrón con balotas cantadas oficialmente.
+          {uncalled > 0 && ` Tienes ${uncalled === 1 ? '1 número marcado' : `${uncalled} números marcados`} que todavía no ha salido.`}
+        </p>
+      )}
+      {!locked && !canClaim &&<p className="text-center text-sm text-fg-muted">Podrás reclamar cuando el sorteo esté en vivo.</p>}
       {error && (
         <p role="alert" className="text-center font-semibold text-sol-red dark:text-red-300">
           {error}

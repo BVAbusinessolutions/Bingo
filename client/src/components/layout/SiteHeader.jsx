@@ -150,8 +150,8 @@ export default function SiteHeader() {
         <Link to={PATHS.home} className="group flex min-w-0 items-center gap-2 leading-tight sm:gap-3" aria-label="Hogar Sol, inicio">
           {/* max-h-10 + object-contain: el logo cabe completo en la placa sin recortarse ni desbordar la barra. */}
           <BrandBadge
-            className="h-11 w-11 overflow-hidden rounded-xl transition-transform duration-300 group-hover:scale-105"
-            logoClassName="h-full max-h-10 w-auto object-contain"
+            className="h-11 w-11 rounded-xl p-0.5 transition-transform duration-300 group-hover:scale-105"
+            logoClassName="block h-10 max-h-10 w-10 object-contain"
           />
           <span className="min-w-0 font-display text-base font-bold sm:text-lg">
             Hogar Sol

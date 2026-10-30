@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Trophy } from 'lucide-react';
+import { Star, Trophy } from 'lucide-react';
 import BrandLogo from '../brand/BrandLogo';
 import { LETTERS, PATTERNS, isFreeCell, missingFor } from '../../constants/patterns';
 
@@ -13,12 +13,36 @@ import { LETTERS, PATTERNS, isFreeCell, missingFor } from '../../constants/patte
  *  - onToggle(cardId, number)
  *  - showStatus:  false = vista previa (catálogo, impresión), sin progreso del patrón
  */
-function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL', onToggle, showStatus = true }) {
-  const marked = useMemo(() => {
-    if (autoMark) return called;
-    // En modo manual solo cuentan las marcas que además fueron cantadas (evita "bingos" falsos).
-    return new Set([...manualMarks].filter((n) => called.has(n)));
-  }, [autoMark, called, manualMarks]);
+/** La "ficha" que se coloca sobre la casilla. `valid` = la balota ya fue cantada. */
+function Marker({ type, valid }) {
+  const base = `pointer-events-none absolute animate-stamp ${valid ? '' : 'opacity-45'}`;
+  if (type === 'star') {
+    return <Star className={`${base} inset-[12%] h-[76%] w-[76%] fill-sol-gold text-sol-gold-dark drop-shadow`} strokeWidth={1.5} aria-hidden />;
+  }
+  if (type === 'corn') {
+    return (
+      <span
+        className={`${base} left-[30%] top-[20%] h-[60%] w-[40%] rotate-[18deg] rounded-[50%_50%_45%_45%] bg-[radial-gradient(circle_at_35%_30%,#fff7c2,#f5c518_45%,#d99a06)] shadow-[0_0.5cqw_1cqw_rgb(0_0_0/0.35)]`}
+        aria-hidden
+      />
+    );
+  }
+  if (type === 'gold') {
+    return (
+      <span
+        className={`${base} inset-[10%] -rotate-12 rounded-full border-[0.9cqw] border-dashed border-sol-gold-dark bg-sol-gold/35 shadow-[inset_0_0_0_0.5cqw_rgb(245_158_11/0.5)]`}
+        aria-hidden
+      />
+    );
+  }
+  return <span className={`${base} inset-[8%] rounded-full bg-sol-red/55 ring-[0.6cqw] ring-sol-red mix-blend-multiply`} aria-hidden />;
+}
+
+function BingoCard({ card, called, manualMarks, autoMark = true, marker = 'chip', pattern = 'FULL', onToggle, showStatus = true }) {
+  // Lo que se ve marcado: automático = lo cantado; manual = todo lo que la persona marcó.
+  const shown = autoMark ? called : manualMarks;
+  // Para el patrón solo cuentan las marcas cantadas oficialmente (nunca un "bingo" falso).
+  const marked = useMemo(() => (autoMark ? called : new Set([...manualMarks].filter((n) => called.has(n)))), [autoMark, called, manualMarks]);
 
   const missing = missingFor(card.grid, marked, pattern);
   const won = showStatus && missing === 0;
@@ -56,7 +80,8 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
                 </div>
               );
             }
-            const isMarked = marked.has(n);
+            const isMarked = shown.has(n);
+            const notCalled = isMarked && !called.has(n); // marcada a mano, pero la balota aún no sale
             const pendingManual = !autoMark && called.has(n) && !isMarked;
             return (
               <button
@@ -66,18 +91,13 @@ function BingoCard({ card, called, manualMarks, autoMark = true, pattern = 'FULL
                 disabled={autoMark || !onToggle}
                 onClick={() => onToggle?.(card.id, n)}
                 aria-pressed={isMarked}
-                aria-label={`${LETTERS[c]} ${n}${isMarked ? ', marcado' : ''}`}
+                aria-label={`${LETTERS[c]} ${n}${isMarked ? (notCalled ? ', marcado, aún no cantado' : ', marcado') : ''}`}
                 className={`relative grid aspect-square select-none place-items-center rounded-[1.6cqw] bg-white text-[10cqw] font-black tabular-nums leading-none text-black shadow-[inset_0_-0.6cqw_0_rgba(0,0,0,0.12)] transition disabled:cursor-default ${
                   !autoMark && onToggle ? 'cursor-pointer hover:bg-sol-gold-light active:scale-95' : ''
-                } ${pendingManual ? 'ring-[0.8cqw] ring-sol-gold' : ''}`}
+                } ${pendingManual ? 'ring-[0.8cqw] ring-sol-gold' : ''} ${notCalled ? 'outline-dashed outline-[0.5cqw] -outline-offset-[1cqw] outline-sol-red/70' : ''}`}
               >
                 {n}
-                {isMarked && (
-                  <span
-                    className="pointer-events-none absolute inset-[8%] animate-stamp rounded-full bg-sol-red/55 ring-[0.6cqw] ring-sol-red mix-blend-multiply"
-                    aria-hidden
-                  />
-                )}
+                {isMarked && <Marker type={marker} valid={!notCalled} />}
               </button>
             );
           })

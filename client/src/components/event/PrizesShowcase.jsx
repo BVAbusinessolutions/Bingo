@@ -31,8 +31,7 @@ export default function PrizesShowcase({ withCta = true, title = 'Premios' }) {
   const others = PRIZES.filter((p) => !p.main);
 
   return (
-    <section aria-labelledby="prizes-title" className="relative overflow-hidden bg-navy-950 text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_30rem_at_80%_0%,rgb(29_99_184/0.35),transparent),radial-gradient(40rem_25rem_at_0%_100%,rgb(251_191_36/0.12),transparent)]" aria-hidden />
+    <section aria-labelledby="prizes-title" className="stage relative overflow-hidden">
       <PrizeTicker />
       <div className="container-page relative grid items-center gap-6 py-14 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
         <h2 id="prizes-title" className="sr-only">

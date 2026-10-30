@@ -16,7 +16,7 @@ const STEPS = [
   { icon: UserPlus, title: 'Crea tu cuenta', text: 'Solo necesitas tu nombre y tu correo.' },
   { icon: MousePointerClick, title: 'Elige tus cartones', text: 'Escoge los que más te gusten del catálogo.' },
   { icon: CreditCard, title: 'Paga con SINPE', text: 'O por transferencia. Envíanos el comprobante.' },
-  { icon: PartyPopper, title: '¡Juega en vivo!', text: 'Tus cartones se marcan solos. Si completas, pulsa “¡Bingo!”.' },
+  { icon: PartyPopper, title: '¡Juega en vivo!', text: 'Marca tus números al salir cada balota. Si completas, pulsa “¡Bingo!”.' },
 ];
 
 const IMPACT = [
@@ -185,7 +185,7 @@ function LatestWinnerSection() {
 
   return (
     <section className="container-page py-16" aria-labelledby="latest-winner-title">
-      <div className="reveal relative overflow-hidden rounded-3xl bg-navy-950 p-8 text-white shadow-xl sm:p-12">
+      <div className="reveal relative overflow-hidden stage rounded-3xl p-8 shadow-xl ring-1 ring-white/10 sm:p-12">
         <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-accent/20 blur-3xl" aria-hidden />
         <div className="relative flex flex-col items-center gap-5 text-center lg:flex-row lg:text-left">
           <Trophy className="h-16 w-16 shrink-0 text-accent" aria-hidden />
@@ -234,12 +234,8 @@ export default function HomePage() {
 
   return (
     <main>
-      {/* Portada: azul marino con halos de luz y tarjeta de vidrio */}
-      <section className="relative overflow-hidden bg-navy-950 text-white">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(50rem_30rem_at_85%_-10%,rgb(29_99_184/0.55),transparent),radial-gradient(40rem_30rem_at_-10%_110%,rgb(251_191_36/0.18),transparent)]"
-          aria-hidden
-        />
+      {/* Portada: escenario de marca (azul marino de noche, cielo claro de día) con tarjeta de vidrio */}
+      <section className="stage relative overflow-hidden">
         <div className="container-page relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-[1.1fr_1fr]">
           <div className="animate-fade-up space-y-6 text-center lg:text-left">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-1.5 text-sm font-semibold ring-1 ring-white/15">

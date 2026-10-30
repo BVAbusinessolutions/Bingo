@@ -52,8 +52,14 @@
   --fg-subtle: #94a3b8;
   --brand: #0e4a8e;
   --card-glow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.07);
-  /* Vidrio claro: 65 % blanco + blur 16 px; filo dorado arriba-izquierda y azul abajo-derecha. */
-  --glass-fill: rgb(255 255 255 / 0.65);
+  /* Vidrio claro: 75 % blanco + blur 16 px; filo dorado arriba-izquierda y azul abajo-derecha. */
+  --glass-fill: rgb(255 255 255 / 0.75);
+  /* Escenario de marca en Día: cielo claro que se funde con la página (sin corte azul -> crema). */
+  --stage-color: #f1f6fc;
+  --stage-bg:
+    radial-gradient(50rem 30rem at 85% -10%, rgb(29 99 184 / 0.16), transparent 70%),
+    radial-gradient(40rem 30rem at -10% 110%, rgb(251 191 36 / 0.18), transparent 70%),
+    linear-gradient(180deg, #eaf2fb, var(--page));
   --glass-edge: linear-gradient(135deg, rgb(255 255 255 / 0.95), rgb(251 191 36 / 0.4) 45%, rgb(29 99 184 / 0.25));
   --page-glow:
     radial-gradient(48rem 32rem at 100% 0%, rgb(29 99 184 / 0.1), transparent 70%),
@@ -72,6 +78,10 @@
   --brand: #fbbf24;
   --card-glow: 0 10px 30px rgb(0 0 0 / 0.4);
   --glass-fill: rgb(15 23 42 / 0.6);
+  --stage-color: #0a1128;
+  --stage-bg:
+    radial-gradient(50rem 30rem at 85% -10%, rgb(29 99 184 / 0.55), transparent),
+    radial-gradient(40rem 30rem at -10% 110%, rgb(251 191 36 / 0.18), transparent);
   --glass-edge: linear-gradient(135deg, rgb(255 255 255 / 0.16), rgb(251 191 36 / 0.3), rgb(255 255 255 / 0.04));
   --page-glow:
     radial-gradient(50rem 34rem at 100% 0%, rgb(29 99 184 / 0.22), transparent 70%),
@@ -93,6 +103,8 @@
   --glass-fill: var(--card);
   --glass-edge: linear-gradient(#000000, #000000);
   --page-glow: none;
+  --stage-color: #0a1128;
+  --stage-bg: none;
 }
 
 .dark[data-contrast='high'] {
