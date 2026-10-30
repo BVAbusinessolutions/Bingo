@@ -117,10 +117,14 @@ async function eventJsonLd(origin) {
 // Ningún permiso sensible del navegador hace falta (pantalla completa sí, para la transmisión).
 const PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=(), payment=(), usb=()';
 
-/** Hash de los <script> en línea de index.html para permitirlos en la CSP sin 'unsafe-inline'. */
-function inlineScriptHashes(html) {
+/**
+ * Hash de los <script> en línea de index.html para permitirlos en la CSP sin 'unsafe-inline'.
+ * El navegador calcula el hash con los saltos de línea normalizados a LF (estándar HTML): si index.html se
+ * compiló en Windows (CRLF), hashear los bytes tal cual bloqueaba el script de tema y accesibilidad.
+ */
+export function inlineScriptHashes(html) {
   return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-    ([, body]) => `'sha256-${createHash('sha256').update(body).digest('base64')}'`
+    ([, body]) => `'sha256-${createHash('sha256').update(body.replace(/\r\n?/g, '\n')).digest('base64')}'`
   );
 }
 

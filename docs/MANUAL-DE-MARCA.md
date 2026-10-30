@@ -67,8 +67,9 @@ Reglas:
   Nada de marco dentro de marco.
 - **Marco 4:3 con `object-contain`:** acomoda por igual la foto horizontal y las casi cuadradas, así la moto
   mantiene un tamaño parecido entre fotos.
-- **Fundido** entre fotos cada 4,5 s; miniaturas, pausa y contador en una barra propia debajo de la foto. En
-  celular no hay flechas (se desliza o se usan las miniaturas).
+- **Pasa sola** cada 4,5 s con fundido, siempre (sin botón de pausa, por decisión de la Asociación). Si la
+  persona elige una foto, la cuenta empieza de nuevo desde ahí. Miniaturas y contador en una barra propia debajo
+  de la foto. En celular no hay flechas (se desliza o se usan las miniaturas).
 - **Distribución:** fotos en 7 de 12 columnas, información (título, requisito de retiro y compra) en 5, y los
   incentivos debajo en tres columnas iguales.
 - Si una foto no carga, se quita; si no queda ninguna, el escenario no se muestra (nunca una imagen rota).

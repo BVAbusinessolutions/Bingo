@@ -54,7 +54,8 @@ export default function MyPurchasesPage() {
 
         <ul className="grid gap-3">
           {items?.map((r) => (
-            <li key={r.id}>
+            // min-w-0: sin esto, la lista de cartones (una línea con "…") ensanchaba la tarjeta y desbordaba en celular.
+            <li key={r.id} className="min-w-0">
               <Link
                 to={toPath(PATHS.purchaseDetail, { id: r.id })}
                 className="surface flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:ring-2 hover:ring-sol-gold sm:p-5"

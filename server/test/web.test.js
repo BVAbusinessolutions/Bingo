@@ -63,6 +63,15 @@ describe('web compilada en producción', () => {
     assert.match(csp, /frame-src [^;]*https:\/\/www\.facebook\.com/); // Facebook Live
   });
 
+  it('el hash CSP de los scripts en línea coincide con el del navegador aunque index.html tenga CRLF', async () => {
+    const { inlineScriptHashes } = await import('../src/app.js');
+    const { createHash } = await import('node:crypto');
+    const body = '\n  var a = 1;\n  var b = 2;\n';
+    const browserHash = `'sha256-${createHash('sha256').update(body).digest('base64')}'`;
+    assert.deepEqual(inlineScriptHashes(`<script>${body}</script>`), [browserHash]);
+    assert.deepEqual(inlineScriptHashes(`<script>${body.replace(/\n/g, '\r\n')}</script>`), [browserHash]);
+  });
+
   it('robots.txt excluye las zonas privadas y apunta al sitemap', async () => {
     const res = await api().get('/robots.txt');
     assert.match(res.headers['content-type'], /text\/plain/);
