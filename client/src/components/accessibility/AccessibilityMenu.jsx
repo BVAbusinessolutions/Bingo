@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Contrast, ScanEye, Moon, RotateCcw, Sparkles, Sun, Type, Volume2, VolumeX, X } from 'lucide-react';
+import { Contrast, PersonStanding, Moon, RotateCcw, Sparkles, Sun, Type, Volume2, VolumeX, X } from 'lucide-react';
 import { TEXT_SIZES, useTheme } from '../../context/ThemeContext';
 import { useSpeech } from './useSpeech';
 import { A11Y_TOGGLE_EVENT, announceAccessibilityState } from './a11yEvents';
@@ -157,7 +157,7 @@ export default function AccessibilityMenu() {
       >
         <header className="flex items-center justify-between gap-2">
           <h2 id={titleId} className="flex items-center gap-2 text-xl font-black text-fg">
-            <ScanEye className="h-6 w-6 text-brand" aria-hidden /> Ajustes visuales
+            <PersonStanding className="h-6 w-6 text-brand" aria-hidden /> Ajustes visuales
           </h2>
           <button
             type="button"

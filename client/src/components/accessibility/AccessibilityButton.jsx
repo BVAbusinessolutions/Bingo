@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ScanEye } from 'lucide-react';
+import { PersonStanding } from 'lucide-react';
 import { A11Y_STATE_EVENT, toggleAccessibility } from './a11yEvents';
 
 /**
- * Botón discreto de ajustes visuales y de lectura (ojo con marco). Va en la barra de navegación:
+ * Botón discreto de ajustes visuales y de lectura (silueta humana universal de accesibilidad). Va en la barra de navegación:
  * abre el panel y, si ya está abierto, lo cierra.
  */
 export default function AccessibilityButton({ className = '' }) {
@@ -30,7 +30,7 @@ export default function AccessibilityButton({ className = '' }) {
         open ? 'bg-accent/20 ring-accent' : 'bg-white/10 ring-white/15'
       } ${className}`}
     >
-      <ScanEye className="h-6 w-6" aria-hidden />
+      <PersonStanding className="h-6 w-6" aria-hidden />
     </button>
   );
 }

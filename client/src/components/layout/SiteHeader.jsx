@@ -6,7 +6,10 @@ import { ROLES } from '../../constants/roles';
 import { PATHS } from '../../routing/paths';
 import { BrandBadge } from '../brand/BrandLogo';
 import AccessibilityButton from '../accessibility/AccessibilityButton';
+import ThemeToggle from '../ui/ThemeToggle';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { useExclusiveOverlay } from '../../lib/overlays';
+import { useCanPlayLive } from '../../hooks/useCanPlayLive';
 
 const initials = (name = '') =>
   name
@@ -58,7 +61,7 @@ function UserMenu({ user, isAdmin, onLogout }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-full bg-white/10 py-1 pl-1 pr-3 font-semibold ring-1 ring-white/15 transition hover:bg-white/20"
+        className="flex h-11 items-center gap-2 rounded-full bg-white/10 pl-1 pr-3 font-semibold ring-1 ring-white/15 transition hover:bg-white/20"
       >
         <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-black text-navy-950">{initials(user?.name)}</span>
         <span className="hidden max-w-32 truncate 2xl:inline">{user?.name?.split(' ')[0]}</span>
@@ -91,9 +94,24 @@ function UserMenu({ user, isAdmin, onLogout }) {
 export default function SiteHeader() {
   const { isAuthenticated, role, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  // Cerrar sesión pide confirmación: un toque accidental en el menú ya no saca a la persona de su cuenta.
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const askLogout = useCallback(() => setConfirmLogout(true), []);
+  const cancelLogout = useCallback(() => setConfirmLogout(false), []);
+  const doLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setLoggingOut(false);
+      setConfirmLogout(false);
+    }
+  };
   const { pathname } = useLocation();
   const isAdmin = role === ROLES.ADMIN;
-  const links = isAuthenticated ? [...MAIN_LINKS, { to: PATHS.live, label: 'Jugar en vivo' }] : MAIN_LINKS;
+  const canPlayLive = useCanPlayLive();
+  const links = canPlayLive ? [...MAIN_LINKS, { to: PATHS.live, label: 'Jugar en vivo' }] : MAIN_LINKS;
 
   const closeMenu = useCallback(() => setOpen(false), []);
   useEffect(() => {
@@ -130,7 +148,11 @@ export default function SiteHeader() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-accent/70 to-transparent" aria-hidden />
       <div className="container-page flex h-[4.5rem] items-center justify-between gap-3">
         <Link to={PATHS.home} className="group flex min-w-0 items-center gap-2 leading-tight sm:gap-3" aria-label="Hogar Sol, inicio">
-          <BrandBadge className="h-11 w-11 rounded-xl transition-transform duration-300 group-hover:scale-105 sm:h-12 sm:w-12" />
+          {/* max-h-10 + object-contain: el logo cabe completo en la placa sin recortarse ni desbordar la barra. */}
+          <BrandBadge
+            className="h-11 w-11 overflow-hidden rounded-xl transition-transform duration-300 group-hover:scale-105"
+            logoClassName="h-full max-h-10 w-auto object-contain"
+          />
           <span className="min-w-0 font-display text-base font-bold sm:text-lg">
             Hogar Sol
             <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-accent sm:text-[0.7rem] sm:tracking-[0.2em]">
@@ -148,18 +170,22 @@ export default function SiteHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
           <AccessibilityButton />
           <div className="hidden items-center gap-2 xl:flex">
             {isAuthenticated ? (
-              <UserMenu user={user} isAdmin={isAdmin} onLogout={logout} />
+              <UserMenu user={user} isAdmin={isAdmin} onLogout={askLogout} />
             ) : (
               <>
-                <Link to={PATHS.login} className="whitespace-nowrap rounded-xl px-3 py-2 font-semibold text-white/90 transition hover:bg-white/10 hover:text-white">
+                <Link
+                  to={PATHS.login}
+                  className="inline-flex h-11 items-center whitespace-nowrap rounded-full px-4 font-semibold text-white/90 ring-1 ring-white/15 transition hover:bg-white/10 hover:text-white hover:ring-accent/60 active:scale-95"
+                >
                   Iniciar sesión
                 </Link>
                 <Link
                   to={PATHS.register}
-                  className="whitespace-nowrap rounded-xl bg-accent px-4 py-2.5 font-bold text-navy-950 shadow-[0_6px_20px_rgb(251_191_36/0.35)] transition hover:-translate-y-0.5 hover:bg-accent-strong active:translate-y-0 active:scale-[0.97]"
+                  className="inline-flex h-11 items-center whitespace-nowrap rounded-full bg-accent px-4 font-bold text-navy-950 shadow-[0_6px_20px_rgb(251_191_36/0.35)] transition hover:bg-accent-strong active:scale-95"
                 >
                   Crear cuenta
                 </Link>
@@ -168,7 +194,7 @@ export default function SiteHeader() {
           </div>
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-xl transition hover:bg-white/10 xl:hidden"
+            className="grid h-11 w-11 place-items-center rounded-full ring-1 ring-white/15 transition hover:bg-white/10 active:scale-95 xl:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={open}
@@ -210,7 +236,7 @@ export default function SiteHeader() {
             {isAuthenticated ? (
               <button
                 type="button"
-                onClick={logout}
+                onClick={askLogout}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/25 font-semibold transition hover:bg-white/5"
               >
                 <LogOut className="h-5 w-5" aria-hidden /> Cerrar sesión
@@ -227,6 +253,12 @@ export default function SiteHeader() {
             )}
           </div>
         </div>
+      )}
+
+      {confirmLogout && (
+        <ConfirmDialog title="¿Cerrar sesión?" confirmLabel="Cerrar sesión" confirmVariant="danger" loading={loggingOut} onConfirm={doLogout} onCancel={cancelLogout}>
+          Tus cartones y compras quedan guardados. Podrás volver a entrar cuando quieras.
+        </ConfirmDialog>
       )}
     </header>
   );

@@ -133,7 +133,7 @@ function SinpeInfo() {
   }, []);
 
   return (
-    <section aria-labelledby="sinpe-title" className="relative overflow-hidden rounded-3xl bg-navy-950 p-6 text-white sm:p-8">
+    <section aria-labelledby="sinpe-title" className="relative overflow-hidden rounded-3xl bg-navy-950 p-6 text-white ring-1 ring-white/10 sm:p-8">
       <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-accent/20 blur-3xl" aria-hidden />
       <h2 id="sinpe-title" className="relative flex items-center gap-2 font-display text-2xl font-semibold">
         <Smartphone className="h-7 w-7 text-accent" aria-hidden /> Consulta SINPE Móvil
@@ -179,7 +179,8 @@ export default function ContactPage() {
     title: 'Contacto',
     description: 'Escribe a la Asociación Infantil Hogar Sol: formulario, WhatsApp, teléfono, correo y datos oficiales de SINPE Móvil.',
   });
-  const mapQuery = encodeURIComponent(`${SITE.address}`);
+  // Coordenadas exactas si están configuradas; si no, búsqueda por el nombre del salón.
+  const mapQuery = encodeURIComponent(SITE.eventVenueCoords || SITE.eventVenueMapQuery);
 
   return (
     <main className="container-page space-y-10 py-10">
@@ -197,7 +198,7 @@ export default function ContactPage() {
             {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
             className="surface lift flex flex-col items-start gap-3 p-6 hover:ring-2 hover:ring-accent/60"
           >
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy-950 text-accent">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy-950 text-accent ring-1 ring-accent/30">
               <Icon className="h-6 w-6" aria-hidden />
             </span>
             <span className="text-xs font-bold uppercase tracking-[0.15em] text-fg-muted">{label}</span>
@@ -209,18 +210,24 @@ export default function ContactPage() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <ContactForm />
         <div className="space-y-4">
-          <div className="surface overflow-hidden">
+          <div className="surface overflow-hidden rounded-2xl">
             <iframe
-              title={`Mapa: ${SITE.address}`}
-              src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-              className="h-64 w-full border-0"
+              title={`Mapa: ${SITE.eventVenue}`}
+              src={`https://www.google.com/maps?q=${mapQuery}&z=16&output=embed`}
+              className="h-72 w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
             <div className="space-y-2 p-5">
-              <p className="flex items-start gap-3 text-fg">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden /> {SITE.address}
-              </p>
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-fg-muted">Lugar del evento</p>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 font-semibold text-fg hover:text-brand"
+              >
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden /> {SITE.eventVenueMapQuery}
+              </a>
               <p className="flex items-start gap-3 text-fg">
                 <Clock className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden /> {SITE.schedule}
               </p>
