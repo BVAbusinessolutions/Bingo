@@ -87,7 +87,7 @@ async function visitsByDay(days) {
 }
 
 /** Presencia y visitas de hoy al momento (el panel también las recibe por Socket.io en 'metrics:update'). */
-router.get('/metrics/live', async (req, res) => res.json(await liveMetrics()));
+router.get('/live-panel', async (req, res) => res.json(await liveMetrics()));
 
 router.get('/events/:eventId/stats', findEvent, async (req, res) => {
   await releaseExpiredReservations();

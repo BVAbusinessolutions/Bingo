@@ -206,7 +206,8 @@ export function createApp() {
   app.use('/api/reservations', reservationRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/contact', contactRoutes);
-  app.use('/api/metrics', metricsRoutes);
+  // Rutas con nombres neutros: los bloqueadores de anuncios cortan /metrics, /visit y /presence.
+  app.use('/api/site', metricsRoutes);
   app.use('/api', (req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
 
   // Producción: la web compilada se sirve desde el mismo origen (cookies SameSite=Strict y sin CORS).

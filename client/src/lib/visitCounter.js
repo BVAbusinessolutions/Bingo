@@ -28,7 +28,7 @@ export function startPresence() {
     clearInterval(timer);
     timer = null;
     try {
-      navigator.sendBeacon?.(`${import.meta.env.VITE_API_URL ?? '/api'}/metrics/presence/leave?tab=${tab}`);
+      navigator.sendBeacon?.(`${import.meta.env.VITE_API_URL ?? '/api'}/site/ping/bye?tab=${tab}`);
     } catch {
       // sin sendBeacon: el servidor la quita sola a los 90 s
     }

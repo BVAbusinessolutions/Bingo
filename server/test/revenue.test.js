@@ -61,8 +61,8 @@ describe('métricas de tráfico', () => {
 
   it('cuenta visitas anónimas y exige la cabecera anti-CSRF', async () => {
     const before = (await stats()).visitsTotal;
-    assert.equal((await api().post('/api/metrics/visit')).status, 403);
-    assert.equal((await api().post('/api/metrics/visit').set('X-Requested-With', 'XMLHttpRequest')).status, 204);
+    assert.equal((await api().post('/api/site/hello')).status, 403);
+    assert.equal((await api().post('/api/site/hello').set('X-Requested-With', 'XMLHttpRequest')).status, 204);
     const after = await stats();
     assert.equal(after.visitsTotal, before + 1);
     assert.equal(after.visitsWeek >= 1, true);

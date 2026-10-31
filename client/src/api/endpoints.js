@@ -23,8 +23,8 @@ export const authApi = {
 };
 
 export const metricsApi = {
-  visit: () => http.post('/metrics/visit'),
-  presence: (tab) => http.post(`/metrics/presence?tab=${tab}`),
+  visit: () => http.post('/site/hello'),
+  presence: (tab) => http.post(`/site/ping?tab=${tab}`),
 };
 
 export const contactApi = {
@@ -76,7 +76,7 @@ export const drawApi = {
 
 export const adminApi = {
   stats: (eventId) => http.get(`/admin/events/${eventId}/stats`).then(data),
-  liveMetrics: () => http.get('/admin/metrics/live').then(data),
+  liveMetrics: () => http.get('/admin/live-panel').then(data),
   events: () => http.get('/admin/events').then(data),
   createEvent: (body) => http.post('/admin/events', body).then(data),
   updateEvent: (id, body) => http.patch(`/admin/events/${id}`, body).then(data),

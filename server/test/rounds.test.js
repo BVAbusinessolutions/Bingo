@@ -107,8 +107,8 @@ describe('rondas en Bingo Master', () => {
 });
 
 describe('visitas y presencia reales', () => {
-  const ping = (tab) => api().post(`/api/metrics/presence?tab=${tab}`).set('X-Requested-With', 'XMLHttpRequest');
-  const live = async () => (await api().get('/api/admin/metrics/live').set(auth(admin))).body;
+  const ping = (tab) => api().post(`/api/site/ping?tab=${tab}`).set('X-Requested-With', 'XMLHttpRequest');
+  const live = async () => (await api().get('/api/admin/live-panel').set(auth(admin))).body;
 
   it('cuenta pestañas abiertas, las quita al cerrarse y no acepta latidos de otros sitios', async () => {
     const before = (await live()).online;
@@ -116,15 +116,15 @@ describe('visitas y presencia reales', () => {
     assert.equal((await ping('tab-aaaa-1111')).status, 204); // la misma pestaña no suma dos veces
     assert.equal((await ping('tab-bbbb-2222')).status, 204);
     assert.equal((await live()).online, before + 2);
-    assert.equal((await api().post('/api/metrics/presence?tab=tab-cccc-3333')).status, 403, 'sin X-Requested-With');
+    assert.equal((await api().post('/api/site/ping?tab=tab-cccc-3333')).status, 403, 'sin X-Requested-With');
     assert.equal((await ping('<script>')).status, 400);
-    assert.equal((await api().post('/api/metrics/presence/leave?tab=tab-aaaa-1111')).status, 204);
+    assert.equal((await api().post('/api/site/ping/bye?tab=tab-aaaa-1111')).status, 204);
     assert.equal((await live()).online, before + 1);
   });
 
   it('las visitas del día y la serie de 14 días salen de la base, sin datos inventados', async () => {
     const before = await live();
-    await api().post('/api/metrics/visit').set('X-Requested-With', 'XMLHttpRequest');
+    await api().post('/api/site/hello').set('X-Requested-With', 'XMLHttpRequest');
     assert.equal((await live()).visitsToday, before.visitsToday + 1);
     const stats = (await api().get(`/api/admin/events/${DEMO_EVENT_ID}/stats`).set(auth(admin))).body;
     assert.equal(stats.visitsByDay.length, 14);
