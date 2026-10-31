@@ -24,7 +24,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
 import DonutChart from '../../components/admin/DonutChart';
-import VisitsChart from '../../components/admin/VisitsChart';
+import PeopleChart from '../../components/admin/PeopleChart';
 import { PatternPreview } from '../../components/bingo/PatternPreview';
 import { PATTERNS } from '../../constants/patterns';
 import { ACTIONS } from '../../constants/auditActions';
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
           Tráfico y conversión
         </h2>
         <div className="grid gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <VisitsChart days={stats.visitsByDay ?? []} />
+          <PeopleChart days={stats.visitsByDay ?? []} />
           <div className="grid content-start gap-3 sm:grid-cols-3 xl:grid-cols-1">
             <Stat
               Icon={Eye}

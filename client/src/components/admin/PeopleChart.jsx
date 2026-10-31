@@ -7,7 +7,7 @@ const dayLabel = (iso, opts) => new Intl.DateTimeFormat('es-CR', { timeZone: 'UT
  * la línea base, una sola serie (sin leyenda: el título la nombra), tooltip al pasar el mouse o con el teclado
  * y una tabla oculta para lectores de pantalla. Hoy se resalta; el resto en el tono base.
  */
-export default function VisitsChart({ days }) {
+export default function PeopleChart({ days }) {
   const titleId = useId();
   const [active, setActive] = useState(null);
   const max = Math.max(1, ...days.map((d) => d.visits));
