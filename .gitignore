@@ -2,6 +2,11 @@ uploads/
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
+!server/.env.test
+*.pem
+*.key
 importar/
 .data/
 server/.data/

@@ -20,12 +20,6 @@ const STEPS = [
   { icon: PartyPopper, title: '¡Juega en vivo!', text: 'Marca tus números al salir cada bola. Si completas, pulsa “¡Bingo!”.' },
 ];
 
-const IMPACT = [
-  ['120+', 'niños apoyados'],
-  ['15', 'años de servicio'],
-  ['100 %', 'de lo recaudado va a la causa'],
-];
-
 /** Precio, patrón y cartones disponibles del evento vigente. */
 function EventStats({ event }) {
   return (
@@ -293,29 +287,6 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
-      </section>
-
-      {/* Impacto: cifras limpias en vidrio, sin íconos encima, tres columnas idénticas */}
-      <section aria-labelledby="impact-title" className="relative overflow-hidden bg-muted/60 py-16">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_18rem_at_50%_0%,rgb(251_191_36/0.14),transparent)]"
-          aria-hidden
-        />
-        <h2 id="impact-title" className="sr-only">
-          Nuestro impacto
-        </h2>
-        <dl className="container-page relative grid gap-5 sm:grid-cols-3">
-          {IMPACT.map(([n, label]) => (
-            <div
-              key={label}
-              className="glass-panel lift reveal flex min-h-40 flex-col items-center justify-center rounded-3xl px-6 py-8 text-center shadow-[0_18px_40px_rgb(2_6_23/0.08)]"
-            >
-              {/* dt antes que dd en el código (orden válido); se invierte solo a la vista */}
-              <dt className="order-2 mt-2 text-lg text-fg-muted">{label}</dt>
-              <dd className="order-1 font-display text-5xl font-bold tabular-nums text-brand">{n}</dd>
-            </div>
-          ))}
-        </dl>
       </section>
 
       {/* Último ganador: se despliega aquí mismo, sin cambiar de página */}
