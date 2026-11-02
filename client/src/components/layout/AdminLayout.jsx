@@ -20,6 +20,7 @@ import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
 import { formatCRC } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
+import Button from '../ui/Button';
 import GlassSelect from '../ui/GlassSelect';
 import ErrorBoundary from './ErrorBoundary';
 import BingoAlert from '../admin/BingoAlert';
@@ -67,6 +68,7 @@ function AdminToast({ toast, onClose }) {
 export default function AdminLayout() {
   const { pathname } = useLocation();
   const [events, setEvents] = useState([]);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
   const [eventId, setEventId] = useState('');
   const [pending, setPending] = useState(0);
   const [pendingClaims, setPendingClaims] = useState(0);
@@ -80,6 +82,7 @@ export default function AdminLayout() {
     () =>
       adminApi.events().then((list) => {
         setEvents(list);
+        setEventsLoaded(true);
         setEventId(
           (id) => id || (list.find((e) => e.status === 'LIVE') ?? list.find((e) => e.status === 'SCHEDULED') ?? list[0])?.id || ''
         );
@@ -207,6 +210,10 @@ export default function AdminLayout() {
   ];
 
   const event = events.find((e) => e.id === eventId);
+  // Vistas que trabajan sobre un evento: sin ninguno creado quedarían cargando para siempre.
+  const section = pathname.replace(/^\/admin\/?/, '').split('/')[0];
+  const needsEvent = ['', PATHS.adminDraw, PATHS.adminFinance, PATHS.adminWinners, PATHS.adminCards].includes(section);
+  const showNoEvent = eventsLoaded && events.length === 0 && needsEvent;
 
   // Shell propio y aislado del sitio público: cabecera de gestión, barra lateral y contenido; sin pie de página.
   return (
@@ -283,21 +290,35 @@ export default function AdminLayout() {
         <div id="contenido-admin" tabIndex={-1} className="min-w-0 outline-none">
           <ErrorBoundary resetKey={pathname}>
             <Suspense fallback={<PageLoader />}>
-              <Outlet
-                context={{
-                  events,
-                  event,
-                  eventId,
-                  setEventId,
-                  reloadEvents,
-                  reloadCounters,
-                  revision,
-                  pending,
-                  pendingClaims,
-                  socket,
-                  connected,
-                }}
-              />
+              {showNoEvent ? (
+                <div className="surface mx-auto max-w-xl space-y-4 p-8 text-center">
+                  <CalendarDays className="mx-auto h-10 w-10 text-sol-gold" aria-hidden />
+                  <h1 className="text-2xl font-black">Todavía no hay ningún bingo creado</h1>
+                  <p className="text-fg-muted">
+                    El panel, el sorteo, las finanzas, los ganadores y los cartones muestran los datos de un evento. Crea el bingo, elige su
+                    serie de cartones y aquí aparecerán las cifras.
+                  </p>
+                  <Button to={`${PATHS.admin}/${PATHS.adminEvents}`} icon={CalendarDays}>
+                    Crear el bingo
+                  </Button>
+                </div>
+              ) : (
+                <Outlet
+                  context={{
+                    events,
+                    event,
+                    eventId,
+                    setEventId,
+                    reloadEvents,
+                    reloadCounters,
+                    revision,
+                    pending,
+                    pendingClaims,
+                    socket,
+                    connected,
+                  }}
+                />
+              )}
             </Suspense>
           </ErrorBoundary>
         </div>

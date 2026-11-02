@@ -23,6 +23,7 @@ import { useAdmin } from '../../hooks/useAdmin';
 import { useAuth } from '../../context/AuthContext';
 import { adminApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
+import Alert from '../../components/ui/Alert';
 import DonutChart from '../../components/admin/DonutChart';
 import PeopleChart from '../../components/admin/PeopleChart';
 import { PatternPreview } from '../../components/bingo/PatternPreview';
@@ -97,6 +98,7 @@ export default function AdminDashboard() {
   const { event, eventId, revision, socket, connected, pending, pendingClaims } = useAdmin();
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState('');
   const [live, setLive] = useState(null); // { online, playersLive, visitsToday, at }
   const [queue, setQueue] = useState([]);
   const [activity, setActivity] = useState([]);
@@ -105,10 +107,14 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!eventId) return;
-    adminApi.stats(eventId).then((s) => {
-      setStats(s);
-      setLive({ online: s.online, playersLive: s.playersLive, visitsToday: s.visitsToday, at: s.at });
-    });
+    adminApi
+      .stats(eventId)
+      .then((s) => {
+        setStats(s);
+        setStatsError('');
+        setLive({ online: s.online, playersLive: s.playersLive, visitsToday: s.visitsToday, at: s.at });
+      })
+      .catch((err) => setStatsError(errorMessage(err)));
     adminApi.reservations('PROOF_SUBMITTED').then((l) => setQueue(l.filter((r) => r.eventId === eventId).slice(0, 5)));
     adminApi
       .audit({ page: 1 })
@@ -164,6 +170,12 @@ export default function AdminDashboard() {
     }
   };
 
+  if (!stats && statsError)
+    return (
+      <Alert tone="error" title="No se pudieron cargar las cifras del panel">
+        {statsError} Recarga la página; si sigue igual, revisa que el servidor esté en línea.
+      </Alert>
+    );
   if (!stats) return <div className="surface h-40 animate-pulse" />;
 
   const soldPct = stats.total ? Math.round((stats.sold / stats.total) * 100) : 0;
