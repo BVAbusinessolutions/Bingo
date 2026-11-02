@@ -1,33 +1,25 @@
 # Pendientes y estado del proyecto
 
-Última revisión: 29/10/2026 (rama `Angel`).
+Última revisión: 02/11/2026 (rama `main`).
 
-## Para salir a producción (bloquean el lanzamiento)
+**Estado:** el sitio está en producción en https://bingo-hogar-sol.onrender.com (Render, plan de pago) con el
+evento «Gran Bingo Hogar Sol» (15/11/2026, 1:00 p. m., ₡2 000 por cartón) y la serie *HOGAR SOL 1001-1500*
+(500 cartones, todos leídos) a la venta.
 
-- [ ] **Correo real (SMTP).** Sin `SMTP_HOST` en `server/.env` los correos (verificación de cuenta, recuperar
-      contraseña, avisos de compra) solo se imprimen en la consola del servidor y nadie los recibe.
-      Ver `server/.env.example` (Gmail con contraseña de aplicación o un proveedor transaccional).
-- [ ] **Datos de cobro reales** en *Administración → Datos de cobro*: SINPE Móvil (teléfono y, si no es la
-      Asociación, titular de la línea) y transferencia (banco, IBAN, cédula jurídica, titular y BIC/SWIFT opcional).
-- [ ] **Coordenadas exactas del Salón Tinamaste** en `VITE_EVENT_VENUE_COORDS` (el mapa usa un valor aproximado).
-- [ ] **Transmisión** (Administración → Eventos): YouTube Live (ID o URL), Facebook Live (URL pública del video en
-      facebook.com), Twitch o Kick (canal), TikTok LIVE (@cuenta: TikTok no permite incrustar sus directos, así que
-      el jugador ve un botón "Ver en TikTok" y juega sus cartones en la web) o enlace HLS `.m3u8` / WebRTC; si es HLS/WHEP, su origen en `STREAM_ORIGINS`. Al guardar, quienes
-      están en la vista en vivo ven el cambio al instante sin recargar.
-      El video de los datos de demostración (`jfKfPfyJRdk`) ya no se puede insertar: YouTube muestra
-      "Video Unavailable" hasta que se ponga el de la transmisión real.
+## Pendientes antes del evento
+
+- [ ] **Enlace de YouTube Live** (el día del evento): *Administración → Eventos → Editar → Transmisión → YouTube
+      Live*, pegar la URL o el ID del directo y guardar. Quienes estén en la vista en vivo lo ven al instante sin
+      recargar. Hasta entonces la vista en vivo no muestra video.
 - [ ] **Revisión legal** de reglamento, términos y privacidad (ver `docs/LEGAL-REVISION.md`).
 - [ ] **Confirmar con la Asociación** dos respuestas de Preguntas frecuentes: si los cartones se pueden
       transferir a otra persona y si se puede jugar fuera de San José.
-- [ ] Crear el administrador real (`npm run create-admin`) y no usar las cuentas de demostración.
-- [ ] **Supabase:** cadena del *Session pooler* en `DATABASE_URL` (ver `docs/DESPLIEGUE.md`) y `SEED_DEMO=false`
-      antes del primer arranque.
-- [ ] **Despliegue en Render** con `render.yaml` (plan de pago para el día del evento: el gratuito se duerme).
-- [ ] **Contacto real** en `client/.env` (`VITE_CONTACT_*`) y `ADMIN_NOTIFY_EMAILS` con el correo definitivo
-      (hoy apunta a un correo de pruebas).
-- [ ] **GitHub:** permiso de escritura en `BVAbusinessolutions/Bingo` para quien vaya a subir cambios.
-- [ ] **Lector automático de cartones** (`server/src/modules/series/cardRecognizer.js`): hoy cada imagen importada
-      queda "por revisar" y la serie se toma del nombre del archivo. Hacen falta muestras reales en `Bingo/importar/`.
+- [ ] **Coordenadas exactas del Salón Tinamaste** en `VITE_EVENT_VENUE_COORDS` en Render (formato `lat,lng`;
+      el mapa usa hoy la búsqueda por nombre). Requiere volver a desplegar.
+- [ ] **No cantar bolas en Bingo Master antes del evento.** La primera bola pone el evento EN VIVO, cierra la
+      venta y no se puede volver a «Programado» (habría que cancelar el evento y crear otro).
+- [ ] Primera venta real: confirmar que llega el correo de **compra aprobada** con el enlace a los cartones
+      (los correos de verificación, comprobante recibido, aviso al admin y pago rechazado ya se probaron).
 
 ## Recomendado (no bloquea)
 
@@ -47,6 +39,21 @@
 Además de lo de abajo, sigue vigente todo lo completado en la lista anterior (base de datos con RLS y
 migraciones automáticas, reservas atómicas, series de cartones, bitácora, bloqueo por intentos, CSP estricta,
 exportación a Excel protegida, etc.); se puede consultar en el historial de `pendientes/TAREAS-PENDIENTES.md`.
+
+### Puesta en producción (02/11/2026)
+
+- [x] Despliegue en Render (plan de pago) con Supabase como base de datos y administrador real.
+- [x] Correo real (SMTP de Gmail): avisos a `bingohogarsol@gmail.com`. Probado con una compra de prueba: llegan a
+      la bandeja de entrada la verificación de cuenta, «Recibimos tu comprobante», «Nueva compra por verificar»
+      y «Pago no verificado».
+- [x] Datos de cobro (SINPE Móvil 6027-1658 y transferencia) y contacto real: +506 6027-1658,
+      WhatsApp 6027-1658 y `bingohogarsol@gmail.com`.
+- [x] Lector de cartones por plantillas de dígitos (`cardRecognizer.js` + `digitTemplates.json`): la serie
+      1001-1500 se leyó completa (500/500, 0 por revisar) en ~2 min. Si una cifra no coincide con claridad la
+      casilla queda «por revisar»; nunca acepta un número dudoso.
+- [x] Panel de administración sin eventos: muestra «Todavía no hay ningún bingo creado» en lugar de quedarse
+      cargando.
+- [x] Evento creado y serie asignada; venta abierta.
 
 ### Juego
 
