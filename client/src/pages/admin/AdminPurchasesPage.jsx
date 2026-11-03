@@ -146,7 +146,7 @@ export default function AdminPurchasesPage() {
 
       {/* Estado: barra de pestañas con conteo (se desliza de lado en celular) */}
       <div className="surface p-1.5">
-        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex" role="tablist" aria-label="Estado de las compras">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 2xl:grid-cols-6" role="tablist" aria-label="Estado de las compras">
           {FILTERS.map(([s, label, Icon]) => {
             const active = status === s;
             const n = counts[s] ?? 0;
@@ -157,7 +157,7 @@ export default function AdminPurchasesPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setStatus(s)}
-                className={`group flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-xl px-2.5 text-left text-sm font-extrabold leading-tight transition sm:px-3 duration-200 active:scale-95 lg:flex-1 lg:justify-center ${
+                className={`group flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-xl px-2.5 text-left text-sm font-extrabold leading-tight transition sm:px-3 duration-200 active:scale-95 ${
                   active
                     ? 'bg-sol-blue text-white shadow-md dark:bg-sol-gold dark:text-sol-blue'
                     : 'text-fg-muted hover:bg-muted hover:text-fg'
@@ -166,7 +166,7 @@ export default function AdminPurchasesPage() {
                 <span className="flex min-w-0 items-center gap-2">
                   {/* En celular sin ícono: así el nombre completo cabe junto al conteo */}
                   <Icon className="hidden h-4 w-4 shrink-0 sm:block" aria-hidden />
-                  <span className="hyphens-auto sm:truncate">{label}</span>
+                  <span className="hyphens-auto">{label}</span>
                 </span>
                 <span
                   className={`grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1.5 text-xs tabular-nums ${

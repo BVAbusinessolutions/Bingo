@@ -157,7 +157,7 @@ function clientCsp(indexHtml) {
       // LL-HLS (hls.js usa blob:) y WebRTC; el video nativo de Safari carga directo del origen del stream.
       mediaSrc: ["'self'", 'blob:', ...env.streamOrigins],
       workerSrc: ["'self'", 'blob:'],
-      frameSrc: [...STREAM_FRAMES, ...MAP_FRAMES],
+      frameSrc: [...STREAM_FRAMES, ...MAP_FRAMES, 'blob:'], // blob: comprobantes y facturas PDF dentro del panel
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],

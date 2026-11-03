@@ -22,14 +22,16 @@ export default function ProofPreview({ reservationId }) {
   if (file === 'error') return <p className="text-fg-muted">No se pudo cargar el comprobante.</p>;
   if (file.isPdf) {
     return (
-      <a
-        href={file.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-h-12 items-center gap-2 rounded-xl border-2 border-line px-4 font-bold text-fg hover:border-sol-blue"
-      >
-        <FileText className="h-5 w-5 text-sol-red" aria-hidden /> Abrir comprobante (PDF)
-      </a>
+      <div className="space-y-2">
+        <iframe title="Comprobante de pago (PDF)" src={file.url} className="h-96 w-full rounded-xl border border-line bg-white" />
+        <a
+          href={file.url}
+          download="comprobante.pdf"
+          className="inline-flex min-h-12 items-center gap-2 rounded-xl border-2 border-line px-4 font-bold text-fg hover:border-sol-blue"
+        >
+          <FileText className="h-5 w-5 text-sol-red" aria-hidden /> Descargar comprobante (PDF)
+        </a>
+      </div>
     );
   }
   return <img src={file.url} alt="Comprobante de pago enviado" className="max-h-96 w-full rounded-xl border border-line object-contain" />;

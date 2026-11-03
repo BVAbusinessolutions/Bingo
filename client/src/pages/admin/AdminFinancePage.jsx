@@ -23,6 +23,7 @@ import Field from '../../components/ui/Field';
 import PageLoader from '../../components/ui/PageLoader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Modal from '../../components/ui/Modal';
+import FileViewer from '../../components/ui/FileViewer';
 import DonutChart from '../../components/admin/DonutChart';
 import IncomeChart from '../../components/admin/IncomeChart';
 import CategoryBars from '../../components/admin/CategoryBars';
@@ -44,19 +45,6 @@ const today = () => new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 1
 const EMPTY_EXPENSE = { concept: '', category: 'PREMIOS', amount: '', spentOn: today(), method: 'TRANSFER', reference: '' };
 const selectCls =
   'mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-base text-fg outline-none focus:border-sol-blue focus:ring-4 focus:ring-sol-gold/40';
-
-/** Abre un comprobante o factura (blob) en otra pestaña. */
-async function openBlob(load) {
-  const tab = window.open('', '_blank'); // se abre antes de esperar la descarga: así no lo bloquea el navegador
-  try {
-    const url = URL.createObjectURL(await load());
-    if (tab) tab.location.href = url;
-    else window.location.href = url;
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch {
-    tab?.close();
-  }
-}
 
 /** Virtual (en línea) o físico (salón): cartones, compras y dinero verificado de cada canal. */
 function ChannelCard({ Icon, title, hint, data, total }) {
@@ -192,6 +180,7 @@ export default function AdminFinancePage() {
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  const [viewing, setViewing] = useState(null); // gasto cuya factura se muestra en el visor
 
   const load = useCallback(() => {
     if (!eventId) return;
@@ -257,9 +246,10 @@ export default function AdminFinancePage() {
             </h1>
             <p className="text-white/75">{event?.name} · solo dinero verificado por la administración</p>
           </div>
-          <div className="grid w-full grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:w-auto">
+          <div className="grid w-full grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:w-auto [&>*]:min-w-0">
             <Button variant="gold" icon={Plus} onClick={() => setAdding(true)} className="rounded-full! px-3! whitespace-nowrap sm:px-4!">
-              Registrar gasto
+              <span className="sm:hidden">Gasto</span>
+              <span className="hidden sm:inline">Registrar gasto</span>
             </Button>
             <Button
               variant="light"
@@ -338,6 +328,14 @@ export default function AdminFinancePage() {
       </section>
 
       {error && <Alert tone="error">{error}</Alert>}
+      {viewing && (
+        <FileViewer
+          title={`Factura · ${viewing.concept}`}
+          fileName={`factura-${viewing.concept}`}
+          load={() => adminApi.receiptBlob(viewing.id)}
+          onClose={() => setViewing(null)}
+        />
+      )}
       {adding && (
         <ExpenseForm
           eventId={eventId}
@@ -475,7 +473,7 @@ export default function AdminFinancePage() {
                       size="sm"
                       icon={Eye}
                       className="rounded-full!"
-                      onClick={() => openBlob(() => adminApi.receiptBlob(x.id))}
+                      onClick={() => setViewing(x)}
                     >
                       Ver factura
                     </Button>

@@ -7,9 +7,11 @@ import {
   Landmark,
   Layers,
   LayoutDashboard,
+  Menu,
   Mic,
   ScrollText,
   ShoppingCart,
+  ChevronDown,
   Trophy,
   Users,
   Wallet,
@@ -22,6 +24,7 @@ import { formatCRC } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
 import Button from '../ui/Button';
 import GlassSelect from '../ui/GlassSelect';
+import StatusBadge from '../ui/StatusBadge';
 import ErrorBoundary from './ErrorBoundary';
 import BingoAlert from '../admin/BingoAlert';
 import AdminTopBar from './AdminTopBar';
@@ -77,6 +80,8 @@ export default function AdminLayout() {
   const [revision, setRevision] = useState(0); // sube con cada aviso en tiempo real -> las vistas recargan
   const { socket, connected } = useSocket('/admin');
   useHashScroll(); // cada sección del panel empieza arriba
+  const [menuOpen, setMenuOpen] = useState(false); // menú de secciones en celular
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   const reloadEvents = useCallback(
     () =>
@@ -210,6 +215,11 @@ export default function AdminLayout() {
   ];
 
   const event = events.find((e) => e.id === eventId);
+  const currentLabel =
+    sections.flatMap((x) => x.items).find(({ to, end }) => {
+      const full = to ? `${PATHS.admin}/${to}` : PATHS.admin;
+      return end ? pathname.replace(/\/$/, '') === full : pathname.startsWith(full);
+    })?.label ?? 'Secciones del panel';
   // Vistas que trabajan sobre un evento: sin ninguno creado quedarían cargando para siempre.
   const section = pathname.replace(/^\/admin\/?/, '').split('/')[0];
   const needsEvent = ['', PATHS.adminDraw, PATHS.adminFinance, PATHS.adminWinners, PATHS.adminCards].includes(section);
@@ -222,13 +232,13 @@ export default function AdminLayout() {
         Saltar al contenido
       </a>
       <AdminTopBar />
-      <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[15rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
+      <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[16.5rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
         {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 lg:[scrollbar-width:thin] print:hidden">
           <div className="surface space-y-3 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-extrabold uppercase tracking-wider text-sol-red dark:text-sol-gold">Administración</p>
-              {/* Conexión en tiempo real con el servidor: verde = los avisos y las cifras llegan al instante. */}
+              {/* Conexión en tiempo real con el servidor (no es el estado del bingo): verde = los avisos llegan al instante. */}
               <span
                 role="status"
                 className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -239,7 +249,7 @@ export default function AdminLayout() {
                   className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500 motion-safe:animate-pulse' : 'bg-slate-400'}`}
                   aria-hidden
                 />
-                {connected ? 'En vivo' : 'Conectando…'}
+                {connected ? 'Conectado' : 'Conectando…'}
               </span>
             </div>
             <GlassSelect
@@ -248,22 +258,46 @@ export default function AdminLayout() {
               onChange={setEventId}
               options={events.map((e) => ({ value: e.id, label: e.name }))}
             />
+            {event && (
+              <p className="flex items-center justify-between gap-2 text-sm text-fg-muted">
+                Estado del bingo <StatusBadge status={event.status} />
+              </p>
+            )}
           </div>
 
+          {/* Celular: un botón con la sección actual abre la lista completa (antes era una tira que se cortaba de lado). */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-expanded={menuOpen}
+            aria-controls="admin-nav"
+            className="surface flex min-h-12 w-full items-center gap-3 px-4 font-extrabold text-fg lg:hidden"
+          >
+            <Menu className="h-5 w-5 text-brand" aria-hidden />
+            <span className="flex-1 text-left">{currentLabel}</span>
+            {pending + pendingClaims > 0 && (
+              <span className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white">
+                {pending + pendingClaims}
+              </span>
+            )}
+            <ChevronDown className={`h-5 w-5 text-fg-muted transition-transform ${menuOpen ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+
           <nav
+            id="admin-nav"
             aria-label="Administración"
-            className="surface flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-3 lg:overflow-visible lg:p-3"
+            className={`surface space-y-2 p-2 lg:block lg:p-3 ${menuOpen ? 'block animate-fade-in' : 'hidden'}`}
           >
             {sections.map(({ title, items }) => (
-              <div key={title} className="flex shrink-0 gap-1 lg:block lg:space-y-1">
-                <p className="hidden px-3 pb-1 text-[0.7rem] font-extrabold uppercase tracking-widest text-fg-subtle lg:block">{title}</p>
+              <div key={title} className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:block lg:space-y-0.5">
+                <p className="col-span-full px-3 pb-0.5 pt-1 text-[0.7rem] font-extrabold uppercase tracking-widest text-fg-subtle">{title}</p>
                 {items.map(({ to, end, label, Icon, badge }) => (
                   <NavLink
                     key={label}
                     to={to}
                     end={end}
                     className={({ isActive }) =>
-                      `group relative flex min-h-11 shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 font-extrabold transition duration-200 ${
+                      `group relative flex min-h-11 min-w-0 items-center gap-3 rounded-xl px-3 font-extrabold transition duration-200 lg:min-h-10 ${
                         isActive
                           ? 'bg-sol-blue text-white shadow-md dark:bg-sol-gold dark:text-sol-blue'
                           : 'text-fg-muted hover:translate-x-0.5 hover:bg-muted hover:text-fg'
@@ -271,7 +305,7 @@ export default function AdminLayout() {
                     }
                   >
                     <Icon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden />
-                    <span className="flex-1">{label}</span>
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
                     {badge > 0 && (
                       <span
                         className="grid h-6 min-w-6 place-items-center rounded-full bg-sol-red px-1.5 text-sm font-black text-white motion-safe:animate-pop"
