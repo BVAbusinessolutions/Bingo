@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Check, Mail, Phone, Trophy, X } from 'lucide-react';
+import { useCallback, useEffect, useId, useState } from 'react';
+import { Check, Gift, Mail, Phone, Trophy, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import WinnerVerification from '../../components/admin/WinnerVerification';
+import SalonWinners from '../../components/admin/SalonWinners';
 import StatusBadge from '../../components/ui/StatusBadge';
 import PageLoader from '../../components/ui/PageLoader';
 import Button from '../../components/ui/Button';
@@ -13,7 +14,60 @@ import { errorMessage, formatDate } from '../../lib/format';
 
 const CLAIM_LABELS = { PENDING: 'PROOF_SUBMITTED', CONFIRMED: 'APPROVED', REJECTED: 'REJECTED' }; // reutiliza colores de StatusBadge
 
-function ClaimCard({ claim, pattern, onDecide }) {
+/** Premio que se le entrega a este ganador ("Motocicleta", "₡50 000"…): se guarda y sale en Resultados. */
+function PrizeEditor({ claim, onSaved }) {
+  const inputId = useId();
+  const [value, setValue] = useState(claim.prize ?? '');
+  const [state, setState] = useState('idle'); // idle | saving | saved
+  const [error, setError] = useState('');
+  const dirty = value.trim() !== (claim.prize ?? '');
+
+  const save = async (e) => {
+    e.preventDefault();
+    setState('saving');
+    setError('');
+    try {
+      await adminApi.setClaimPrize(claim.id, value.trim() || null);
+      setState('saved');
+      onSaved();
+      setTimeout(() => setState('idle'), 2000);
+    } catch (err) {
+      setError(errorMessage(err, 'El premio debe tener entre 2 y 120 caracteres.'));
+      setState('idle');
+    }
+  };
+
+  return (
+    <form onSubmit={save} className="flex flex-wrap items-end gap-2 rounded-2xl bg-sol-gold/10 p-3 ring-1 ring-sol-gold/40">
+      <label htmlFor={inputId} className="min-w-48 flex-1">
+        <span className="flex items-center gap-1.5 text-sm font-extrabold text-fg">
+          <Gift className="h-4 w-4 text-sol-gold-dark" aria-hidden /> Premio entregado
+        </span>
+        <input
+          id={inputId}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          maxLength={120}
+          placeholder="Ej. Motocicleta, ₡50 000, canasta"
+          className="mt-1 min-h-11 w-full rounded-xl border-2 border-line bg-card px-3 text-fg outline-none focus:border-sol-blue focus:ring-4 focus:ring-sol-gold/30"
+        />
+      </label>
+      <Button
+        type="submit"
+        size="sm"
+        loading={state === 'saving'}
+        disabled={!dirty && state !== 'saved'}
+        icon={Check}
+        className="rounded-full!"
+      >
+        {state === 'saved' ? '¡Guardado!' : 'Guardar premio'}
+      </Button>
+      {error && <p className="w-full text-sm font-semibold text-sol-red dark:text-red-300">{error}</p>}
+    </form>
+  );
+}
+
+function ClaimCard({ claim, pattern, onDecide, onChanged }) {
   const claimPattern = claim.pattern ?? pattern; // la modalidad de su ronda, no la actual del evento
   return (
     <article id={`reclamo-${claim.id}`} className="surface scroll-mt-24 space-y-5 p-4 sm:p-5">
@@ -54,6 +108,7 @@ function ClaimCard({ claim, pattern, onDecide }) {
           claim.decidedAt && <p className="text-fg-muted">Decidido el {formatDate(claim.decidedAt)}.</p>
         )}
       </header>
+      {claim.status !== 'REJECTED' && <PrizeEditor key={claim.prize ?? ''} claim={claim} onSaved={onChanged} />}
       <WinnerVerification claim={claim} pattern={claimPattern} />
     </article>
   );
@@ -106,19 +161,31 @@ export default function AdminWinnersPage() {
       </header>
 
       {error && <Alert tone="error">{error}</Alert>}
+
+      <SalonWinners event={event} revision={revision} />
+
+      <h2 className="flex items-center gap-2 pt-2 text-xl font-black text-fg">
+        <Trophy className="h-6 w-6 text-sol-gold" aria-hidden /> Ganadores en línea
+      </h2>
       {!claims ? (
         <PageLoader />
       ) : claims.length === 0 ? (
-        <p className="surface p-10 text-center text-lg text-fg-muted">Todavía nadie ha reclamado bingo en este evento.</p>
+        <p className="surface p-8 text-center text-lg text-fg-muted">Todavía nadie ha reclamado bingo en línea en este evento.</p>
       ) : (
         <>
           {pending.length > 0 && <h2 className="text-2xl font-black text-fg">Por confirmar ({pending.length})</h2>}
           {pending.map((c) => (
-            <ClaimCard key={c.id} claim={c} pattern={pattern} onDecide={(claim, approve) => setConfirming({ claim, approve })} />
+            <ClaimCard
+              key={c.id}
+              claim={c}
+              pattern={pattern}
+              onChanged={load}
+              onDecide={(claim, approve) => setConfirming({ claim, approve })}
+            />
           ))}
           {decided.length > 0 && <h2 className="pt-2 text-2xl font-black text-fg">Revisados ({decided.length})</h2>}
           {decided.map((c) => (
-            <ClaimCard key={c.id} claim={c} pattern={pattern} />
+            <ClaimCard key={c.id} claim={c} pattern={pattern} onChanged={load} />
           ))}
         </>
       )}

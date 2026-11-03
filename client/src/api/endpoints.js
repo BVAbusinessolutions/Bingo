@@ -72,6 +72,8 @@ export const drawApi = {
   setPattern: (eventId, pattern) => http.put(`/events/${eventId}/draw/pattern`, { pattern }).then(data),
   newRound: (eventId, pattern) => http.post(`/events/${eventId}/draw/round`, { pattern }).then(data),
   rounds: (eventId) => http.get(`/events/${eventId}/draw/rounds`).then(data),
+  deleteRound: (eventId, round) => http.delete(`/events/${eventId}/draw/rounds/${round}`).then(data),
+  resetRounds: (eventId) => http.delete(`/events/${eventId}/draw/rounds`).then(data),
 };
 
 export const adminApi = {
@@ -115,6 +117,12 @@ export const adminApi = {
   exportReservations: (params) => http.get('/admin/reservations/export.csv', { params, responseType: 'blob' }).then(data),
   claims: (eventId) => http.get('/admin/claims', { params: { eventId } }).then(data),
   decideClaim: (id, approve) => http.post(`/admin/claims/${id}/decision`, { approve }).then(data),
+  setClaimPrize: (id, prize) => http.patch(`/admin/claims/${id}/prize`, { prize }).then(data),
+  manualWinners: (eventId) => http.get(`/admin/events/${eventId}/manual-winners`).then(data),
+  addManualWinner: (eventId, body) => http.post(`/admin/events/${eventId}/manual-winners`, body).then(data),
+  deleteManualWinner: (id) => http.delete(`/admin/manual-winners/${id}`).then(data),
+  notifyEmails: () => http.get('/admin/settings/notify-emails').then(data),
+  updateNotifyEmails: (emails) => http.put('/admin/settings/notify-emails', { emails }).then(data),
   users: (params) => http.get('/admin/users', { params }).then(data),
   createUser: (body) => http.post('/admin/users', body).then(data),
   updateUser: (id, body) => http.patch(`/admin/users/${id}`, body).then(data),

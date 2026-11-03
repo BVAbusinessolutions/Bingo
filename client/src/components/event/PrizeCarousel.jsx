@@ -114,6 +114,11 @@ export default function PrizeCarousel({ images, alt, views = [] }) {
           />
         ))}
 
+        {/* Aviso bajo cada foto: el premio real puede variar en color o modelo respecto a la imagen. */}
+        <p className="absolute inset-x-0 bottom-[2.5%] text-center text-xs font-semibold tracking-wide text-white/80 [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] sm:text-sm">
+          Imagen con fines ilustrativos
+        </p>
+
         {count > 1 && (
           <>
             <button type="button" onClick={() => goTo(current - 1)} className={`${arrow} left-3`} aria-label="Foto anterior">

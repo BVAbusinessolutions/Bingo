@@ -200,7 +200,10 @@ drawRouter.put('/draw/pattern', authenticate, authorize('ADMIN'), requireEvent, 
     if ((await roundBalls(q, e)) > 0) return false;
     await q('update app.events set pattern = $2, updated_at = now() where id = $1', [e.id, pattern]);
     await q('update app.event_rounds set pattern = $3 where event_id = $1 and round = $2', [e.id, e.round, pattern]);
-    await audit({ ...actorFrom(req), action: 'draw.pattern', targetType: 'event', targetId: e.id, details: { round: e.round, pattern } }, q);
+    await audit(
+      { ...actorFrom(req), action: 'draw.pattern', targetType: 'event', targetId: e.id, details: { round: e.round, pattern } },
+      q
+    );
     return true;
   });
   if (!changed) return res.status(409).json({ error: 'ROUND_STARTED' });
@@ -229,6 +232,104 @@ drawRouter.post('/draw/round', authenticate, authorize('ADMIN'), requireEvent, r
   await notifyWinningCards(e.id);
   notifyAdmins('draw:round', { eventId: e.id, round: next, pattern, patternLabel: PATTERN_LABELS[pattern] });
   res.status(201).json(await stateOf(e.id));
+});
+
+/**
+ * Deja el evento coherente tras borrar rondas: la ronda vigente pasa a ser la última que queda (con su modalidad)
+ * y, si ya no queda ninguna bola cantada, el evento vuelve a "Programado" para reabrir la venta en línea.
+ */
+async function settleRounds(q, e) {
+  let [{ last }] = await q('select max(round)::int as last from app.event_rounds where event_id = $1', [e.id]);
+  if (!last) {
+    await q('insert into app.event_rounds (event_id, round, pattern) values ($1, 1, $2)', [e.id, e.pattern]);
+    last = 1;
+  }
+  await q(
+    `update app.events set round = $2, updated_at = now(),
+            pattern = (select pattern from app.event_rounds where event_id = $1 and round = $2)
+      where id = $1`,
+    [e.id, last]
+  );
+  const [{ balls }] = await q('select count(*)::int as balls from app.draws where event_id = $1', [e.id]);
+  if (balls === 0) await q("update app.events set status = 'SCHEDULED' where id = $1 and status = 'LIVE'", [e.id]);
+  return { round: last, reopened: balls === 0 };
+}
+
+const afterRoundsChanged = async (e) => {
+  await broadcast(e.id);
+  await notifyWinningCards(e.id);
+  notifyAdmins('draw:round', { eventId: e.id });
+};
+
+/**
+ * Borra una ronda (p. ej. de prueba) con sus bolas y sus reclamos, también los premios confirmados en ella.
+ * Las rondas siguientes se renumeran para que no queden huecos. Queda en la bitácora con lo que se borró.
+ */
+drawRouter.delete('/draw/rounds/:round', authenticate, authorize('ADMIN'), requireEvent, requirePlayable, async (req, res) => {
+  const target = Number(req.params.round);
+  if (!Number.isInteger(target) || target < 1 || target > 99) return res.status(404).json({ error: 'NOT_FOUND' });
+  const e = req.event;
+  const result = await tx(async (q) => {
+    const [exists] = await q('select 1 from app.event_rounds where event_id = $1 and round = $2', [e.id, target]);
+    if (!exists) return null;
+    const [{ balls }] = await q('select count(*)::int as balls from app.draws where event_id = $1 and round = $2', [e.id, target]);
+    const removedClaims = await q('delete from app.claims where event_id = $1 and round = $2 returning status', [e.id, target]);
+    await q('delete from app.draws where event_id = $1 and round = $2', [e.id, target]);
+    await q('delete from app.event_rounds where event_id = $1 and round = $2', [e.id, target]);
+    // Renumerar de una en una (la clave única incluye la ronda): la 3 pasa a 2, luego la 4 a 3…
+    const later = await q('select round from app.event_rounds where event_id = $1 and round > $2 order by round', [e.id, target]);
+    for (const { round } of later) {
+      for (const table of ['app.draws', 'app.claims', 'app.event_rounds']) {
+        await q(`update ${table} set round = $3 where event_id = $1 and round = $2`, [e.id, round, round - 1]);
+      }
+    }
+    const settled = await settleRounds(q, e);
+    await audit(
+      {
+        ...actorFrom(req),
+        action: 'draw.round_deleted',
+        targetType: 'event',
+        targetId: e.id,
+        details: {
+          round: target,
+          balls,
+          claims: removedClaims.length,
+          confirmed: removedClaims.filter((c) => c.status === 'CONFIRMED').length,
+        },
+      },
+      q
+    );
+    return settled;
+  });
+  if (!result) return res.status(404).json({ error: 'NOT_FOUND' });
+  await afterRoundsChanged(e);
+  res.json({ ...(await stateOf(e.id)), reopened: result.reopened });
+});
+
+/** Borra TODAS las rondas del evento (pruebas antes del bingo real): queda la ronda 1 vacía y la venta reabierta. */
+drawRouter.delete('/draw/rounds', authenticate, authorize('ADMIN'), requireEvent, requirePlayable, async (req, res) => {
+  const e = req.event;
+  const result = await tx(async (q) => {
+    const [{ balls }] = await q('select count(*)::int as balls from app.draws where event_id = $1', [e.id]);
+    const removedClaims = await q('delete from app.claims where event_id = $1 returning status', [e.id]);
+    await q('delete from app.draws where event_id = $1', [e.id]);
+    const [{ rounds }] = await q('select count(*)::int as rounds from app.event_rounds where event_id = $1', [e.id]);
+    await q('delete from app.event_rounds where event_id = $1', [e.id]);
+    const settled = await settleRounds(q, e);
+    await audit(
+      {
+        ...actorFrom(req),
+        action: 'draw.rounds_reset',
+        targetType: 'event',
+        targetId: e.id,
+        details: { rounds, balls, claims: removedClaims.length },
+      },
+      q
+    );
+    return settled;
+  });
+  await afterRoundsChanged(e);
+  res.json({ ...(await stateOf(e.id)), reopened: result.reopened });
 });
 
 /** Rondas del evento con su modalidad, bolas cantadas y ganadores confirmados (historial de Bingo Master). */

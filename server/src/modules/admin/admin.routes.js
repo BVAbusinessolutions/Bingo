@@ -6,16 +6,18 @@ import { one, query, tx } from '../../db/index.js';
 import { authenticate, authorize, USABLE_ACCOUNT_SQL } from '../../middleware/auth.js';
 import { validateBody, validateQuery, zipUploadLimiter } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
-import { sendMail } from '../../utils/mailer.js';
+import { notifyAdminsByMail, sendMail } from '../../utils/mailer.js';
+import { formatCRC } from '../../utils/format.js';
 import { audit, actorFrom } from '../../services/audit.js';
 import { getFile, sendFile } from '../../services/files.js';
-import { getPaymentSettings, updatePayment } from '../../services/settings.js';
+import { getNotifyEmails, getPaymentSettings, updateNotifyEmails, updatePayment } from '../../services/settings.js';
 import { HttpError } from '../../utils/httpError.js';
 import { env } from '../../config/env.js';
 import { toCsv } from '../../utils/csv.js';
 import { EVENT_SELECT, publicEvent } from '../events/events.routes.js';
 import { broadcast } from '../draw/draw.js';
 import { PATTERN_IDS } from '../../domain/bingo.js';
+import { isWholeBundle, PACKAGE_PRICE, PACKAGE_SIZE, totalFor } from '../../domain/pricing.js';
 import { liveMetrics } from '../../services/presence.js';
 import financeRoutes, { financeSummary } from '../finance/finance.routes.js';
 import { revokeAllFor } from '../auth/auth.routes.js';
@@ -172,7 +174,10 @@ const youtubeId = (value) =>
   value.match(/(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|live\/|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,64})/)?.[1] ?? value;
 const VIDEO_ID = /^[A-Za-z0-9_-]{2,64}$/;
 // Twitch y Kick: nombre del canal o el enlace del canal (twitch.tv/hogarsol, kick.com/hogarsol).
-const CHANNEL_URL = { twitch: /^https?:\/\/(?:www\.)?twitch\.tv\/([A-Za-z0-9_-]{2,64})\/?$/i, kick: /^https?:\/\/(?:www\.)?kick\.com\/([A-Za-z0-9_-]{2,64})\/?$/i };
+const CHANNEL_URL = {
+  twitch: /^https?:\/\/(?:www\.)?twitch\.tv\/([A-Za-z0-9_-]{2,64})\/?$/i,
+  kick: /^https?:\/\/(?:www\.)?kick\.com\/([A-Za-z0-9_-]{2,64})\/?$/i,
+};
 const channelName = (provider) => (value) => value.match(CHANNEL_URL[provider])?.[1] ?? value;
 // TikTok LIVE no tiene reproductor para incrustar: se guarda el enlace al directo de la cuenta y se abre en TikTok.
 const tiktokLive = (value) => {
@@ -185,12 +190,23 @@ const FACEBOOK_URL = /^https:\/\/(?:www\.|web\.|m\.)?facebook\.com\/\S+$/;
 
 const streamSchema = z.discriminatedUnion('provider', [
   z.object({ provider: z.literal('youtube'), videoId: z.string().trim().max(300).transform(youtubeId).pipe(z.string().regex(VIDEO_ID)) }),
-  z.object({ provider: z.literal('twitch'), videoId: z.string().trim().max(300).transform(channelName('twitch')).pipe(z.string().regex(VIDEO_ID)) }),
-  z.object({ provider: z.literal('kick'), videoId: z.string().trim().max(300).transform(channelName('kick')).pipe(z.string().regex(VIDEO_ID)) }),
+  z.object({
+    provider: z.literal('twitch'),
+    videoId: z.string().trim().max(300).transform(channelName('twitch')).pipe(z.string().regex(VIDEO_ID)),
+  }),
+  z.object({
+    provider: z.literal('kick'),
+    videoId: z.string().trim().max(300).transform(channelName('kick')).pipe(z.string().regex(VIDEO_ID)),
+  }),
   z.object({ provider: z.literal('vimeo'), videoId: z.string().trim().regex(VIDEO_ID) }),
   z.object({
     provider: z.literal('tiktok'),
-    url: z.string().trim().max(300).transform(tiktokLive).pipe(z.string().regex(TIKTOK_LIVE_URL, 'Debe ser la cuenta de TikTok, ej. @hogarsol')),
+    url: z
+      .string()
+      .trim()
+      .max(300)
+      .transform(tiktokLive)
+      .pipe(z.string().regex(TIKTOK_LIVE_URL, 'Debe ser la cuenta de TikTok, ej. @hogarsol')),
   }),
   z.object({
     provider: z.literal('facebook'),
@@ -211,13 +227,13 @@ const streamSchema = z.discriminatedUnion('provider', [
       .refine(allowedStreamUrl, 'El origen de la transmisión no está en STREAM_ORIGINS'),
   }),
 ]);
+// Precio y tamaño del paquete NO se editan: siempre 2 cartones por ₡3 000 (domain/pricing.js).
 // Sin valores por defecto: en una edición parcial, un campo ausente debe quedar como está
 // (antes, cambiar solo el estado borraba la descripción porque el default '' se aplicaba también al editar).
 const eventFields = z.object({
   name: z.string().trim().min(3).max(80),
   description: z.string().trim().max(300),
   pattern: z.enum(PATTERN_IDS),
-  price: z.number().int().min(0).max(1_000_000),
   startsAt: z.string().datetime({ offset: true }),
   // Lugar del evento presencial: se muestra en la portada, el reglamento y la cuenta regresiva.
   venue: z.string().trim().max(120),
@@ -238,11 +254,24 @@ router.get('/events', async (req, res) => {
 });
 
 router.post('/events', validateBody(eventSchema), async (req, res) => {
-  const { name, description, pattern, price, startsAt, venue, venueArea, stream } = req.body;
+  const { name, description, pattern, startsAt, venue, venueArea, stream } = req.body;
   const e = await one(
-    `insert into app.events (name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id, stream_url)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
-    [name, description, pattern, price, startsAt, venue, venueArea, stream?.provider ?? null, stream?.videoId ?? null, stream?.url ?? null]
+    `insert into app.events
+       (name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id, stream_url, bundle_size)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+    [
+      name,
+      description,
+      pattern,
+      PACKAGE_PRICE,
+      startsAt,
+      venue,
+      venueArea,
+      stream?.provider ?? null,
+      stream?.videoId ?? null,
+      stream?.url ?? null,
+      PACKAGE_SIZE,
+    ]
   );
   await query('insert into app.event_rounds (event_id, round, pattern) values ($1, 1, $2)', [e.id, pattern]);
   await audit({ ...actorFrom(req), action: 'event.created', targetType: 'event', targetId: e.id, details: { name } });
@@ -266,19 +295,19 @@ router.patch(
       "select count(*)::int as sales from app.reservations where event_id = $1 and status in ('PENDING', 'PROOF_SUBMITTED', 'APPROVED')",
       [e.id]
     );
-    // Con ventas, precio y patrón quedan fijos: cambiarlos alteraría lo que la gente ya compró.
-    if (sales > 0 && ((b.price !== undefined && b.price !== e.price) || (b.pattern && b.pattern !== e.pattern))) {
+    // Con ventas, el patrón queda fijo: cambiarlo alteraría lo que la gente ya compró.
+    if (sales > 0 && b.pattern && b.pattern !== e.pattern) {
       throw new HttpError(409, 'EVENT_HAS_SALES');
     }
     const stream = b.stream === undefined ? undefined : b.stream;
     await query(
       `update app.events set
          name = coalesce($2, name), description = coalesce($3, description), pattern = coalesce($4, pattern),
-         price = coalesce($5, price), starts_at = coalesce($6, starts_at), status = coalesce($7, status),
-         stream_provider = case when $8 then $9 else stream_provider end,
-         stream_video_id = case when $8 then $10 else stream_video_id end,
-         stream_url = case when $8 then $11 else stream_url end,
-         venue = coalesce($12, venue), venue_area = coalesce($13, venue_area),
+         starts_at = coalesce($5, starts_at), status = coalesce($6, status),
+         stream_provider = case when $7 then $8 else stream_provider end,
+         stream_video_id = case when $7 then $9 else stream_video_id end,
+         stream_url = case when $7 then $10 else stream_url end,
+         venue = coalesce($11, venue), venue_area = coalesce($12, venue_area),
          updated_at = now()
        where id = $1`,
       [
@@ -286,7 +315,6 @@ router.patch(
         b.name ?? null,
         b.description ?? null,
         b.pattern ?? null,
-        b.price ?? null,
         b.startsAt ?? null,
         b.status ?? null,
         stream !== undefined,
@@ -552,8 +580,11 @@ router.post(
     const b = req.body;
     const actor = actorFrom(req);
     const id = await tx(async (q) => {
-      const [event] = await q("select id, price from app.events where id = $1 and status in ('SCHEDULED', 'LIVE')", [b.eventId]);
+      const [event] = await q("select id, price, bundle_size from app.events where id = $1 and status in ('SCHEDULED', 'LIVE')", [
+        b.eventId,
+      ]);
       if (!event) throw new HttpError(409, 'EVENT_NOT_ON_SALE');
+      if (!isWholeBundle(new Set(b.serials).size, event)) throw new HttpError(400, 'BUNDLE_SIZE');
       // Si el comprador tiene cuenta con ese correo, los cartones aparecen en su sesión para jugar en línea.
       const [owner] = b.email ? await q(`select id from app.users where email = $1 and ${USABLE_ACCOUNT_SQL}`, [b.email]) : [];
       const serials = [...new Set(b.serials)];
@@ -565,7 +596,7 @@ router.post(
         [
           event.id,
           owner?.id ?? null,
-          serials.length * event.price,
+          totalFor(serials.length, event),
           b.fullName,
           b.nationalId,
           b.phone,
@@ -590,6 +621,17 @@ router.post(
     });
     const view = await reservationView(await findReservation(id));
     notifyAdmins('reservation:updated', view);
+    await notifyAdminsByMail({
+      subject: `🏪 Venta en el salón · ${view.serials.length} cartón(es) · ${formatCRC(view.total)}`,
+      text: [
+        `Se registró una venta en el salón para ${view.eventName}.`,
+        `Comprador: ${b.fullName} · cédula ${b.nationalId} · ${b.phone}${b.email ? ` · ${b.email}` : ''}`,
+        `Cartones: ${view.serials.map((s) => `#${s}`).join(', ')}`,
+        `Monto: ${formatCRC(view.total)} · ${{ CASH: 'Efectivo', SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia' }[b.method]}`,
+        `Registrada por: ${req.user.email ?? 'administración'}`,
+      ].join('\n'),
+      action: { label: 'Ver la compra', url: `${env.clientOrigin}/admin/compras/${id}` },
+    });
     res.status(201).json(view);
   })
 );
@@ -615,6 +657,127 @@ router.post('/claims/:id/decision', requireUuid('id'), validateBody(z.object({ a
   const view = await decideClaim(req.params.id, req.body.approve, actorFrom(req));
   if (!view) return res.status(409).json({ error: 'NOT_DECIDABLE' });
   res.json(view);
+});
+
+/** Premio entregado a un ganador en línea (lo que se ganó: "Motocicleta", "₡50 000", "Canasta"…). */
+const prizeField = z.string().trim().min(2).max(120);
+router.patch('/claims/:id/prize', requireUuid('id'), validateBody(z.object({ prize: prizeField.nullable() })), async (req, res) => {
+  const row = await one('update app.claims set prize = $2 where id = $1 returning id', [req.params.id, req.body.prize]);
+  if (!row) return res.status(404).json({ error: 'NOT_FOUND' });
+  await audit({ ...actorFrom(req), action: 'claim.prize_set', targetType: 'claim', targetId: row.id, details: { prize: req.body.prize } });
+  notifyAdmins('claim:updated', { id: row.id });
+  res.json({ id: row.id, prize: req.body.prize });
+});
+
+// ---------------------------------------------------------------- Ganadores del salón (cartones físicos)
+const optionalText = (max) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .or(z.literal('').transform(() => undefined));
+const manualWinnerSchema = z.object({
+  name: nameField,
+  prize: prizeField,
+  pattern: z.enum(PATTERN_IDS).optional(),
+  seriesId: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  seriesLabel: optionalText(80),
+  serial: z
+    .string()
+    .trim()
+    .regex(/^\d{1,8}$/)
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  phone: optionalText(20),
+  notes: optionalText(300),
+});
+
+const manualWinnerView = (w) => ({
+  id: w.id,
+  eventId: w.event_id,
+  name: w.name,
+  prize: w.prize,
+  pattern: w.pattern,
+  seriesId: w.series_id,
+  series: w.series_name ?? w.series_label ?? null,
+  serial: w.serial,
+  phone: w.phone,
+  notes: w.notes,
+  createdAt: new Date(w.created_at).toISOString(),
+  createdBy: w.created_by_name ?? null,
+});
+const MANUAL_WINNER_SELECT = `
+  select w.*, s.name as series_name, u.name as created_by_name
+    from app.manual_winners w
+    left join app.card_series s on s.id = w.series_id
+    left join app.users u on u.id = w.created_by`;
+
+router.get('/events/:eventId/manual-winners', findEvent, async (req, res) => {
+  const rows = await query(`${MANUAL_WINNER_SELECT} where w.event_id = $1 order by w.created_at`, [req.event.id]);
+  res.json(rows.map(manualWinnerView));
+});
+
+/** Ganador del salón: se anota con nombre, premio, modalidad y la serie y número del cartón físico. Sale en Resultados. */
+router.post('/events/:eventId/manual-winners', findEvent, validateBody(manualWinnerSchema), async (req, res) => {
+  const b = req.body;
+  const row = await tx(async (q) => {
+    const [w] = await q(
+      `insert into app.manual_winners (event_id, name, prize, pattern, series_id, series_label, serial, phone, notes, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+      [
+        req.event.id,
+        b.name,
+        b.prize,
+        b.pattern ?? null,
+        b.seriesId ?? null,
+        b.seriesLabel ?? null,
+        b.serial ?? null,
+        b.phone ?? null,
+        b.notes ?? null,
+        req.user.id,
+      ]
+    );
+    await audit(
+      {
+        ...actorFrom(req),
+        action: 'winner.manual_added',
+        targetType: 'event',
+        targetId: req.event.id,
+        details: { name: b.name, prize: b.prize, serial: b.serial },
+      },
+      q
+    );
+    return w;
+  });
+  notifyAdmins('claim:updated', { eventId: req.event.id });
+  res.status(201).json(manualWinnerView(await one(`${MANUAL_WINNER_SELECT} where w.id = $1`, [row.id])));
+});
+
+router.delete('/manual-winners/:id', requireUuid('id'), async (req, res) => {
+  const row = await tx(async (q) => {
+    const [w] = await q('delete from app.manual_winners where id = $1 returning id, event_id, name, prize', [req.params.id]);
+    if (w) {
+      await audit(
+        {
+          ...actorFrom(req),
+          action: 'winner.manual_deleted',
+          targetType: 'event',
+          targetId: w.event_id,
+          details: { name: w.name, prize: w.prize },
+        },
+        q
+      );
+    }
+    return w;
+  });
+  if (!row) return res.status(404).json({ error: 'NOT_FOUND' });
+  notifyAdmins('claim:updated', { eventId: row.event_id });
+  res.status(204).end();
 });
 
 // ---------------------------------------------------------------- Usuarios
@@ -828,6 +991,14 @@ const paymentSchema = z.object({
 });
 
 router.get('/settings/payment', async (req, res) => res.json(await getPaymentSettings()));
+
+// Correos que reciben los avisos de compras y de ¡Bingo! (además de ADMIN_NOTIFY_EMAILS del servidor).
+router.get('/settings/notify-emails', async (req, res) => res.json({ emails: await getNotifyEmails(), fixed: env.adminNotifyEmails }));
+router.put('/settings/notify-emails', validateBody(z.object({ emails: z.array(emailField).max(15) })), async (req, res) => {
+  const emails = await updateNotifyEmails(req.body.emails, req.user.id);
+  await audit({ ...actorFrom(req), action: 'settings.notify_emails_updated', details: { count: emails.length } });
+  res.json({ emails, fixed: env.adminNotifyEmails });
+});
 
 router.put('/settings/payment', validateBody(paymentSchema), async (req, res) => {
   const payment = await updatePayment(req.body, req.user.id);

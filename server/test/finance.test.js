@@ -75,7 +75,7 @@ describe('finanzas: ingresos reales virtuales y físicos', () => {
     const pending = await api()
       .post('/api/reservations')
       .set(auth(buyer.token))
-      .send({ eventId: DEMO_EVENT_ID, serials: ['1295'] });
+      .send({ eventId: DEMO_EVENT_ID, serials: ['1295', '1299'] });
     assert.equal((await attachProof(pending.body.id)).body.error, 'PROOF_NOT_ATTACHABLE');
   });
 
@@ -84,7 +84,7 @@ describe('finanzas: ingresos reales virtuales y físicos', () => {
     const r = await api()
       .post('/api/reservations')
       .set(auth(buyer.token))
-      .send({ eventId: DEMO_EVENT_ID, serials: ['1296', '1297', '1298'] });
+      .send({ eventId: DEMO_EVENT_ID, serials: ['1296', '1297', '1298', '1300'] });
     const proof = api().post(`/api/reservations/${r.body.id}/proof`).set(auth(buyer.token));
     Object.entries({
       fullName: 'Luis Web',
@@ -97,12 +97,12 @@ describe('finanzas: ingresos reales virtuales y físicos', () => {
     await proof.attach('proof', TINY_PNG, { filename: 'p.png', contentType: 'image/png' });
     await api().post(`/api/admin/reservations/${r.body.id}/decision`).set(auth(admin)).send({ approve: true, method: 'SINPE' });
     const f = await finance();
-    assert.deepEqual(f.channels.WEB, { orders: 1, amount: r.body.total, cards: 3 });
+    assert.deepEqual(f.channels.WEB, { orders: 1, amount: r.body.total, cards: 4 });
     assert.equal(f.income, f.channels.WEB.amount + f.channels.MANUAL.amount);
     // Serie diaria: 14 días y hoy suma todo lo verificado en la prueba (virtual y físico por separado).
     assert.equal(f.incomeByDay.length, 14);
     assert.deepEqual(f.incomeByDay.at(-1), { day: f.incomeByDay.at(-1).day, web: f.channels.WEB.amount, salon: f.channels.MANUAL.amount });
-    assert.equal((await stats()).soldWeb, 3);
+    assert.equal((await stats()).soldWeb, 4);
   });
 });
 
@@ -168,7 +168,7 @@ describe('finanzas: gastos con factura y balance', () => {
   it('el libro para Excel trae cada ingreso y cada gasto con su comprobante', async () => {
     const res = await api().get(`/api/admin/events/${DEMO_EVENT_ID}/finance/export.csv`).set(auth(admin));
     assert.match(res.headers['content-type'], /text\/csv/);
-    assert.match(res.text, /"Ingreso","Físico \(salón\)",.*,"4000","","Sí"/);
+    assert.match(res.text, /"Ingreso","Físico \(salón\)",.*,"3000","","Sí"/);
     assert.match(res.text, /"Gasto","LOCAL","Alquiler del salón","Transferencia","FAC-001","","150000","Sí"/);
     assert.match(res.text, /Virtual \(en línea\)/);
     assert.match(res.text, /Gasto/);

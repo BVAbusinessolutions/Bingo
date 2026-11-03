@@ -31,3 +31,26 @@ export async function updatePayment(value, actorId) {
   cache = null;
   return getPayment();
 }
+
+// ---------------------------------------------------------------- Correos de avisos
+let notifyCache = null;
+
+/** Correos agregados desde el panel que reciben los avisos de compras y de ¡Bingo! (además de ADMIN_NOTIFY_EMAILS). */
+export async function getNotifyEmails() {
+  if (!notifyCache) {
+    const row = await one("select value from app.settings where key = 'notify_emails'");
+    notifyCache = Array.isArray(row?.value?.emails) ? row.value.emails : [];
+  }
+  return [...notifyCache];
+}
+
+export async function updateNotifyEmails(emails, actorId) {
+  const clean = [...new Set(emails.map((e) => e.trim().toLowerCase()))];
+  await query(
+    `insert into app.settings (key, value, updated_at, updated_by) values ('notify_emails', $1, now(), $2)
+     on conflict (key) do update set value = excluded.value, updated_at = now(), updated_by = excluded.updated_by`,
+    [JSON.stringify({ emails: clean }), actorId]
+  );
+  notifyCache = null;
+  return getNotifyEmails();
+}

@@ -21,6 +21,7 @@ import {
   reservationView,
 } from './reservations.service.js';
 import { HttpError } from '../../utils/httpError.js';
+import { isWholeBundle, totalFor } from '../../domain/pricing.js';
 
 const router = Router();
 const MAX_CARDS_PER_RESERVATION = 20;
@@ -48,7 +49,7 @@ router.post('/', authenticate, reservationLimiter, validateBody(createSchema), a
 
   try {
     const reservationId = await tx(async (q) => {
-      const [event] = await q("select id, price from app.events where id = $1 and status = 'SCHEDULED' for share", [eventId]);
+      const [event] = await q("select id, price, bundle_size from app.events where id = $1 and status = 'SCHEDULED' for share", [eventId]);
       if (!event) throw new HttpError(409, 'EVENT_NOT_ON_SALE');
 
       const [{ pending }] = await q("select count(*)::int as pending from app.reservations where user_id = $1 and status = 'PENDING'", [
@@ -58,10 +59,12 @@ router.post('/', authenticate, reservationLimiter, validateBody(createSchema), a
 
       const wanted = serials ? [...new Set(serials)] : null;
       const count = wanted ? wanted.length : quantity;
+      // Venta por paquetes ("2 cartones por ₡3 000"): solo cantidades completas.
+      if (!isWholeBundle(count, event)) throw new HttpError(400, 'BUNDLE_SIZE');
       const [r] = await q(
         `insert into app.reservations (event_id, user_id, status, total, expires_at)
          values ($1, $2, 'PENDING', $3, $4) returning id`,
-        [eventId, req.user.id, count * event.price, new Date(Date.now() + RESERVATION_TTL_MS)]
+        [eventId, req.user.id, totalFor(count, event), new Date(Date.now() + RESERVATION_TTL_MS)]
       );
 
       // Solo se apartan cartones que siguen AVAILABLE en este instante: dos personas no pueden apartar el mismo.
@@ -200,7 +203,7 @@ router.post(
       subject: 'Recibimos tu comprobante · Bingo Hogar Sol',
       text: `Hola ${fullName}, recibimos tu comprobante. Tus cartones (${serials}) están en verificación; te avisaremos por este medio cuando se apruebe el pago.`,
     });
-    notifyAdminsByMail({
+    await notifyAdminsByMail({
       subject: `${duplicates.length ? '⚠ Comprobante repetido' : '🛒 Nueva compra por verificar'} · ${formatCRC(view.total)}`,
       text: [
         ...duplicateWarning,

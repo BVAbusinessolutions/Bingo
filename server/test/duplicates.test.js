@@ -14,7 +14,7 @@ const buyer = { fullName: 'Ana Duplicada', nationalId: '1-1111-1111', phone: '88
 /** Reserva y envía comprobante. Devuelve el id de la reserva. */
 async function purchase(serial, reference, image = TINY_PNG) {
   const client = await newVerifiedClient();
-  const r = await api().post('/api/reservations').set(auth(client.token)).send({ eventId: DEMO_EVENT_ID, serials: [serial] });
+  const r = await api().post('/api/reservations').set(auth(client.token)).send({ eventId: DEMO_EVENT_ID, serials: [serial, String(Number(serial) - 150)] }); // se vende de 2 en 2
   assert.equal(r.status, 201);
   const req = api().post(`/api/reservations/${r.body.id}/proof`).set(auth(client.token));
   Object.entries({ ...buyer, reference }).forEach(([k, v]) => req.field(k, v));

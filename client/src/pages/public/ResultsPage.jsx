@@ -5,7 +5,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import { PATTERNS } from '../../constants/patterns';
-import { formatDate } from '../../lib/format';
+import { formatDate, seriesText } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
 import EventCountdown, { EventFacts } from '../../components/event/EventCountdown';
 import PrizesShowcase from '../../components/event/PrizesShowcase';
@@ -53,10 +53,19 @@ function EventResult({ event }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-lg font-black text-fg">{w.name}</span>
+                    {w.prize && <span className="block font-extrabold text-sol-red dark:text-sol-gold">🎁 {w.prize}</span>}
+                    {/* Solo los datos que existen: los ganadores del salón pueden no tener número de cartón o bolas. */}
                     <span className="text-fg-muted">
-                      Cartón #{w.serial} · {w.round > 1 || event.round > 1 ? `Ronda ${w.round} · ` : ''}
-                      {PATTERNS[w.pattern ?? event.pattern]?.label} · con {w.calledCount} bolas ·{' '}
-                      {w.channel === 'SALON' ? 'en el salón' : 'en línea'}
+                      {[
+                        w.serial && `Cartón #${w.serial}`,
+                        w.series && seriesText(w.series),
+                        w.round && (w.round > 1 || event.round > 1) && `Ronda ${w.round}`,
+                        PATTERNS[w.pattern ?? event.pattern]?.label,
+                        w.calledCount != null && `con ${w.calledCount} bolas`,
+                        w.channel === 'SALON' ? 'en el salón' : 'en línea',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </span>
                   </span>
                 </li>

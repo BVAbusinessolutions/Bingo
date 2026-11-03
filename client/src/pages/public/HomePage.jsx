@@ -1,6 +1,18 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, ChevronDown, ChevronRight, CreditCard, HeartHandshake, MousePointerClick, PartyPopper, Radio, Ticket, Trophy, UserPlus } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  CreditCard,
+  HeartHandshake,
+  MousePointerClick,
+  PartyPopper,
+  Radio,
+  Ticket,
+  Trophy,
+  UserPlus,
+} from 'lucide-react';
 import { eventsApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentEvent } from '../../hooks/useCurrentEvent';
@@ -10,7 +22,8 @@ import EventCountdown, { EventFacts, eventPlace } from '../../components/event/E
 import PrizesShowcase from '../../components/event/PrizesShowcase';
 import { BrandBadge } from '../../components/brand/BrandLogo';
 import { PATTERNS } from '../../constants/patterns';
-import { formatCRC, formatDate } from '../../lib/format';
+import { priceLabel } from '../../lib/pricing';
+import { formatDate } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
 
 const STEPS = [
@@ -25,7 +38,7 @@ function EventStats({ event }) {
   return (
     <dl className="grid grid-cols-3 gap-2 text-center">
       {[
-        ['Precio', formatCRC(event.price)],
+        ['Precio', priceLabel(event)],
         ['Se juega', PATTERNS[event.pattern]?.label],
         ['Disponibles', event.available],
       ].map(([k, v]) => (
@@ -140,7 +153,9 @@ function LatestWinnerPanel({ state }) {
       <ol className="grid gap-2 sm:grid-cols-2">
         {event.winners.map((w, i) => (
           <li key={`${w.serial}-${i}`} className="flex items-center gap-3 rounded-2xl bg-white/5 p-3 ring-1 ring-white/10">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent font-display font-bold text-navy-950">{i + 1}</span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent font-display font-bold text-navy-950">
+              {i + 1}
+            </span>
             <span className="min-w-0">
               <span className="block truncate font-semibold">{w.name}</span>
               <span className="text-sm text-white/70">
@@ -150,7 +165,10 @@ function LatestWinnerPanel({ state }) {
           </li>
         ))}
       </ol>
-      <Link to={PATHS.results} className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent underline-offset-4 hover:underline">
+      <Link
+        to={PATHS.results}
+        className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent underline-offset-4 hover:underline"
+      >
         Ver todos los resultados <ChevronRight className="h-4 w-4" aria-hidden />
       </Link>
     </div>
@@ -240,7 +258,8 @@ export default function HomePage() {
               <HeartHandshake className="h-5 w-5 text-accent" aria-hidden /> Bingo benéfico · Asociación Infantil Hogar Sol
             </p>
             <h1 className="font-display text-4xl font-bold sm:text-5xl lg:text-6xl">
-              Juega bingo y <span className="bg-linear-to-r from-accent to-accent-strong bg-clip-text text-transparent">ayuda a la niñez</span>
+              Juega bingo y{' '}
+              <span className="bg-linear-to-r from-accent to-accent-strong bg-clip-text text-transparent">ayuda a la niñez</span>
             </h1>
             <p className="mx-auto max-w-xl text-lg text-white/80 sm:text-xl lg:mx-0">
               {place ? `Juega en el ${place} o desde tu casa. ` : 'Juega desde tu casa o en el salón del evento. '}
@@ -253,7 +272,7 @@ export default function HomePage() {
                 </Button>
               ) : (
                 <Button to={PATHS.catalog} variant="gold" size="lg" icon={Ticket}>
-                  Comprar cartones{event ? ` · ${formatCRC(event.price)}` : ''}
+                  Comprar cartones{event ? ` · ${priceLabel(event)}` : ''}
                 </Button>
               )}
               {!isAuthenticated && (

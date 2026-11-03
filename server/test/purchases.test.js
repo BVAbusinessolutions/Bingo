@@ -31,7 +31,7 @@ describe('reservas', () => {
     const res = await api()
       .post('/api/auth/register')
       .send({ name: 'Sin Verificar', email: `sv${Date.now()}@example.com`, password: 'Clave12345', acceptTerms: true });
-    const r = await reserve(res.body.accessToken, ['1100']);
+    const r = await reserve(res.body.accessToken, ['1100', '1101']);
     assert.equal(r.status, 403);
     assert.equal(r.body.error, 'EMAIL_NOT_VERIFIED');
   });
@@ -47,7 +47,7 @@ describe('reservas', () => {
 
   it('nadie puede ver ni pagar la reserva de otra persona (IDOR)', async () => {
     const [owner, other] = await Promise.all([newVerifiedClient(), newVerifiedClient()]);
-    const r = await reserve(owner.token, ['1210']);
+    const r = await reserve(owner.token, ['1210', '1211']);
     assert.equal((await api().get(`/api/reservations/${r.body.id}`).set(auth(other.token))).status, 404);
     assert.equal((await sendProof(other.token, r.body.id, { ...buyer, reference: 'ABC1234' })).status, 404);
     assert.equal((await api().delete(`/api/reservations/${r.body.id}`).set(auth(other.token))).status, 404);
@@ -55,9 +55,9 @@ describe('reservas', () => {
 
   it('la reserva vencida libera sus cartones', async () => {
     const client = await newVerifiedClient();
-    const r = await reserve(client.token, ['1215']);
+    const r = await reserve(client.token, ['1215', '1216']);
     await query("update app.reservations set expires_at = now() - interval '1 minute' where id = $1", [r.body.id]);
-    const again = await reserve((await newVerifiedClient()).token, ['1215']);
+    const again = await reserve((await newVerifiedClient()).token, ['1215', '1216']);
     assert.equal(again.status, 201);
     const old = await one('select status from app.reservations where id = $1', [r.body.id]);
     assert.equal(old.status, 'EXPIRED');
@@ -73,7 +73,7 @@ describe('compra completa: comprobante, aviso al admin y aprobación', () => {
     const r = await reserve(client.token, ['1250', '1251']);
     assert.equal(r.status, 201);
     assert.equal(r.body.payment.detail, 'Bingo');
-    assert.equal(r.body.total, 4000);
+    assert.equal(r.body.total, 3000); // 2 cartones = 1 paquete
     reservationId = r.body.id;
   });
 
@@ -174,7 +174,7 @@ describe('venta manual y exportación', () => {
       .set(auth(admin))
       .send({
         eventId: DEMO_EVENT_ID,
-        serials: ['1261'],
+        serials: ['1261', '1263'],
         fullName: 'Otra Persona',
         nationalId: '3-3333-3333',
         phone: '8777-1111',
@@ -189,7 +189,7 @@ describe('venta manual y exportación', () => {
       .set(auth(admin))
       .send({
         eventId: DEMO_EVENT_ID,
-        serials: ['1262'],
+        serials: ['1262', '1264'],
         fullName: 'Pedro Ruiz',
         nationalId: '4-4444-4444',
         phone: '8777-2222',

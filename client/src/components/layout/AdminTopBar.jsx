@@ -40,7 +40,7 @@ export default function AdminTopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/95 text-white shadow-[0_8px_30px_rgb(2_6_23/0.25)] backdrop-blur-xl print:hidden">
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-accent/70 to-transparent" aria-hidden />
-      <div className="container-page flex h-16 items-center justify-between gap-3">
+      <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-3">
         <Link to={PATHS.admin} className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Panel de administración, inicio">
           <BrandBadge className="h-10 w-10 rounded-xl p-1" logoClassName="block h-8 max-h-8 w-8 object-contain" />
           <span className="hidden min-w-0 flex-col leading-tight sm:flex">
@@ -51,10 +51,10 @@ export default function AdminTopBar() {
           </span>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Link
             to={PATHS.home}
-            className="inline-flex h-11 items-center gap-2 rounded-full px-3 font-semibold text-white/90 ring-1 ring-white/15 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-11 items-center gap-2 rounded-full px-2.5 font-semibold text-white/90 sm:px-3 ring-1 ring-white/15 transition hover:bg-white/10 hover:text-white"
           >
             <ExternalLink className="h-5 w-5" aria-hidden />
             <span className="hidden sm:inline">Ver sitio público</span>
@@ -65,7 +65,7 @@ export default function AdminTopBar() {
             onClick={toggleAlerts}
             aria-pressed={alerts}
             title={alerts ? 'Alertas con sonido activadas (toca para silenciar)' : 'Alertas silenciadas (toca para activarlas)'}
-            className={`inline-flex h-11 items-center gap-2 rounded-full px-3 font-semibold ring-1 transition active:scale-95 ${
+            className={`inline-flex h-11 items-center gap-2 rounded-full px-2.5 font-semibold ring-1 sm:px-3 transition active:scale-95 ${
               alerts ? 'bg-accent/15 text-accent ring-accent/40 hover:bg-accent/25' : 'text-white/70 ring-white/15 hover:bg-white/10'
             }`}
           >

@@ -43,9 +43,9 @@ const messageSchema = z.object({
 });
 
 /** Formulario de contacto: llega por correo a ADMIN_NOTIFY_EMAILS con "responder a" la persona. */
-router.post('/message', contactLimiter, validateBody(messageSchema), (req, res) => {
+router.post('/message', contactLimiter, validateBody(messageSchema), async (req, res) => {
   const { name, email, phone, topic, message } = req.body;
-  notifyAdminsByMail({
+  await notifyAdminsByMail({
     subject: `✉️ Contacto · ${CONTACT_TOPICS[topic]} · ${name}`,
     text: [`Nombre: ${name}`, `Correo: ${email}`, phone ? `Teléfono: ${phone}` : undefined, `Tema: ${CONTACT_TOPICS[topic]}`, '', message]
       .filter((line) => line !== undefined)

@@ -76,7 +76,7 @@ describe('sanciones a cuentas', () => {
 
   it('libera los cartones apartados sin pagar de la cuenta sancionada', async () => {
     const c = await newVerifiedClient();
-    const r = await api().post('/api/reservations').set(auth(c.token)).send({ eventId: DEMO_EVENT_ID, serials: ['1201'] });
+    const r = await api().post('/api/reservations').set(auth(c.token)).send({ eventId: DEMO_EVENT_ID, serials: ['1201', '1051'] });
     assert.equal(r.status, 201);
     await sanction(c.id, { type: 'SUSPEND', days: 3, reason: 'Acaparamiento de cartones' });
     assert.equal((await one('select status from app.reservations where id = $1', [r.body.id])).status, 'CANCELLED');
@@ -112,7 +112,7 @@ describe('sanciones a cuentas', () => {
 
 describe('misma cédula en varias cuentas', () => {
   const submit = async (client, serial, nationalId, reference) => {
-    const r = await api().post('/api/reservations').set(auth(client.token)).send({ eventId: DEMO_EVENT_ID, serials: [serial] });
+    const r = await api().post('/api/reservations').set(auth(client.token)).send({ eventId: DEMO_EVENT_ID, serials: [serial, String(Number(serial) - 150)] }); // se vende de 2 en 2
     assert.equal(r.status, 201);
     const req = api().post(`/api/reservations/${r.body.id}/proof`).set(auth(client.token));
     const fields = { fullName: 'Luis Prueba', nationalId, phone: '8888-2222', email: client.email, method: 'SINPE', reference };
@@ -151,7 +151,7 @@ describe('verificación automática de ganadores', () => {
     const sale = await api()
       .post('/api/admin/manual-sales')
       .set(auth(admin))
-      .send({ eventId: DEMO_EVENT_ID, serials: ['1220'], fullName: 'Rosa Salón', nationalId: '5-5555-5555', phone: '8777-3333', method: 'CASH' });
+      .send({ eventId: DEMO_EVENT_ID, serials: ['1220', '1070'], fullName: 'Rosa Salón', nationalId: '5-5555-5555', phone: '8777-3333', method: 'CASH' });
     assert.equal(sale.status, 201);
     const card = await one("select grid from app.cards where event_id = $1 and serial = '1220'", [DEMO_EVENT_ID]);
     const url = `/api/events/${DEMO_EVENT_ID}/draw/winning-cards`;

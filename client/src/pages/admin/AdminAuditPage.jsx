@@ -12,6 +12,7 @@ const FILTERS = [
   ['expense', 'Gastos'],
   ['draw', 'Sorteo'],
   ['claim', 'Premios'],
+  ['winner', 'Ganadores del salón'],
   ['auth', 'Seguridad'],
   ['user', 'Usuarios'],
   ['series', 'Series'],

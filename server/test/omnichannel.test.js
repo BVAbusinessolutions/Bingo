@@ -42,7 +42,7 @@ describe('ganadores del salón', () => {
     const sale = await api()
       .post('/api/admin/manual-sales')
       .set(auth(admin))
-      .send({ eventId: DEMO_EVENT_ID, serials: ['1240'], fullName: 'Marta Salón Pérez', nationalId: '6-0666-0666', phone: '8777-4444', method: 'CASH' });
+      .send({ eventId: DEMO_EVENT_ID, serials: ['1240', '1090'], fullName: 'Marta Salón Pérez', nationalId: '6-0666-0666', phone: '8777-4444', method: 'CASH' });
     assert.equal(sale.status, 201);
     const card = await one("select id, grid from app.cards where event_id = $1 and serial = '1240'", [DEMO_EVENT_ID]);
     cardId = card.id;

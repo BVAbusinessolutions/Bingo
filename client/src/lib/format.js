@@ -19,11 +19,12 @@ const ERRORS = {
   PROOF_REQUIRED: 'Adjunta la foto o el PDF del comprobante.',
   NOT_REFUNDABLE: 'Solo se pueden reembolsar compras aprobadas.',
   EVENT_ALREADY_STARTED: 'El sorteo ya empezó: esa acción ya no está permitida.',
-  EVENT_HAS_SALES: 'El evento ya tiene ventas: no se puede cambiar el precio, el patrón ni la serie.',
+  EVENT_HAS_SALES: 'El evento ya tiene ventas: no se puede cambiar el patrón ni la serie.',
   EVENT_NOT_PLAYABLE: 'El evento está finalizado o cancelado.',
   EVENT_CLOSED: 'El evento está cerrado y no se puede editar.',
   INVALID_STATUS_CHANGE: 'Ese cambio de estado no está permitido.',
   ALREADY_CALLED: 'Esa bola ya fue cantada.',
+  BUNDLE_SIZE: 'Los cartones se venden por paquete completo (por ejemplo, de 2 en 2).',
   PROOF_NOT_ATTACHABLE: 'Solo se adjuntan comprobantes a compras aprobadas o en revisión.',
   FILE_REQUIRED: 'Elige la foto o el PDF del comprobante.',
   ROUND_STARTED: 'La ronda ya empezó: su modalidad queda fija. Abre una nueva ronda para cambiarla.',
@@ -69,3 +70,6 @@ export const errorMessage = (err, fallback = 'Ocurrió un error. Intenta de nuev
   const msg = ERRORS[body.error];
   return (typeof msg === 'function' ? msg(body) : msg) ?? fallback;
 };
+
+/** "Serie A" para mostrar una serie de cartones, sin repetir la palabra si el nombre ya la trae ("Serie de prueba"). */
+export const seriesText = (name) => (/^serie\b/i.test(String(name).trim()) ? name : `Serie ${name}`);

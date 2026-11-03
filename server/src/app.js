@@ -109,7 +109,15 @@ async function eventJsonLd(origin) {
           ...(place ? [{ '@type': 'Place', name: e.venue || place, address: { '@type': 'PostalAddress', streetAddress: place, addressCountry: 'CR' } }] : []),
           { '@type': 'VirtualLocation', url: `${origin}/live` },
         ],
-        offers: { '@type': 'Offer', url: `${origin}/cartones`, price: e.price, priceCurrency: 'CRC', availability: 'https://schema.org/InStock' },
+        // Precio por paquete: eligibleQuantity dice cuántos cartones trae ("2 cartones por ₡3 000").
+        offers: {
+          '@type': 'Offer',
+          url: `${origin}/cartones`,
+          price: e.price,
+          priceCurrency: 'CRC',
+          eligibleQuantity: { '@type': 'QuantitativeValue', value: e.bundle_size ?? 1, unitText: 'cartones' },
+          availability: 'https://schema.org/InStock',
+        },
         organizer: { '@type': 'NGO', name: 'Asociación Infantil Hogar Sol', url: `${origin}/` },
       }).replace(/</g, '\\u003c'); // nunca puede cerrar la etiqueta <script>
     }

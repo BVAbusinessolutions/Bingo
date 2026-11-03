@@ -11,6 +11,9 @@ evento «Gran Bingo Hogar Sol» (15/11/2026, 1:00 p. m., ₡2 000 por cartón) y
 - [ ] **Enlace de YouTube Live** (el día del evento): *Administración → Eventos → Editar → Transmisión → YouTube
       Live*, pegar la URL o el ID del directo y guardar. Quienes estén en la vista en vivo lo ven al instante sin
       recargar. Hasta entonces la vista en vivo no muestra video.
+- [x] **Precio fijo "2 cartones por ₡3 000"**: no se venden cartones sueltos. Lo aplica la migración 013 a los eventos
+      programados o en vivo y todo evento nuevo nace así; el panel ya no permite cambiarlo.
+- [ ] **Correos de avisos** en *Administración → Cobro y avisos*: agregar los correos que deben recibir cada compra y cada ¡Bingo!.
 - [ ] **Revisión legal** de reglamento, términos y privacidad (ver `docs/LEGAL-REVISION.md`).
 - [ ] **Confirmar con la Asociación** dos respuestas de Preguntas frecuentes: si los cartones se pueden
       transferir a otra persona y si se puede jugar fuera de San José.
@@ -85,7 +88,7 @@ exportación a Excel protegida, etc.); se puede consultar en el historial de `pe
 
 ### Administración
 
-- [x] Recaudación = solo compras aprobadas por un admin con método de cobro (cartones aprobados × precio).
+- [x] Recaudación = solo compras aprobadas por un admin con método de cobro (paquetes aprobados × precio del paquete).
 - [x] Tráfico y conversión: visitas, usuarios activos y verificados, conversión de compras, comprobantes pendientes.
 - [x] Compras con filtros y acciones en píldoras de 44 px que se acomodan en celular.
 

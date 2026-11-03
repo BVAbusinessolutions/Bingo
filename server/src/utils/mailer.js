@@ -3,6 +3,7 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 import { logger } from './logger.js';
+import { getNotifyEmails } from '../services/settings.js';
 
 export const outbox = [];
 
@@ -61,5 +62,17 @@ export function sendMail({ to, subject, text, action, replyTo }) {
   return mail;
 }
 
-/** Avisa a los administradores configurados en ADMIN_NOTIFY_EMAILS. */
-export const notifyAdminsByMail = (mail) => sendMail({ ...mail, to: env.adminNotifyEmails });
+/**
+ * Avisa a los administradores: ADMIN_NOTIFY_EMAILS del servidor y los correos agregados en el panel
+ * (Administración → Datos de cobro → Correos de avisos). Devuelve una promesa: quien quiera el correo ya en la
+ * bandeja de salida (p. ej. las pruebas) la espera; el envío por SMTP nunca bloquea la petición.
+ */
+export async function notifyAdminsByMail(mail) {
+  let extra = [];
+  try {
+    extra = await getNotifyEmails();
+  } catch (err) {
+    logger.error('mail.notify_list_failed', { message: err.message }); // sin la lista, igual llegan los del servidor
+  }
+  return sendMail({ ...mail, to: [...new Set([...env.adminNotifyEmails, ...extra])] });
+}

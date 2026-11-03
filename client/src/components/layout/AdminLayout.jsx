@@ -197,7 +197,7 @@ export default function AdminLayout() {
         { to: PATHS.adminEvents, label: 'Eventos', Icon: CalendarDays },
         { to: PATHS.adminSeries, label: 'Series', Icon: Layers },
         { to: PATHS.adminCards, label: 'Cartones', Icon: Grid3x3 },
-        { to: PATHS.adminSettings, label: 'Datos de cobro', Icon: Landmark },
+        { to: PATHS.adminSettings, label: 'Cobro y avisos', Icon: Landmark },
       ],
     },
     {

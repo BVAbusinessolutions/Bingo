@@ -110,7 +110,7 @@ export default function AdminPurchasesPage() {
         </div>
         {/* Acciones y filtros con la misma medida: píldoras de 44 px, mismo radio y espaciado; en celular
             las acciones ocupan columnas iguales y los filtros se acomodan en filas ordenadas. */}
-        <div className="grid w-full grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:w-auto [&>*]:whitespace-nowrap">
+        <div className="grid w-full grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:w-auto [&>*]:min-w-0 [&>*]:whitespace-nowrap">
           {event && ['SCHEDULED', 'LIVE'].includes(event.status) && (
             <Button
               variant="gold"
@@ -118,7 +118,8 @@ export default function AdminPurchasesPage() {
               onClick={() => setSelling(true)}
               className="h-11 min-h-11! rounded-full! px-3! text-sm sm:px-4! sm:text-base"
             >
-              Venta en salón
+              <span className="min-[360px]:hidden">Salón</span>
+              <span className="hidden min-[360px]:inline">Venta en salón</span>
             </Button>
           )}
           <Button
@@ -156,7 +157,7 @@ export default function AdminPurchasesPage() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setStatus(s)}
-                className={`group flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-xl px-3 text-sm font-extrabold transition duration-200 active:scale-95 lg:flex-1 lg:justify-center ${
+                className={`group flex min-h-12 min-w-0 items-center justify-between gap-2 rounded-xl px-2.5 text-left text-sm font-extrabold leading-tight transition sm:px-3 duration-200 active:scale-95 lg:flex-1 lg:justify-center ${
                   active
                     ? 'bg-sol-blue text-white shadow-md dark:bg-sol-gold dark:text-sol-blue'
                     : 'text-fg-muted hover:bg-muted hover:text-fg'
@@ -165,7 +166,7 @@ export default function AdminPurchasesPage() {
                 <span className="flex min-w-0 items-center gap-2">
                   {/* En celular sin ícono: así el nombre completo cabe junto al conteo */}
                   <Icon className="hidden h-4 w-4 shrink-0 sm:block" aria-hidden />
-                  <span className="truncate">{label}</span>
+                  <span className="hyphens-auto sm:truncate">{label}</span>
                 </span>
                 <span
                   className={`grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1.5 text-xs tabular-nums ${

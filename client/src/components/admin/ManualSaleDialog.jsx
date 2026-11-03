@@ -6,6 +6,7 @@ import Field from '../ui/Field';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { errorMessage, formatCRC } from '../../lib/format';
+import { bundleSizeOf, isWholeBundle, totalFor } from '../../lib/pricing';
 
 const EMPTY = { serials: '', fullName: '', nationalId: '', phone: '', email: '', method: 'CASH', reference: '' };
 
@@ -93,7 +94,12 @@ export default function ManualSaleDialog({ event, onClose, onDone }) {
         />
         {serials.length > 0 && (
           <p className="font-bold text-fg">
-            {serials.length} cartón(es) · Total {formatCRC(serials.length * event.price)}
+            {serials.length} cartón(es) · Total {formatCRC(totalFor(serials.length, event))}
+            {!isWholeBundle(serials.length, event) && (
+              <span className="ml-2 text-sol-red dark:text-red-300">
+                · se venden de {bundleSizeOf(event)} en {bundleSizeOf(event)}
+              </span>
+            )}
           </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">

@@ -34,7 +34,7 @@ describe('recaudación', () => {
     assert.equal(await revenue(), r.body.total);
     const stats = (await api().get(`/api/admin/events/${DEMO_EVENT_ID}/stats`).set(auth(admin))).body;
     assert.equal(stats.approvedCards, 2);
-    assert.equal(stats.revenue, stats.approvedCards * (await one('select price from app.events where id = $1', [DEMO_EVENT_ID])).price);
+    assert.equal(stats.revenue, (stats.approvedCards / 2) * (await one('select price from app.events where id = $1', [DEMO_EVENT_ID])).price); // ₡ por paquete de 2
     assert.ok(stats.conversionPct > 0 && stats.conversionPct <= 100);
     // Gráfico de ventas por método: lo cobrado por transferencia, nada por SINPE.
     assert.deepEqual(stats.byMethod, {

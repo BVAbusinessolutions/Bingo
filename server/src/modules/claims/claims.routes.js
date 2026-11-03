@@ -50,9 +50,9 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
   const existing = await one(activeClaim, [card.id, event.round]);
   if (existing) return res.json(claimView(existing));
 
-  const called = (
-    await query('select number from app.draws where event_id = $1 and round = $2 order by seq', [event.id, event.round])
-  ).map((r) => r.number);
+  const called = (await query('select number from app.draws where event_id = $1 and round = $2 order by seq', [event.id, event.round])).map(
+    (r) => r.number
+  );
   if (!isWinningCard(card.grid, called, event.pattern)) return res.status(422).json({ error: 'NOT_A_WINNER' });
 
   // El índice único parcial impide dos reclamos activos del mismo cartón aunque lleguen a la vez.
@@ -72,7 +72,7 @@ router.post('/', claimLimiter, authenticate, requireEvent, validateBody(z.object
     "select serial from app.cards where event_id = $1 and owner_id = $2 and status = 'SOLD' order by serial",
     [event.id, req.user.id]
   );
-  notifyAdminsByMail({
+  await notifyAdminsByMail({
     subject: `🏆 ¡BINGO CANTADO! Cartón N.° ${card.serial} · ${patternLabel}`,
     text: [
       `¡BINGO CANTADO! en ${event.name}.`,

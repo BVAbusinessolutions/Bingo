@@ -13,6 +13,7 @@ import LoginRequiredDialog, { LOGIN_REQUIRED_TEXT } from '../../components/auth/
 import { PATHS, toPath } from '../../routing/paths';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { bundleSizeOf, isWholeBundle, priceLabel, totalFor } from '../../lib/pricing';
 
 const MAX = 20;
 const POLL_MS = 15_000;
@@ -160,7 +161,10 @@ export default function CatalogPage() {
     return <p className="mx-auto mt-20 max-w-md px-4 text-center text-fg-muted">No hay bingos con venta abierta en este momento.</p>;
   }
 
-  const total = selected.length * event.price;
+  const total = totalFor(selected.length, event);
+  const bundle = bundleSizeOf(event);
+  // Venta por paquetes: con una cantidad incompleta no se puede continuar (el servidor también lo rechaza).
+  const missingForBundle = selected.length % bundle ? bundle - (selected.length % bundle) : 0;
 
   return (
     <main className="container-page max-w-full space-y-5 overflow-x-clip pb-32 pt-6">
@@ -168,7 +172,7 @@ export default function CatalogPage() {
       <div>
         <h1 className="text-3xl font-black text-brand sm:text-4xl">Elige tus cartones</h1>
         <p className="text-lg text-fg-muted">
-          {event.name} · {formatDate(event.startsAt)} · <b className="text-fg">{formatCRC(event.price)}</b> por cartón
+          {event.name} · {formatDate(event.startsAt)} · <b className="text-fg">{priceLabel(event)}</b>
         </p>
       </div>
 
@@ -246,10 +250,15 @@ export default function CatalogPage() {
               {selected.length} cartón(es){selected.length >= MAX && ' · máximo alcanzado'}
             </p>
             <p className="text-2xl font-black text-sol-red dark:text-sol-gold">{formatCRC(total)}</p>
+            {missingForBundle > 0 && (
+              <p role="status" className="text-sm font-bold text-fg">
+                Se venden de {bundle} en {bundle}: elige {missingForBundle} más
+              </p>
+            )}
           </div>
           <button
             onClick={reserve}
-            disabled={busy || (isAuthenticated && selected.length === 0)}
+            disabled={busy || (isAuthenticated && !isWholeBundle(selected.length, event))}
             className="flex items-center gap-2 rounded-xl bg-sol-gold px-5 py-3.5 font-black text-sol-blue shadow-lg hover:bg-sol-gold-dark disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Ticket className="h-5 w-5" />}

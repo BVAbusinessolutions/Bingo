@@ -31,6 +31,7 @@ import { PATTERNS } from '../../constants/patterns';
 import { ACTIONS } from '../../constants/auditActions';
 import { PATHS } from '../../routing/paths';
 import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { priceLabel } from '../../lib/pricing';
 
 const LIVE_POLL_MS = 30_000; // respaldo si el socket se corta: las cifras nunca quedan congeladas
 
@@ -266,7 +267,7 @@ export default function AdminDashboard() {
             Icon={Coins}
             label="Recaudación verificada"
             value={formatCRC(stats.revenue)}
-            sub={`${stats.approvedCards} cartones aprobados × ${formatCRC(event?.price)}`}
+            sub={`${stats.approvedCards} cartones aprobados · ${event ? priceLabel(event) : ''}`}
             pulseKey={stats.revenue}
             accent="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
           />

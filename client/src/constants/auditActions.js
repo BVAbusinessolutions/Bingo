@@ -34,4 +34,10 @@ export const ACTIONS = Object.freeze({
   'expense.deleted': 'Gasto borrado',
   'expense.receipt_attached': 'Factura de gasto adjuntada',
   'finance.exported': 'Libro de finanzas exportado a Excel',
+  'draw.round_deleted': 'Ronda borrada (prueba)',
+  'draw.rounds_reset': 'Todas las rondas borradas (pruebas)',
+  'claim.prize_set': 'Premio anotado a un ganador',
+  'winner.manual_added': 'Ganador del salón agregado',
+  'winner.manual_deleted': 'Ganador del salón borrado',
+  'settings.notify_emails_updated': 'Correos de avisos actualizados',
 });

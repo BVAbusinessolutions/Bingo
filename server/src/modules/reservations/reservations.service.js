@@ -1,7 +1,7 @@
 import { one, query, tx } from '../../db/index.js';
 import { env } from '../../config/env.js';
 import { notifyAdmins, notifyUser } from '../../realtime.js';
-import { sendMail } from '../../utils/mailer.js';
+import { notifyAdminsByMail, sendMail } from '../../utils/mailer.js';
 import { formatCRC } from '../../utils/format.js';
 import { getPayment } from '../../services/settings.js';
 import { audit } from '../../services/audit.js';
@@ -171,7 +171,13 @@ export async function approveReservation(id, actor, method) {
     if (!r) return null;
     await q(`update app.cards set status = 'SOLD', owner_id = $2 where reservation_id = $1`, [id, r.user_id]);
     await audit(
-      { ...actor, action: 'reservation.approved', targetType: 'reservation', targetId: id, details: { total: r.total, method: r.payment_method } },
+      {
+        ...actor,
+        action: 'reservation.approved',
+        targetType: 'reservation',
+        targetId: id,
+        details: { total: r.total, method: r.payment_method },
+      },
       q
     );
     return r;
@@ -188,6 +194,19 @@ export async function approveReservation(id, actor, method) {
       `Entra a la página con tu cuenta para verlos, imprimirlos y jugar en vivo el día del sorteo.\n` +
       `¡Gracias por apoyar a la Asociación Infantil Hogar Sol!`,
     action: { label: 'Ver mis cartones', url: `${env.clientOrigin}/mis-compras/${id}` },
+  });
+  // Copia de la confirmación para la Asociación (ADMIN_NOTIFY_EMAILS y los correos de avisos del panel).
+  await notifyAdminsByMail({
+    subject: `✅ Compra confirmada · ${view.serials.length} cartón(es) · ${formatCRC(r.total)}`,
+    text: [
+      `Se aprobó una compra en ${r.event_name}.`,
+      `Comprador: ${r.buyer_full_name ?? 'Sin nombre'}${r.buyer_national_id ? ` · cédula ${r.buyer_national_id}` : ''}`,
+      `Contacto: ${[r.buyer_email, r.buyer_phone].filter(Boolean).join(' · ') || '—'}`,
+      `Cartones: ${serialsText(view.serials)}`,
+      `Monto: ${formatCRC(r.total)} · ${{ SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia', CASH: 'Efectivo' }[r.payment_method] ?? r.payment_method ?? '—'}`,
+      `Comprobante: ${r.payment_reference ?? 'sin número'}`,
+    ].join('\n'),
+    action: { label: 'Ver la compra', url: `${env.clientOrigin}/admin/compras/${id}` },
   });
   notifyAdmins('reservation:updated', view);
   notifyUser(r.user_id, 'reservation:updated', view);

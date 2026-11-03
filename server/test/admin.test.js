@@ -133,9 +133,10 @@ describe('sorteo y reclamos', () => {
 });
 
 describe('eventos', () => {
-  it('no permite cambiar precio con ventas, sí la transmisión', async () => {
-    const price = await api().patch(`/api/admin/events/${DEMO_EVENT_ID}`).set(auth(admin)).send({ price: 5000 });
-    assert.equal(price.body.error, 'EVENT_HAS_SALES');
+  it('el precio no se edita (siempre 2 cartones por ₡3 000); con ventas el patrón queda fijo, la transmisión no', async () => {
+    const price = await api().patch(`/api/admin/events/${DEMO_EVENT_ID}`).set(auth(admin)).send({ price: 5000, bundleSize: 1 });
+    assert.equal(price.status, 200);
+    assert.deepEqual([price.body.price, price.body.bundleSize], [3000, 2]);
     const stream = await api()
       .patch(`/api/admin/events/${DEMO_EVENT_ID}`)
       .set(auth(admin))

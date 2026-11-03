@@ -31,6 +31,7 @@ export const claimView = (c) => ({
   calledCount: c.called_count,
   round: c.round,
   pattern: c.pattern, // modalidad con la que se validó (la de su ronda)
+  prize: c.prize ?? null, // premio entregado (lo anota la administración)
   createdAt: iso(c.created_at),
   decidedAt: iso(c.decided_at),
 });

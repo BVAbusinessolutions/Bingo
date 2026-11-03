@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarPlus, Layers, Pencil, Play, Square, X } from 'lucide-react';
+import { CalendarPlus, Layers, Lock, Pencil, Play, Square, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import Field from '../../components/ui/Field';
@@ -9,8 +9,9 @@ import Alert from '../../components/ui/Alert';
 import StatusBadge from '../../components/ui/StatusBadge';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { PATTERNS } from '../../constants/patterns';
-import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { errorMessage, formatDate } from '../../lib/format';
 import { useReveal } from '../../hooks/useReveal';
+import { priceLabel } from '../../lib/pricing';
 
 const selectCls = 'mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg';
 
@@ -25,7 +26,6 @@ const formFrom = (ev) => ({
   name: ev?.name ?? '',
   description: ev?.description ?? '',
   pattern: ev?.pattern ?? 'FULL',
-  price: String(ev?.price ?? 2000),
   startsAt: toLocalInput(ev?.startsAt),
   venue: ev?.venue ?? '',
   venueArea: ev?.venueArea ?? '',
@@ -78,7 +78,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
       await onSubmit({
         name: form.name.trim(),
         description: form.description.trim(),
-        ...(!locked && { pattern: form.pattern, price: Number(form.price) }),
+        ...(!locked && { pattern: form.pattern }),
         startsAt: new Date(form.startsAt).toISOString(),
         venue: form.venue.trim(),
         venueArea: form.venueArea.trim(),
@@ -102,7 +102,13 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
         hint="Ej.: ¡Gana 1 moto y muchos premios más!"
       />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Precio por cartón (₡)" type="number" min="0" value={form.price} onChange={set('price')} disabled={locked} />
+        <div className="block">
+          <span className="font-bold text-fg">Precio</span>
+          <p className="mt-1.5 flex min-h-12 items-center gap-2 rounded-xl border-2 border-dashed border-line bg-muted px-4 font-black text-fg">
+            <Lock className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden /> {priceLabel(initial)}
+          </p>
+          <p className="mt-1 text-sm text-fg-muted">Fijo para todos los bingos: no se venden cartones sueltos.</p>
+        </div>
         <label className="block">
           <span className="font-bold text-fg">Modalidad de la primera ronda</span>
           <select value={form.pattern} onChange={set('pattern')} disabled={locked} className={selectCls}>
@@ -116,7 +122,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
       </div>
       {locked && (
         <p className="text-sm text-fg-muted">
-          El precio y el patrón no se pueden cambiar aquí porque ya hay ventas. La modalidad de cada ronda se elige en Bingo Master.
+          El patrón no se puede cambiar aquí porque ya hay ventas. La modalidad de cada ronda se elige en Bingo Master.
         </p>
       )}
       <Field
@@ -292,7 +298,7 @@ function EventCard({ ev, series, onChanged }) {
         <StatusBadge status={ev.status} />
       </header>
       <p className="text-fg-muted">
-        {formatCRC(ev.price)} por cartón · {PATTERNS[ev.pattern]?.label} · {ev.total - ev.available}/{ev.total} cartones ocupados
+        {priceLabel(ev)} · {PATTERNS[ev.pattern]?.label} · {ev.total - ev.available}/{ev.total} cartones ocupados
         {ev.seriesName && ` · Serie: ${ev.seriesName}`}
       </p>
 

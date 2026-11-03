@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Dices, History, Keyboard, Layers3, Undo2 } from 'lucide-react';
+import { AlertTriangle, Dices, History, Keyboard, Layers3, Trash2, Undo2 } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { drawApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -59,6 +59,8 @@ export default function AdminDrawPage() {
   const [error, setError] = useState('');
   const [typed, setTyped] = useState('');
   const [nextPattern, setNextPattern] = useState(null); // diálogo "Nueva ronda" abierto con esta modalidad
+  const [deleting, setDeleting] = useState(null); // { round } una ronda, o { all: true } todas (pruebas)
+  const [notice, setNotice] = useState('');
 
   const loadRounds = useCallback(() => {
     if (eventId)
@@ -80,6 +82,7 @@ export default function AdminDrawPage() {
   const run = async (fn) => {
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const state = await fn();
       setCalled(state.called);
@@ -116,6 +119,25 @@ export default function AdminDrawPage() {
     const n = randomRemaining(called);
     if (n) callNumber(n);
   };
+  // Rondas de prueba: se borran con advertencia; el servidor renumera y, sin bolas, reabre la venta.
+  const removeRounds = async () => {
+    const target = deleting;
+    let reopened = false;
+    const ok = await run(async () => {
+      const state = target.all ? await drawApi.resetRounds(eventId) : await drawApi.deleteRound(eventId, target.round);
+      reopened = state.reopened;
+      return state;
+    });
+    if (ok) {
+      setDeleting(null);
+      setNotice(
+        target.all
+          ? 'Se borraron todas las rondas. El sorteo empieza de cero en la ronda 1.'
+          : `Se borró la ronda ${target.round}.${reopened ? ' Ya no quedan bolas cantadas: el evento volvió a "Programado" y la venta en línea se reabrió.' : ''}`
+      );
+    }
+  };
+
   const startRound = async () => {
     if (await run(() => drawApi.newRound(eventId, nextPattern))) setNextPattern(null);
   };
@@ -259,9 +281,22 @@ export default function AdminDrawPage() {
       {/* Historial de rondas */}
       {rounds.length > 0 && (
         <div className="surface p-4">
-          <h2 className="mb-3 flex items-center gap-2 font-black text-fg">
-            <History className="h-5 w-5 text-brand" aria-hidden /> Rondas de este evento
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-black text-fg">
+              <History className="h-5 w-5 text-brand" aria-hidden /> Rondas de este evento
+            </h2>
+            {!closed && rounds.some((r) => r.called > 0) && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={Trash2}
+                onClick={() => setDeleting({ all: true })}
+                className="rounded-full! text-sol-red!"
+              >
+                Borrar todas (pruebas)
+              </Button>
+            )}
+          </div>
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {rounds.map((r) => (
               <li
@@ -278,10 +313,51 @@ export default function AdminDrawPage() {
                     {r.called} bolas · {r.winners} {r.winners === 1 ? 'ganador' : 'ganadores'} · {formatDate(r.startedAt)}
                   </p>
                 </div>
+                {!closed && (r.called > 0 || rounds.length > 1) && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(r)}
+                    aria-label={`Borrar la ronda ${r.round}`}
+                    title="Borrar esta ronda (por ejemplo, una prueba)"
+                    className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted transition hover:bg-sol-red/10 hover:text-sol-red active:scale-90"
+                  >
+                    <Trash2 className="h-5 w-5" aria-hidden />
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         </div>
+      )}
+
+      {notice && (
+        <Alert tone="success" title="Listo">
+          {notice}
+        </Alert>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title={deleting.all ? '¿Borrar TODAS las rondas?' : `¿Borrar la ronda ${deleting.round}?`}
+          icon={AlertTriangle}
+          confirmLabel={deleting.all ? 'Sí, borrar todas' : `Sí, borrar la ronda ${deleting.round}`}
+          confirmVariant="danger"
+          loading={busy}
+          onConfirm={removeRounds}
+          onCancel={() => setDeleting(null)}
+        >
+          <span className="block font-bold text-sol-red dark:text-red-300">Esta acción no se puede deshacer.</span>
+          <span className="mt-2 block">
+            {deleting.all
+              ? `Se borran las ${rounds.length} rondas con todas sus bolas y reclamos, también los premios confirmados. Úsalo solo para limpiar pruebas antes del bingo real.`
+              : `Se borran sus ${deleting.called} bolas y sus reclamos${
+                  deleting.winners ? `, incluidos ${deleting.winners} premio(s) confirmado(s) que dejarán de salir en Resultados` : ''
+                }. Las rondas siguientes se renumeran.`}
+          </span>
+          <span className="mt-2 block">
+            Si ya no quedan bolas cantadas, el evento vuelve a "Programado" y se reabre la venta en línea. Queda en la bitácora.
+          </span>
+        </ConfirmDialog>
       )}
 
       {nextPattern && (

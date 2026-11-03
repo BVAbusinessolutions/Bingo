@@ -25,7 +25,8 @@ export function publicEvent(e) {
     description: e.description,
     pattern: e.pattern,
     round: e.round ?? 1,
-    price: e.price,
+    price: e.price, // precio de cada paquete
+    bundleSize: e.bundle_size ?? 1, // cartones por paquete ("2 cartones por ₡3 000")
     startsAt: new Date(e.starts_at).toISOString(),
     venue: e.venue ?? '',
     venueArea: e.venue_area ?? '',
@@ -71,13 +72,25 @@ router.get('/results', async (req, res) => {
   );
   const winners = events.length
     ? await query(
-        `select cl.event_id, coalesce(u.name, r.buyer_full_name) as name, c.serial, cl.called_count, cl.channel, cl.round, cl.pattern
+        `select cl.event_id, coalesce(u.name, r.buyer_full_name) as name, c.serial, cl.called_count, cl.channel, cl.round, cl.pattern, cl.prize,
+                s.name as series
            from app.claims cl
            join app.cards c on c.id = cl.card_id
+           left join app.series_cards sc on sc.id = c.series_card_id
+           left join app.card_series s on s.id = sc.series_id
            left join app.users u on u.id = cl.user_id
            left join app.reservations r on r.id = c.reservation_id
           where cl.status = 'CONFIRMED' and cl.event_id = any($1::text[])
           order by cl.created_at`,
+        [events.map((e) => e.id)]
+      )
+    : [];
+  // Ganadores del salón anotados a mano (cartones físicos).
+  const manual = events.length
+    ? await query(
+        `select w.event_id, w.name, w.prize, w.pattern, w.serial, coalesce(s.name, w.series_label) as series
+           from app.manual_winners w left join app.card_series s on s.id = w.series_id
+          where w.event_id = any($1::text[]) order by w.created_at`,
         [events.map((e) => e.id)]
       )
     : [];
@@ -100,7 +113,23 @@ router.get('/results', async (req, res) => {
           channel: w.channel,
           round: w.round,
           pattern: w.pattern,
-        })),
+          prize: w.prize,
+          series: w.series,
+        }))
+        .concat(
+          manual
+            .filter((w) => w.event_id === e.id)
+            .map((w) => ({
+              name: publicWinnerName(w.name),
+              serial: w.serial,
+              calledCount: null,
+              channel: 'SALON',
+              round: null,
+              pattern: w.pattern,
+              prize: w.prize,
+              series: w.series,
+            }))
+        ),
     }))
   );
 });
