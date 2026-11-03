@@ -86,7 +86,10 @@ const requireEvent = async (req, res, next) => {
   return req.event ? next() : res.status(404).json({ error: 'NOT_FOUND' });
 };
 
-/** Solo se canta en eventos programados o en vivo; el primer número pone el evento EN VIVO. */
+/**
+ * Solo se canta en eventos programados o en vivo. Cantar NO cambia el estado: "En vivo" lo decide la administración
+ * (Bingo Master o Eventos). Antes de eso las bolas son de prueba y nadie puede reclamar premios.
+ */
 const requirePlayable = (req, res, next) =>
   ['SCHEDULED', 'LIVE'].includes(req.event.status) ? next() : res.status(409).json({ error: 'EVENT_NOT_PLAYABLE' });
 
@@ -107,7 +110,6 @@ drawRouter.post(
         [req.event.id, req.body.number, req.user.id]
       );
       if (!rows.length) return false;
-      await q("update app.events set status = 'LIVE', updated_at = now() where id = $1 and status = 'SCHEDULED'", [req.event.id]);
       await audit(
         { ...actorFrom(req), action: 'draw.call', targetType: 'event', targetId: req.event.id, details: { number: req.body.number } },
         q
@@ -250,9 +252,7 @@ async function settleRounds(q, e) {
       where id = $1`,
     [e.id, last]
   );
-  const [{ balls }] = await q('select count(*)::int as balls from app.draws where event_id = $1', [e.id]);
-  if (balls === 0) await q("update app.events set status = 'SCHEDULED' where id = $1 and status = 'LIVE'", [e.id]);
-  return { round: last, reopened: balls === 0 };
+  return { round: last };
 }
 
 const afterRoundsChanged = async (e) => {
@@ -303,19 +303,19 @@ drawRouter.delete('/draw/rounds/:round', authenticate, authorize('ADMIN'), requi
   });
   if (!result) return res.status(404).json({ error: 'NOT_FOUND' });
   await afterRoundsChanged(e);
-  res.json({ ...(await stateOf(e.id)), reopened: result.reopened });
+  res.json(await stateOf(e.id));
 });
 
-/** Borra TODAS las rondas del evento (pruebas antes del bingo real): queda la ronda 1 vacía y la venta reabierta. */
+/** Borra TODAS las rondas del evento (pruebas antes del bingo real): queda la ronda 1 vacía. El estado no cambia. */
 drawRouter.delete('/draw/rounds', authenticate, authorize('ADMIN'), requireEvent, requirePlayable, async (req, res) => {
   const e = req.event;
-  const result = await tx(async (q) => {
+  await tx(async (q) => {
     const [{ balls }] = await q('select count(*)::int as balls from app.draws where event_id = $1', [e.id]);
     const removedClaims = await q('delete from app.claims where event_id = $1 returning status', [e.id]);
     await q('delete from app.draws where event_id = $1', [e.id]);
     const [{ rounds }] = await q('select count(*)::int as rounds from app.event_rounds where event_id = $1', [e.id]);
     await q('delete from app.event_rounds where event_id = $1', [e.id]);
-    const settled = await settleRounds(q, e);
+    await settleRounds(q, e);
     await audit(
       {
         ...actorFrom(req),
@@ -326,10 +326,9 @@ drawRouter.delete('/draw/rounds', authenticate, authorize('ADMIN'), requireEvent
       },
       q
     );
-    return settled;
   });
   await afterRoundsChanged(e);
-  res.json({ ...(await stateOf(e.id)), reopened: result.reopened });
+  res.json(await stateOf(e.id));
 });
 
 /** Rondas del evento con su modalidad, bolas cantadas y ganadores confirmados (historial de Bingo Master). */

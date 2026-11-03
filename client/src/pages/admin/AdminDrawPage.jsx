@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Dices, History, Keyboard, Layers3, Trash2, Undo2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Dices, History, Keyboard, Layers3, Play, Radio, Trash2, Undo2 } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
-import { drawApi } from '../../api/endpoints';
+import { adminApi, drawApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
@@ -61,6 +61,7 @@ export default function AdminDrawPage() {
   const [nextPattern, setNextPattern] = useState(null); // diálogo "Nueva ronda" abierto con esta modalidad
   const [deleting, setDeleting] = useState(null); // { round } una ronda, o { all: true } todas (pruebas)
   const [notice, setNotice] = useState('');
+  const [statusConfirm, setStatusConfirm] = useState(null); // 'LIVE' para iniciar, 'SCHEDULED' para volver a programado
 
   const loadRounds = useCallback(() => {
     if (eventId)
@@ -119,24 +120,41 @@ export default function AdminDrawPage() {
     const n = randomRemaining(called);
     if (n) callNumber(n);
   };
-  // Rondas de prueba: se borran con advertencia; el servidor renumera y, sin bolas, reabre la venta.
+  // Rondas de prueba: se borran con advertencia; el servidor renumera las siguientes. El estado no cambia.
   const removeRounds = async () => {
     const target = deleting;
-    let reopened = false;
-    const ok = await run(async () => {
-      const state = target.all ? await drawApi.resetRounds(eventId) : await drawApi.deleteRound(eventId, target.round);
-      reopened = state.reopened;
-      return state;
-    });
+    const ok = await run(() => (target.all ? drawApi.resetRounds(eventId) : drawApi.deleteRound(eventId, target.round)));
     if (ok) {
       setDeleting(null);
       setNotice(
-        target.all
-          ? 'Se borraron todas las rondas. El sorteo empieza de cero en la ronda 1.'
-          : `Se borró la ronda ${target.round}.${reopened ? ' Ya no quedan bolas cantadas: el evento volvió a "Programado" y la venta en línea se reabrió.' : ''}`
+        target.all ? 'Se borraron todas las rondas. El sorteo empieza de cero en la ronda 1.' : `Se borró la ronda ${target.round}.`
       );
     }
   };
+
+  // "En vivo" lo decide la administración: cantar bolas no cambia el estado del evento.
+  const changeStatus = async () => {
+    const status = statusConfirm;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await adminApi.updateEvent(eventId, { status });
+      setLive((l) => (l ? { ...l, status } : l));
+      reloadEvents();
+      setNotice(
+        status === 'LIVE'
+          ? '¡El bingo está en vivo! Los jugadores ya pueden reclamar sus premios.'
+          : 'El evento volvió a "Programado": regresa la cuenta regresiva y se reabre la venta en línea.'
+      );
+      setStatusConfirm(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const isLive = current?.status === 'LIVE';
 
   const startRound = async () => {
     if (await run(() => drawApi.newRound(eventId, nextPattern))) setNextPattern(null);
@@ -151,6 +169,42 @@ export default function AdminDrawPage() {
         </div>
         {current && <StatusBadge status={current.status} />}
       </header>
+
+      {/* Estado del bingo: solo la administración decide cuándo empieza */}
+      {current && !closed && (
+        <div
+          className={`flex flex-col gap-3 rounded-2xl p-4 ring-1 sm:flex-row sm:items-center sm:justify-between ${
+            isLive ? 'bg-sol-red/10 ring-sol-red/30' : 'bg-sol-gold/15 ring-sol-gold/40'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {isLive ? (
+              <Radio className="mt-0.5 h-6 w-6 shrink-0 animate-pulse text-sol-red" aria-hidden />
+            ) : (
+              <CalendarClock className="mt-0.5 h-6 w-6 shrink-0 text-sol-gold-dark dark:text-sol-gold" aria-hidden />
+            )}
+            <div>
+              <p className="font-black text-fg">{isLive ? 'El bingo está EN VIVO' : 'El bingo todavía no comienza'}</p>
+              <p className="text-sm text-fg-muted">
+                {isLive
+                  ? 'Los jugadores pueden reclamar premios y la venta en línea está cerrada.'
+                  : `El inicio muestra la cuenta regresiva y la venta sigue abierta. ${
+                      started ? 'Las bolas cantadas son de prueba: nadie puede reclamar premios.' : 'Puedes cantar bolas de prueba.'
+                    }`}
+              </p>
+            </div>
+          </div>
+          {isLive ? (
+            <Button variant="outline" icon={CalendarClock} disabled={busy} onClick={() => setStatusConfirm('SCHEDULED')} className="shrink-0">
+              Volver a programado
+            </Button>
+          ) : (
+            <Button variant="danger" icon={Play} disabled={busy} onClick={() => setStatusConfirm('LIVE')} className="shrink-0">
+              Iniciar bingo en vivo
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Estado de la ronda */}
       <div className="surface grid gap-5 p-5 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
@@ -355,8 +409,26 @@ export default function AdminDrawPage() {
                 }. Las rondas siguientes se renumeran.`}
           </span>
           <span className="mt-2 block">
-            Si ya no quedan bolas cantadas, el evento vuelve a "Programado" y se reabre la venta en línea. Queda en la bitácora.
+            El estado del evento (programado o en vivo) no cambia. Queda en la bitácora.
           </span>
+        </ConfirmDialog>
+      )}
+
+      {statusConfirm && (
+        <ConfirmDialog
+          title={statusConfirm === 'LIVE' ? '¿Iniciar el bingo en vivo?' : '¿Volver el evento a programado?'}
+          icon={statusConfirm === 'LIVE' ? Play : CalendarClock}
+          confirmLabel={statusConfirm === 'LIVE' ? 'Sí, iniciar en vivo' : 'Sí, volver a programado'}
+          confirmVariant={statusConfirm === 'LIVE' ? 'danger' : 'primary'}
+          loading={busy}
+          onConfirm={changeStatus}
+          onCancel={() => setStatusConfirm(null)}
+        >
+          {statusConfirm === 'LIVE'
+            ? `Se cierra la venta en línea, el inicio cambia la cuenta regresiva por "¡El bingo está en curso!" y los jugadores pueden reclamar premios.${
+                started ? ' Si las bolas cantadas fueron de prueba, bórralas antes en "Rondas de este evento".' : ''
+              }`
+            : 'Vuelve la cuenta regresiva en el inicio y se reabre la venta en línea. Úsalo si se inició por error. Las bolas cantadas no se borran.'}
         </ConfirmDialog>
       )}
 

@@ -278,8 +278,9 @@ router.post('/events', validateBody(eventSchema), async (req, res) => {
   res.status(201).json(adminEvent(await one(`${EVENT_SELECT} where e.id = $1`, [e.id])));
 });
 
-// Transiciones válidas: programado -> en vivo / cancelado; en vivo -> finalizado / cancelado.
-const TRANSITIONS = { SCHEDULED: ['LIVE', 'CANCELLED'], LIVE: ['FINISHED', 'CANCELLED'], FINISHED: [], CANCELLED: [] };
+// Transiciones válidas: programado -> en vivo / cancelado; en vivo -> programado / finalizado / cancelado.
+// En vivo -> programado existe para corregir un inicio por error (vuelve la cuenta regresiva y se reabre la venta).
+const TRANSITIONS = { SCHEDULED: ['LIVE', 'CANCELLED'], LIVE: ['SCHEDULED', 'FINISHED', 'CANCELLED'], FINISHED: [], CANCELLED: [] };
 
 router.patch(
   '/events/:eventId',

@@ -40,6 +40,9 @@ export const JUGADOR = ['jugador@hogarsol.org', 'Jugador123!'];
 
 export const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
+/** La administración pone el evento demo EN VIVO (cantar bolas ya no lo hace solo). */
+export const goLive = () => query("update app.events set status = 'LIVE' where id = $1", [DEMO_EVENT_ID]);
+
 /** Último enlace con token enviado por correo a una ruta (/verificar-correo, /restablecer). */
 export const lastMailToken = (path) => {
   for (let i = outbox.length - 1; i >= 0; i--) {

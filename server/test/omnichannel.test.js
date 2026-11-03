@@ -1,6 +1,6 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ADMIN, DEMO_EVENT_ID, api, auth, login, newVerifiedClient, one, outbox, startApp, stopApp } from './helpers.js';
+import { goLive, ADMIN, DEMO_EVENT_ID, api, auth, login, newVerifiedClient, one, outbox, startApp, stopApp } from './helpers.js';
 
 let admin;
 before(async () => {
@@ -39,6 +39,7 @@ describe('datos del evento desde el panel', () => {
 describe('ganadores del salón', () => {
   let cardId;
   before(async () => {
+    await goLive();
     const sale = await api()
       .post('/api/admin/manual-sales')
       .set(auth(admin))

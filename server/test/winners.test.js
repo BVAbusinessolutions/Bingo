@@ -1,6 +1,6 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ADMIN, CLIENTE, DEMO_EVENT_ID, api, auth, login, newVerifiedClient, one, outbox, startApp, stopApp } from './helpers.js';
+import { goLive, ADMIN, CLIENTE, DEMO_EVENT_ID, api, auth, login, newVerifiedClient, one, outbox, startApp, stopApp } from './helpers.js';
 
 let admin;
 before(async () => {
@@ -108,6 +108,7 @@ describe('correos de avisos de compras', () => {
 
 describe('ganadores del salón (cartones físicos)', () => {
   it('se anotan con nombre, premio, modalidad, serie y número, y salen en Resultados', async () => {
+    await goLive(); // Resultados muestra los eventos en vivo o finalizados
     const series = await one('select s.id, s.name from app.card_series s join app.events e on e.series_id = s.id where e.id = $1', [
       DEMO_EVENT_ID,
     ]);
@@ -181,7 +182,6 @@ describe('borrar rondas de prueba en Bingo Master', () => {
     assert.equal(res.body.event.round, 1, 'la ronda 2 pasa a ser la 1');
     assert.equal(res.body.event.pattern, 'X');
     assert.deepEqual(res.body.called, [5, 10]);
-    assert.equal(res.body.reopened, false);
     assert.equal(await one('select count(*)::int as n from app.claims where id = $1', [claim.body.id]).then((r) => r.n), 0);
     const rounds = (await api().get(draw('/rounds')).set(auth(admin))).body;
     assert.deepEqual(
@@ -191,14 +191,33 @@ describe('borrar rondas de prueba en Bingo Master', () => {
     assert.equal((await api().delete(draw('/rounds/7')).set(auth(admin))).status, 404);
   });
 
-  it('borrar todas las rondas deja la ronda 1 vacía y reabre la venta en línea', async () => {
+  it('borrar todas las rondas deja la ronda 1 vacía y no cambia el estado: eso lo decide la administración', async () => {
     const res = await api().delete(draw('/rounds')).set(auth(admin));
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.called, []);
     assert.equal(res.body.event.round, 1);
-    assert.equal(res.body.event.status, 'SCHEDULED');
-    assert.equal(res.body.reopened, true);
+    assert.equal(res.body.event.status, 'LIVE');
     const audit = (await api().get('/api/admin/audit?action=draw').set(auth(admin))).body.entries.map((e) => e.action);
     assert.ok(audit.includes('draw.round_deleted') && audit.includes('draw.rounds_reset'));
+  });
+});
+
+describe('"En vivo" lo decide la administración', () => {
+  it('cantar bolas de prueba no pone el evento en vivo; la administración lo inicia y puede volverlo a programado', async () => {
+    const ev = (
+      await api()
+        .post('/api/admin/events')
+        .set(auth(admin))
+        .send({ name: 'Bingo de ensayo', pattern: 'FULL', startsAt: '2026-12-24T19:00:00-06:00' })
+    ).body;
+    const status = async () => (await one('select status from app.events where id = $1', [ev.id])).status;
+    assert.equal((await api().post(`/api/events/${ev.id}/draw/call`).set(auth(admin)).send({ number: 7 })).status, 200);
+    assert.equal(await status(), 'SCHEDULED', 'una bola de prueba no inicia el bingo');
+
+    assert.equal((await api().patch(`/api/admin/events/${ev.id}`).set(auth(admin)).send({ status: 'LIVE' })).status, 200);
+    assert.equal(await status(), 'LIVE');
+    const back = await api().patch(`/api/admin/events/${ev.id}`).set(auth(admin)).send({ status: 'SCHEDULED' });
+    assert.equal(back.status, 200);
+    assert.equal(await status(), 'SCHEDULED', 'un inicio por error se corrige');
   });
 });

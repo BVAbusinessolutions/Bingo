@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarPlus, Layers, Lock, Pencil, Play, Square, X } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Layers, Lock, Pencil, Play, Square, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import Field from '../../components/ui/Field';
@@ -258,6 +258,7 @@ const STATUS_ACTIONS = {
     ['CANCELLED', 'Cancelar evento', X, 'danger'],
   ],
   LIVE: [
+    ['SCHEDULED', 'Volver a programado', CalendarClock, 'outline'],
     ['FINISHED', 'Finalizar bingo', Square, 'primary'],
     ['CANCELLED', 'Cancelar evento', X, 'danger'],
   ],
@@ -336,7 +337,11 @@ function EventCard({ ev, series, onChanged }) {
       {error && <Alert tone="error">{error}</Alert>}
       {confirm && (
         <ConfirmDialog
-          title={{ LIVE: '¿Poner el evento en vivo?', FINISHED: '¿Finalizar el bingo?', CANCELLED: '¿Cancelar el evento?' }[confirm]}
+          title={
+            { LIVE: '¿Poner el evento en vivo?', SCHEDULED: '¿Volver el evento a programado?', FINISHED: '¿Finalizar el bingo?', CANCELLED: '¿Cancelar el evento?' }[
+              confirm
+            ]
+          }
           confirmLabel="Sí, continuar"
           confirmVariant={confirm === 'CANCELLED' ? 'danger' : 'primary'}
           loading={busy}
@@ -347,7 +352,9 @@ function EventCard({ ev, series, onChanged }) {
             ? 'Se cierran las compras sin aprobar y se avisa por correo a quienes enviaron comprobante. Las compras aprobadas se reembolsan desde Compras.'
             : confirm === 'FINISHED'
               ? 'Ya no se podrán cantar bolas ni reclamar premios.'
-              : 'Se cierra la venta de cartones y los jugadores podrán reclamar bingo.'}
+              : confirm === 'SCHEDULED'
+                ? 'Vuelve la cuenta regresiva en el inicio y se reabre la venta en línea. Úsalo si se inició por error.'
+                : 'Se cierra la venta de cartones, el inicio muestra que el bingo está en curso y los jugadores podrán reclamar bingo.'}
         </ConfirmDialog>
       )}
     </article>

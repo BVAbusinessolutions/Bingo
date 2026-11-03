@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
+  Clock,
   CreditCard,
   HeartHandshake,
   MousePointerClick,
@@ -64,6 +65,18 @@ function LiveNow() {
   );
 }
 
+/** Llegó la hora pero la administración todavía no inicia el bingo: no se anuncia "en curso" antes de tiempo. */
+function StartingSoon() {
+  return (
+    <div className="space-y-1 rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20">
+      <p className="flex items-center justify-center gap-2 font-display text-2xl font-bold">
+        <Clock className="h-7 w-7 text-accent" aria-hidden /> ¡Estamos por comenzar!
+      </p>
+      <p className="text-white/80">El bingo empieza en cuanto la administración lo inicie. Mantén esta página abierta.</p>
+    </div>
+  );
+}
+
 /** Tarjeta de vidrio del evento: cuenta regresiva, fecha, hora y lugar tal como los definió el panel. */
 function EventCard({ event, loading, error, onRetry }) {
   if (loading || (error && !event)) {
@@ -108,7 +121,7 @@ function EventCard({ event, loading, error, onRetry }) {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{place ? 'Presencial y en línea' : 'Próximo bingo'}</p>
         <h2 className="font-display text-2xl font-bold sm:text-3xl">{event.name}</h2>
       </div>
-      {isLive ? <LiveNow /> : <EventCountdown startsAt={event.startsAt} onDoneSlot={<LiveNow />} />}
+      {isLive ? <LiveNow /> : <EventCountdown startsAt={event.startsAt} onDoneSlot={<StartingSoon />} />}
       <EventFacts event={event} className="text-white/85 [&_svg]:text-accent [&_a]:text-accent" />
       <EventStats event={event} />
     </div>

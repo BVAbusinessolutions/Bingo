@@ -1,6 +1,6 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
+import { goLive,
   ADMIN,
   outbox,
   CLIENTE,
@@ -71,6 +71,7 @@ describe('sorteo y reclamos', () => {
   });
 
   it('el servidor valida el bingo y el admin lo confirma', async () => {
+    await goLive();
     const client = await login(...CLIENTE);
     const mine = (await api().get(`/api/events/${DEMO_EVENT_ID}/cards/mine`).set(auth(client.token))).body.cards;
     const [winner, other] = mine;

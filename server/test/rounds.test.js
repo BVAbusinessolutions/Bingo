@@ -1,6 +1,6 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ADMIN, CLIENTE, DEMO_EVENT_ID, api, auth, login, startApp, stopApp } from './helpers.js';
+import { goLive, ADMIN, CLIENTE, DEMO_EVENT_ID, api, auth, login, startApp, stopApp } from './helpers.js';
 import { PATTERNS, PATTERN_IDS, missingFor } from '../src/domain/bingo.js';
 
 let admin;
@@ -45,6 +45,7 @@ describe('modalidades de juego', () => {
 describe('rondas en Bingo Master', () => {
   let card;
   before(async () => {
+    await goLive();
     [card] = (await api().get(`/api/events/${DEMO_EVENT_ID}/cards/mine`).set(auth(client.token))).body.cards;
   });
 

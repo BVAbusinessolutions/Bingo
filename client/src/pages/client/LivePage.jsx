@@ -352,6 +352,16 @@ export default function LivePage() {
             </div>
           )}
 
+          {event?.status === 'SCHEDULED' && (
+            <div role="status" className="rounded-2xl bg-sol-gold/15 p-4 ring-1 ring-sol-gold/40 print:hidden">
+              <p className="font-black text-fg">El bingo todavía no comienza</p>
+              <p className="text-fg-muted">
+                Tus cartones ya están listos. Si ves bolas ahora, son una prueba de la administración: los premios se reclaman cuando el bingo
+                esté en vivo.
+              </p>
+            </div>
+          )}
+
           {roundNotice && (
             <div
               role="status"
