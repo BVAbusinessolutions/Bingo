@@ -20,7 +20,7 @@ import {
 import { PATHS } from '../../routing/paths';
 import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
-import { formatCRC } from '../../lib/format';
+import { formatCRC, formatDate } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
 import Button from '../ui/Button';
 import GlassSelect from '../ui/GlassSelect';
@@ -30,6 +30,24 @@ import BingoAlert from '../admin/BingoAlert';
 import AdminTopBar from './AdminTopBar';
 import { playAdminAlert, playAdminChime, unlockAudio } from '../../lib/sound';
 import { useHashScroll } from '../../hooks/useHashScroll';
+
+const EVENT_STATUS = { SCHEDULED: 'Programado', LIVE: 'En vivo', FINISHED: 'Finalizado', CANCELLED: 'Cancelado' };
+
+const SAVED_EVENT = 'admin:evento';
+const readSavedEvent = () => {
+  try {
+    return localStorage.getItem(SAVED_EVENT);
+  } catch {
+    return null;
+  }
+};
+const saveEvent = (id) => {
+  try {
+    localStorage.setItem(SAVED_EVENT, id);
+  } catch {
+    // sin almacenamiento disponible: solo no se recuerda la elección
+  }
+};
 
 const vibrate = () => {
   try {
@@ -88,9 +106,15 @@ export default function AdminLayout() {
       adminApi.events().then((list) => {
         setEvents(list);
         setEventsLoaded(true);
-        setEventId(
-          (id) => id || (list.find((e) => e.status === 'LIVE') ?? list.find((e) => e.status === 'SCHEDULED') ?? list[0])?.id || ''
-        );
+        // Evento por defecto: el que eligió la última vez (si sigue existiendo), si no el que está en vivo y,
+        // si no, el PRÓXIMO programado por fecha (antes tomaba el de fecha más lejana).
+        const upcoming = list.filter((e) => e.status === 'SCHEDULED').sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
+        setEventId((id) => {
+          if (id && list.some((e) => e.id === id)) return id;
+          const saved = readSavedEvent();
+          if (saved && list.some((e) => e.id === saved)) return saved;
+          return (list.find((e) => e.status === 'LIVE') ?? upcoming[0] ?? list[0])?.id || '';
+        });
       }),
     []
   );
@@ -235,7 +259,8 @@ export default function AdminLayout() {
       <div className="container-page grid min-h-[calc(100dvh-4rem)] content-start gap-5 py-6 lg:grid-cols-[16.5rem_minmax(0,1fr)] print:block print:min-h-0 print:py-0">
         {/* min-w-0: la barra de pestañas con scroll horizontal no debe ensanchar la columna (desbordaba en celular). */}
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 lg:[scrollbar-width:thin] print:hidden">
-          <div className="surface space-y-3 p-4">
+          {/* relative z-20: la lista del selector de evento queda por encima del menú (antes quedaba tapada). */}
+          <div className="surface relative z-20 space-y-3 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-extrabold uppercase tracking-wider text-sol-red dark:text-sol-gold">Administración</p>
               {/* Conexión en tiempo real con el servidor (no es el estado del bingo): verde = los avisos llegan al instante. */}
@@ -255,8 +280,15 @@ export default function AdminLayout() {
             <GlassSelect
               label="Evento"
               value={eventId}
-              onChange={setEventId}
-              options={events.map((e) => ({ value: e.id, label: e.name }))}
+              onChange={(id) => {
+                saveEvent(id);
+                setEventId(id);
+              }}
+              options={events.map((e) => ({
+                value: e.id,
+                label: e.name,
+                hint: `${formatDate(e.startsAt)} · ${EVENT_STATUS[e.status] ?? e.status}`,
+              }))}
             />
             {event && (
               <p className="flex items-center justify-between gap-2 text-sm text-fg-muted">

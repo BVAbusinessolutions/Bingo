@@ -74,6 +74,7 @@ export const drawApi = {
   rounds: (eventId) => http.get(`/events/${eventId}/draw/rounds`).then(data),
   deleteRound: (eventId, round) => http.delete(`/events/${eventId}/draw/rounds/${round}`).then(data),
   resetRounds: (eventId) => http.delete(`/events/${eventId}/draw/rounds`).then(data),
+  editRound: (eventId, round, pattern) => http.patch(`/events/${eventId}/draw/rounds/${round}`, { pattern }).then(data),
 };
 
 export const adminApi = {

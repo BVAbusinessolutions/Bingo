@@ -4,7 +4,7 @@ import { Check, ChevronDown } from 'lucide-react';
 /**
  * Selector en vidrio (reemplaza <select>, cuya lista desplegable la dibuja el sistema y no se puede estilizar).
  * Patrón ARIA "listbox" de un solo valor: flechas, Inicio/Fin, Enter/Espacio eligen, Escape cierra.
- *  - options: [{ value, label }]
+ *  - options: [{ value, label, hint? }] (hint: segunda línea, p. ej. fecha y estado para distinguir eventos)
  */
 export default function GlassSelect({ label, value, options, onChange, className = '' }) {
   const [open, setOpen] = useState(false);
@@ -47,7 +47,7 @@ export default function GlassSelect({ label, value, options, onChange, className
   };
 
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div ref={rootRef} className={`relative ${open ? 'z-50' : ''} ${className}`}>
       <span id={labelId} className="text-sm font-bold text-fg-muted">
         {label}
       </span>
@@ -60,7 +60,7 @@ export default function GlassSelect({ label, value, options, onChange, className
         onClick={() => setOpen((v) => !v)}
         className="glass-panel mt-1 flex h-11 w-full items-center justify-between gap-2 rounded-full px-4 text-left font-bold text-fg transition hover:border-sol-gold/60 active:scale-[0.98]"
       >
-        <span id={`${listId}-value`} className="truncate">
+        <span id={`${listId}-value`} className="min-w-0 truncate">
           {current?.label ?? 'Elegir…'}
         </span>
         <ChevronDown className={`h-5 w-5 shrink-0 text-brand transition-transform duration-200 ${open ? 'rotate-180' : ''}`} aria-hidden />
@@ -74,7 +74,7 @@ export default function GlassSelect({ label, value, options, onChange, className
           aria-labelledby={labelId}
           aria-activedescendant={`${listId}-${active}`}
           onKeyDown={onKey}
-          className="glass-panel absolute inset-x-0 z-30 mt-2 max-h-72 animate-modal-in overflow-y-auto rounded-2xl p-1.5 shadow-[0_0_0_1px_rgb(251_191_36/0.3),0_20px_45px_rgb(2_6_23/0.35)] outline-none"
+          className="absolute inset-x-0 z-50 mt-2 max-h-80 min-w-full animate-modal-in overflow-y-auto rounded-2xl border border-line bg-card p-1.5 shadow-[0_0_0_1px_rgb(251_191_36/0.3),0_20px_45px_rgb(2_6_23/0.35)] outline-none"
         >
           {options.map((o, i) => {
             const selected = o.value === value;
@@ -86,11 +86,14 @@ export default function GlassSelect({ label, value, options, onChange, className
                 aria-selected={selected}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(i)}
-                className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-3 font-semibold ${
+                className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-1.5 font-semibold ${
                   i === active ? 'bg-sol-blue/10 text-fg dark:bg-sol-gold/15' : 'text-fg'
                 } ${selected ? 'text-brand' : ''}`}
               >
-                <span className="truncate">{o.label}</span>
+                <span className="min-w-0">
+                  <span className="block truncate">{o.label}</span>
+                  {o.hint && <span className="block truncate text-xs font-medium text-fg-muted">{o.hint}</span>}
+                </span>
                 {selected && <Check className="h-4 w-4 shrink-0" aria-hidden />}
               </li>
             );

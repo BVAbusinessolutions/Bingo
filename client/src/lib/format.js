@@ -24,6 +24,7 @@ const ERRORS = {
   EVENT_CLOSED: 'El evento está cerrado y no se puede editar.',
   INVALID_STATUS_CHANGE: 'Ese cambio de estado no está permitido.',
   ALREADY_CALLED: 'Esa bola ya fue cantada.',
+  ROUND_HAS_CLAIMS: 'Esa ronda ya tiene reclamos de bingo hechos con la modalidad anterior: recházalos o borra la ronda.',
   BUNDLE_SIZE: 'Los cartones se venden por paquete completo (por ejemplo, de 2 en 2).',
   PROOF_NOT_ATTACHABLE: 'Solo se adjuntan comprobantes a compras aprobadas o en revisión.',
   FILE_REQUIRED: 'Elige la foto o el PDF del comprobante.',

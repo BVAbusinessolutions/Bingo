@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, CalendarClock, Dices, History, Keyboard, Layers3, Play, Radio, Trash2, Undo2 } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Dices, History, Keyboard, Layers3, Pencil, Play, Radio, Trash2, Undo2 } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi, drawApi } from '../../api/endpoints';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import Modal from '../../components/ui/Modal';
 import WinningCardsPanel from '../../components/admin/WinningCardsPanel';
 import PatternPicker, { PatternPreview } from '../../components/bingo/PatternPreview';
 import { COLUMN_RANGES, LETTERS, MAX_BALL, PATTERNS, letterFor } from '../../constants/patterns';
@@ -61,6 +62,7 @@ export default function AdminDrawPage() {
   const [nextPattern, setNextPattern] = useState(null); // diálogo "Nueva ronda" abierto con esta modalidad
   const [deleting, setDeleting] = useState(null); // { round } una ronda, o { all: true } todas (pruebas)
   const [notice, setNotice] = useState('');
+  const [editing, setEditing] = useState(null); // { round, pattern }: ronda cuya modalidad se corrige
   const [statusConfirm, setStatusConfirm] = useState(null); // 'LIVE' para iniciar, 'SCHEDULED' para volver a programado
 
   const loadRounds = useCallback(() => {
@@ -129,6 +131,14 @@ export default function AdminDrawPage() {
       setNotice(
         target.all ? 'Se borraron todas las rondas. El sorteo empieza de cero en la ronda 1.' : `Se borró la ronda ${target.round}.`
       );
+    }
+  };
+
+  const saveRound = async () => {
+    const target = editing;
+    if (await run(() => drawApi.editRound(eventId, target.round, target.pattern))) {
+      setEditing(null);
+      setNotice(`La ronda ${target.round} ahora se juega con ${PATTERNS[target.pattern]?.label}.`);
     }
   };
 
@@ -267,12 +277,16 @@ export default function AdminDrawPage() {
         <PatternPicker
           label={`Modalidad de la ronda ${round}`}
           value={pattern}
-          disabled={busy || started || closed}
-          onChange={(p) => p !== pattern && run(() => drawApi.setPattern(eventId, p))}
+          disabled={busy || closed}
+          onChange={(p) => {
+            if (p === pattern) return;
+            if (started) setEditing({ round, pattern: p });
+            else run(() => drawApi.setPattern(eventId, p));
+          }}
         />
         <p className="text-sm text-fg-muted">
           {started
-            ? 'La ronda ya empezó: su modalidad queda fija. Para jugar otra modalidad, abre una nueva ronda.'
+            ? 'La ronda ya empezó. Si elegiste mal la modalidad, toca la correcta y confirma. Para jugar otra modalidad, abre una nueva ronda.'
             : 'Elige cómo se gana esta ronda antes de cantar la primera bola. Los jugadores la ven en su pantalla al instante.'}
         </p>
       </div>
@@ -351,32 +365,54 @@ export default function AdminDrawPage() {
               </Button>
             )}
           </div>
-          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <p className="mb-3 text-sm text-fg-muted">
+            ¿Una ronda de prueba o con la modalidad equivocada? Corrígela o bórrala aquí. Al borrar, las rondas siguientes se renumeran.
+          </p>
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {rounds.map((r) => (
               <li
                 key={r.round}
-                className={`flex items-center gap-3 rounded-xl p-3 ring-1 ${r.current ? 'bg-sol-blue/5 ring-sol-blue dark:ring-sol-gold' : 'ring-line'}`}
+                className={`flex flex-col gap-3 rounded-2xl bg-card p-3 ring-1 ${r.current ? 'ring-2 ring-sol-blue dark:ring-sol-gold' : 'ring-line'}`}
               >
-                <PatternPreview pattern={r.pattern} active={r.current} className="h-11 w-11" />
-                <div className="min-w-0 text-sm">
-                  <p className="font-black text-fg">
-                    Ronda {r.round} · {PATTERNS[r.pattern]?.label}
-                    {r.current && <span className="ml-1.5 rounded-full bg-sol-gold px-2 text-xs text-sol-blue">en curso</span>}
-                  </p>
-                  <p className="text-fg-muted">
-                    {r.called} bolas · {r.winners} {r.winners === 1 ? 'ganador' : 'ganadores'} · {formatDate(r.startedAt)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <PatternPreview pattern={r.pattern} active={r.current} className="h-12 w-12" />
+                  <div className="min-w-0 text-sm">
+                    <p className="flex flex-wrap items-center gap-1.5 font-black text-fg">
+                      Ronda {r.round} · {PATTERNS[r.pattern]?.label}
+                      {r.current && <span className="rounded-full bg-sol-gold px-2 text-xs text-sol-blue">en curso</span>}
+                    </p>
+                    <p className="text-fg-muted">
+                      {r.called} {r.called === 1 ? 'bola' : 'bolas'} · {r.winners} {r.winners === 1 ? 'ganador' : 'ganadores'}
+                    </p>
+                    <p className="text-xs text-fg-subtle">{formatDate(r.startedAt)}</p>
+                  </div>
                 </div>
-                {!closed && (r.called > 0 || rounds.length > 1) && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(r)}
-                    aria-label={`Borrar la ronda ${r.round}`}
-                    title="Borrar esta ronda (por ejemplo, una prueba)"
-                    className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full text-fg-muted transition hover:bg-sol-red/10 hover:text-sol-red active:scale-90"
-                  >
-                    <Trash2 className="h-5 w-5" aria-hidden />
-                  </button>
+                {!closed && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Pencil}
+                      disabled={busy}
+                      onClick={() => setEditing({ round: r.round, pattern: r.pattern })}
+                      aria-label={`Cambiar la modalidad de la ronda ${r.round}`}
+                      className="rounded-full!"
+                    >
+                      Modalidad
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Trash2}
+                      disabled={busy || (r.called === 0 && rounds.length === 1)}
+                      title={r.called === 0 && rounds.length === 1 ? 'La única ronda está vacía: no hay nada que borrar' : undefined}
+                      onClick={() => setDeleting(r)}
+                      aria-label={`Borrar la ronda ${r.round}`}
+                      className="rounded-full! text-sol-red!"
+                    >
+                      Borrar
+                    </Button>
+                  </div>
                 )}
               </li>
             ))}
@@ -430,6 +466,32 @@ export default function AdminDrawPage() {
               }`
             : 'Vuelve la cuenta regresiva en el inicio y se reabre la venta en línea. Úsalo si se inició por error. Las bolas cantadas no se borran.'}
         </ConfirmDialog>
+      )}
+
+      {editing && (
+        <Modal title={`Modalidad de la ronda ${editing.round}`} icon={Pencil} onClose={() => setEditing(null)} size="max-w-3xl">
+          <div className="space-y-4">
+            <p className="text-fg-muted">
+              Corrige cómo se gana esta ronda. Las bolas cantadas se conservan y los jugadores ven el cambio al instante. Si la ronda ya
+              tiene reclamos de bingo, primero recházalos o borra la ronda.
+            </p>
+            <PatternPicker
+              compact
+              label="Nueva modalidad"
+              value={editing.pattern}
+              onChange={(p) => setEditing((x) => ({ ...x, pattern: p }))}
+            />
+            {error && <Alert tone="error">{error}</Alert>}
+            <div className="flex flex-wrap gap-2">
+              <Button icon={Pencil} loading={busy} onClick={saveRound}>
+                Guardar modalidad
+              </Button>
+              <Button variant="outline" onClick={() => setEditing(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {nextPattern && (

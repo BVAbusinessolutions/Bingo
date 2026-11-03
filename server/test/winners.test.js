@@ -221,3 +221,22 @@ describe('"En vivo" lo decide la administración', () => {
     assert.equal(await status(), 'SCHEDULED', 'un inicio por error se corrige');
   });
 });
+
+describe('editar la modalidad de una ronda del historial', () => {
+  it('se corrige aunque la ronda ya tenga bolas; con reclamos vigentes no', async () => {
+    const ev = (
+      await api().post('/api/admin/events').set(auth(admin)).send({ name: 'Bingo para editar', pattern: 'FULL', startsAt: '2026-12-24T19:00:00-06:00' })
+    ).body;
+    const url = (path) => `/api/events/${ev.id}/draw${path}`;
+    await api().post(url('/call')).set(auth(admin)).send({ number: 3 });
+    const client = await login(...CLIENTE);
+    assert.equal((await api().patch(url('/rounds/1')).set(auth(client.token)).send({ pattern: 'LINE' })).status, 403);
+    const res = await api().patch(url('/rounds/1')).set(auth(admin)).send({ pattern: 'LINE' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.event.pattern, 'LINE');
+    assert.equal((await api().patch(url('/rounds/4')).set(auth(admin)).send({ pattern: 'LINE' })).status, 404);
+    assert.equal((await api().patch(url('/rounds/1')).set(auth(admin)).send({ pattern: 'INVENTADA' })).status, 400);
+    const audit = (await api().get('/api/admin/audit?action=draw').set(auth(admin))).body.entries.map((e) => e.action);
+    assert.ok(audit.includes('draw.round_edited'));
+  });
+});

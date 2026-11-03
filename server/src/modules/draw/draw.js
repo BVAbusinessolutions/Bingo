@@ -331,6 +331,52 @@ drawRouter.delete('/draw/rounds', authenticate, authorize('ADMIN'), requireEvent
   res.json(await stateOf(e.id));
 });
 
+/**
+ * Corrige la modalidad de una ronda del historial (también la actual, aunque ya tenga bolas): por ejemplo, si se
+ * eligió la modalidad equivocada. No se permite si la ronda ya tiene reclamos vigentes, porque se ganaron con la
+ * modalidad anterior: en ese caso hay que rechazarlos o borrar la ronda.
+ */
+drawRouter.patch(
+  '/draw/rounds/:round',
+  authenticate,
+  authorize('ADMIN'),
+  requireEvent,
+  requirePlayable,
+  patternBody,
+  async (req, res) => {
+    const target = Number(req.params.round);
+    if (!Number.isInteger(target) || target < 1 || target > 99) return res.status(404).json({ error: 'NOT_FOUND' });
+    const e = req.event;
+    const { pattern } = req.body;
+    const result = await tx(async (q) => {
+      const [row] = await q('select pattern from app.event_rounds where event_id = $1 and round = $2', [e.id, target]);
+      if (!row) return 'NOT_FOUND';
+      const [{ claims }] = await q(
+        "select count(*)::int as claims from app.claims where event_id = $1 and round = $2 and status <> 'REJECTED'",
+        [e.id, target]
+      );
+      if (claims > 0) return 'ROUND_HAS_CLAIMS';
+      await q('update app.event_rounds set pattern = $3 where event_id = $1 and round = $2', [e.id, target, pattern]);
+      if (target === e.round) await q('update app.events set pattern = $2, updated_at = now() where id = $1', [e.id, pattern]);
+      await audit(
+        {
+          ...actorFrom(req),
+          action: 'draw.round_edited',
+          targetType: 'event',
+          targetId: e.id,
+          details: { round: target, from: row.pattern, to: pattern },
+        },
+        q
+      );
+      return 'OK';
+    });
+    if (result === 'NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND' });
+    if (result === 'ROUND_HAS_CLAIMS') return res.status(409).json({ error: 'ROUND_HAS_CLAIMS' });
+    await afterRoundsChanged(e);
+    res.json(await stateOf(e.id));
+  }
+);
+
 /** Rondas del evento con su modalidad, bolas cantadas y ganadores confirmados (historial de Bingo Master). */
 drawRouter.get('/draw/rounds', authenticate, authorize('ADMIN'), requireEvent, async (req, res) => {
   const rows = await query(
