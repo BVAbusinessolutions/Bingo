@@ -5,7 +5,7 @@ const env = import.meta.env;
 export const SITE = Object.freeze({
   name: 'Asociación Infantil Hogar Sol',
   shortName: 'Hogar Sol',
-  contactEmail: env.VITE_CONTACT_EMAIL ?? 'contacto@hogarsol.org',
+  contactEmail: env.VITE_CONTACT_EMAIL ?? 'promotor@hogarsol.org',
   contactPhone: env.VITE_CONTACT_PHONE ?? '+506 2222-0000',
   whatsapp: env.VITE_CONTACT_WHATSAPP ?? '50688880000', // solo dígitos, con código de país
   address: env.VITE_CONTACT_ADDRESS ?? 'San José, Costa Rica',
