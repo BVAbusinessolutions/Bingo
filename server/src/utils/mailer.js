@@ -4,6 +4,8 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 import { logger } from './logger.js';
 import { getNotifyEmails } from '../services/settings.js';
+import { query } from '../db/index.js';
+import { USABLE_ACCOUNT_SQL } from '../middleware/auth.js';
 
 export const outbox = [];
 
@@ -62,17 +64,21 @@ export function sendMail({ to, subject, text, action, replyTo }) {
   return mail;
 }
 
+/** Correos de todas las cuentas con rol ADMIN que pueden entrar (las deshabilitadas o sancionadas no). */
+const adminAccountEmails = async () =>
+  (await query(`select email from app.users where role = 'ADMIN' and ${USABLE_ACCOUNT_SQL}`)).map((r) => r.email);
+
 /**
- * Avisa a los administradores: ADMIN_NOTIFY_EMAILS del servidor y los correos agregados en el panel
- * (Administración → Datos de cobro → Correos de avisos). Devuelve una promesa: quien quiera el correo ya en la
- * bandeja de salida (p. ej. las pruebas) la espera; el envío por SMTP nunca bloquea la petición.
+ * Avisa a los administradores: cada cuenta con rol ADMIN, ADMIN_NOTIFY_EMAILS del servidor y los correos
+ * agregados en el panel (Administración → Datos de cobro → Correos de avisos). Devuelve una promesa: quien quiera
+ * el correo ya en la bandeja de salida (p. ej. las pruebas) la espera; el envío por SMTP nunca bloquea la petición.
  */
 export async function notifyAdminsByMail(mail) {
-  let extra = [];
-  try {
-    extra = await getNotifyEmails();
-  } catch (err) {
-    logger.error('mail.notify_list_failed', { message: err.message }); // sin la lista, igual llegan los del servidor
-  }
-  return sendMail({ ...mail, to: [...new Set([...env.adminNotifyEmails, ...extra])] });
+  const lists = await Promise.allSettled([adminAccountEmails(), getNotifyEmails()]);
+  const extra = lists.flatMap((r) => {
+    if (r.status === 'fulfilled') return r.value;
+    logger.error('mail.notify_list_failed', { message: r.reason?.message }); // sin una lista, igual llegan las demás
+    return [];
+  });
+  return sendMail({ ...mail, to: [...new Set([...env.adminNotifyEmails, ...extra].map((e) => e.toLowerCase()))] });
 }

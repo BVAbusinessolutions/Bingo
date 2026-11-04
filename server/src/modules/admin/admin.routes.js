@@ -993,7 +993,7 @@ const paymentSchema = z.object({
 
 router.get('/settings/payment', async (req, res) => res.json(await getPaymentSettings()));
 
-// Correos que reciben los avisos de compras y de ¡Bingo! (además de ADMIN_NOTIFY_EMAILS del servidor).
+// Correos que reciben los avisos de compras y de ¡Bingo! (además de las cuentas ADMIN y ADMIN_NOTIFY_EMAILS).
 router.get('/settings/notify-emails', async (req, res) => res.json({ emails: await getNotifyEmails(), fixed: env.adminNotifyEmails }));
 router.put('/settings/notify-emails', validateBody(z.object({ emails: z.array(emailField).max(15) })), async (req, res) => {
   const emails = await updateNotifyEmails(req.body.emails, req.user.id);

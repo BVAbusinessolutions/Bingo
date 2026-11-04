@@ -10,7 +10,7 @@ const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 
 /**
  * Correos que reciben la confirmación de cada compra (nueva compra, compra aprobada, venta en el salón) y los
- * avisos de ¡Bingo!. Se suman a los fijos del servidor (ADMIN_NOTIFY_EMAILS), que se muestran con candado.
+ * avisos de ¡Bingo!. Se suman a las cuentas con rol ADMIN y a los fijos del servidor (ADMIN_NOTIFY_EMAILS, con candado).
  */
 export default function NotifyEmails() {
   const inputId = useId();
@@ -68,6 +68,7 @@ export default function NotifyEmails() {
         </h2>
         <p className="text-fg-muted">
           Reciben la confirmación de cada compra (nueva, aprobada y venta en el salón) y cada ¡Bingo! cantado.
+          Todas las cuentas administradoras ya los reciben solas: aquí agrega otros correos (tesorería, junta…).
         </p>
       </div>
 

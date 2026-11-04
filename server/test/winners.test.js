@@ -104,6 +104,28 @@ describe('correos de avisos de compras', () => {
     assert.ok(mail.to.includes('tesoreria@hogarsol.org') && mail.to.includes('junta@hogarsol.org'));
     assert.match(mail.text, /Rita Copia/);
   });
+
+  it('cada cuenta administradora recibe los avisos; al quitarle el rol deja de recibirlos', async () => {
+    const nuevo = await newVerifiedClient();
+    const venta = async (serials) => {
+      const before = outbox.length;
+      const res = await api()
+        .post('/api/admin/manual-sales')
+        .set(auth(admin))
+        .send({ eventId: DEMO_EVENT_ID, serials, fullName: 'Rita Copia', nationalId: '1-2222-1111', phone: '8888-2222', method: 'CASH' });
+      assert.equal(res.status, 201, JSON.stringify(res.body));
+      return outbox.slice(before).find((m) => m.subject.includes('Venta en el salón'));
+    };
+    const setRole = (role) => api().patch(`/api/admin/users/${nuevo.id}`).set(auth(admin)).send({ role });
+
+    assert.equal((await setRole('ADMIN')).status, 200);
+    const conRol = await venta(['1282', '1283']);
+    assert.ok(conRol.to.includes(nuevo.email), 'el nuevo admin recibe el aviso');
+    assert.ok(conRol.to.includes(ADMIN[0]), 'el admin original también');
+
+    assert.equal((await setRole('CLIENTE')).status, 200);
+    assert.ok(!(await venta(['1284', '1285'])).to.includes(nuevo.email), 'sin el rol ya no lo recibe');
+  });
 });
 
 describe('ganadores del salón (cartones físicos)', () => {
