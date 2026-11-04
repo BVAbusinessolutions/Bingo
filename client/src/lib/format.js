@@ -59,6 +59,8 @@ const ERRORS = {
   ALREADY_CLAIMED: 'Ese cartón ya tiene un reclamo registrado.',
   CANNOT_SANCTION_ADMIN: 'Primero quítale el rol de administrador para poder sancionar la cuenta.',
   NOT_SANCTIONED: 'La cuenta no tiene ninguna sanción activa.',
+  SUPER_ADMIN_ONLY: 'Solo el admin superior puede dar o quitar el rol de administrador.',
+  SUPER_ADMIN_PROTECTED: 'La cuenta del admin superior no se puede degradar, desactivar ni sancionar.',
 };
 
 /** Mensaje en español para un error de la API; algunos usan datos de la respuesta (p. ej. la fecha de una suspensión). */

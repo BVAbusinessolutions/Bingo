@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Ban, BadgeCheck, Lock, Search, ShieldCheck, Timer, UserPlus } from 'lucide-react';
+import { Ban, BadgeCheck, Crown, Lock, Search, ShieldCheck, Timer, UserPlus } from 'lucide-react';
 import { adminApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
@@ -10,8 +10,11 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { errorMessage, formatDate } from '../../lib/format';
 import SanctionDialog from '../../components/admin/SanctionDialog';
 
-function CreateUserForm({ onCreated }) {
+function CreateUserForm({ onCreated, canManageAdmins, superAdminEmail }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' });
+  // Solo el admin superior crea administradores; la cuenta del propio admin superior la puede crear cualquier admin.
+  const allowAdmin = canManageAdmins || (Boolean(superAdminEmail) && form.email.trim().toLowerCase() === superAdminEmail);
+  const role = allowAdmin ? form.role : 'CLIENTE';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -20,7 +23,7 @@ function CreateUserForm({ onCreated }) {
     setBusy(true);
     setError('');
     try {
-      await adminApi.createUser(form);
+      await adminApi.createUser({ ...form, role });
       setForm({ name: '', email: '', password: '', role: 'ADMIN' });
       onCreated();
     } catch (err) {
@@ -46,12 +49,10 @@ function CreateUserForm({ onCreated }) {
       />
       <label className="block">
         <span className="font-bold text-fg">Rol</span>
-        <select
-          value={form.role}
-          onChange={set('role')}
-          className="mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg"
-        >
-          <option value="ADMIN">Administrador</option>
+        <select value={role} onChange={set('role')} className="mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg">
+          <option value="ADMIN" disabled={!allowAdmin}>
+            Administrador{!allowAdmin && ' (solo el admin superior)'}
+          </option>
           <option value="CLIENTE">Cliente</option>
         </select>
       </label>
@@ -79,7 +80,8 @@ const STATUS_FILTERS = [
 
 const isSanctioned = (u) => u.status === 'SUSPENDED' || u.status === 'BANNED';
 
-function UserRow({ u, isSelf, onAction, onSanction }) {
+function UserRow({ u, isSelf, canManageAdmins, onAction, onSanction }) {
+  const protectedSuper = u.superAdmin; // al admin superior nadie lo degrada, desactiva ni sanciona
   return (
     <li className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
@@ -88,6 +90,11 @@ function UserRow({ u, isSelf, onAction, onSanction }) {
           {u.role === 'ADMIN' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-sol-blue px-2 py-0.5 text-sm text-white dark:bg-sol-gold dark:text-sol-blue">
               <ShieldCheck className="h-4 w-4" aria-hidden /> Admin
+            </span>
+          )}
+          {u.superAdmin && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sol-gold px-2 py-0.5 text-sm text-sol-blue">
+              <Crown className="h-4 w-4" aria-hidden /> Admin superior
             </span>
           )}
           {u.status === 'DISABLED' && <span className="rounded-full bg-sol-red px-2 py-0.5 text-sm text-white">Desactivada</span>}
@@ -128,26 +135,30 @@ function UserRow({ u, isSelf, onAction, onSanction }) {
               Desbloquear
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              onAction(
-                u,
-                { role: u.role === 'ADMIN' ? 'CLIENTE' : 'ADMIN' },
-                u.role === 'ADMIN' ? 'Quitar rol de administrador' : 'Hacer administrador'
-              )
-            }
-          >
-            {u.role === 'ADMIN' ? 'Quitar admin' : 'Hacer admin'}
-          </Button>
+          {/* El rol lo cambia el admin superior; a su propia cuenta cualquiera la puede volver admin, nunca degradar. */}
+          {(protectedSuper ? u.role !== 'ADMIN' : canManageAdmins) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                onAction(
+                  u,
+                  { role: u.role === 'ADMIN' ? 'CLIENTE' : 'ADMIN' },
+                  u.role === 'ADMIN' ? 'Quitar rol de administrador' : 'Hacer administrador'
+                )
+              }
+            >
+              {u.role === 'ADMIN' ? 'Quitar admin' : 'Hacer admin'}
+            </Button>
+          )}
           {isSanctioned(u) ? (
             <Button size="sm" variant="success" onClick={() => onSanction(u, 'LIFT')}>
               Levantar sanción
             </Button>
           ) : (
             u.status === 'ACTIVE' &&
-            u.role !== 'ADMIN' && (
+            u.role !== 'ADMIN' &&
+            !protectedSuper && (
               <>
                 <Button size="sm" variant="outline" icon={Timer} onClick={() => onSanction(u, 'SUSPEND')}>
                   Suspender
@@ -158,19 +169,21 @@ function UserRow({ u, isSelf, onAction, onSanction }) {
               </>
             )
           )}
-          <Button
-            size="sm"
-            variant={u.status === 'ACTIVE' ? 'outline' : 'success'}
-            onClick={() =>
-              onAction(
-                u,
-                { status: u.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' },
-                u.status === 'ACTIVE' ? 'Desactivar la cuenta' : 'Reactivar la cuenta'
-              )
-            }
-          >
-            {u.status === 'ACTIVE' ? 'Desactivar' : 'Reactivar'}
-          </Button>
+          {!(protectedSuper && u.status === 'ACTIVE') && (
+            <Button
+              size="sm"
+              variant={u.status === 'ACTIVE' ? 'outline' : 'success'}
+              onClick={() =>
+                onAction(
+                  u,
+                  { status: u.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' },
+                  u.status === 'ACTIVE' ? 'Desactivar la cuenta' : 'Reactivar la cuenta'
+                )
+              }
+            >
+              {u.status === 'ACTIVE' ? 'Desactivar' : 'Reactivar'}
+            </Button>
+          )}
         </div>
       )}
     </li>
@@ -226,7 +239,7 @@ export default function AdminUsersPage() {
         </p>
       </header>
 
-      <CreateUserForm onCreated={load} />
+      <CreateUserForm onCreated={load} canManageAdmins={data?.canManageAdmins ?? false} superAdminEmail={data?.superAdminEmail} />
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <label className="relative flex-1">
@@ -284,6 +297,7 @@ export default function AdminUsersPage() {
                 key={u.id}
                 u={u}
                 isSelf={u.id === user?.id}
+                canManageAdmins={data.canManageAdmins}
                 onAction={(target, body, label) => setPending({ u: target, body, label })}
                 onSanction={(target, type) => setSanction({ u: target, type })}
               />

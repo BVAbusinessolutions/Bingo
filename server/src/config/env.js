@@ -90,6 +90,8 @@ export const env = {
   },
   seedDemoData: !isProd && process.env.SEED_DEMO !== 'false',
   seedDemoPurchases: !isProd && process.env.SEED_DEMO_PURCHASES === 'true',
+  // Admin superior: no se puede degradar, desactivar ni sancionar, y es el único que da o quita el rol de admin.
+  superAdminEmail: (process.env.SUPER_ADMIN_EMAIL ?? '').trim().toLowerCase(),
   // Correos a los que llega el aviso de cada compra nueva (separados por coma)
   adminNotifyEmails: (process.env.ADMIN_NOTIFY_EMAILS ?? '')
     .split(',')

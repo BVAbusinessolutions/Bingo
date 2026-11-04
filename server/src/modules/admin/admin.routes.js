@@ -792,8 +792,18 @@ const usersQuery = z.object({
   page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
 });
 
+/** Admin superior (SUPER_ADMIN_EMAIL en el servidor). Sin esa variable, todas las cuentas admin pueden lo mismo. */
+const isSuperAdminEmail = (email) => Boolean(env.superAdminEmail) && email?.toLowerCase() === env.superAdminEmail;
+/** Solo el admin superior da o quita el rol de admin (si está configurado). Su propia cuenta siempre puede ser admin. */
+async function canManageAdmins(actorId) {
+  if (!env.superAdminEmail) return true;
+  const actor = await one('select email from app.users where id = $1', [actorId]);
+  return isSuperAdminEmail(actor?.email);
+}
+
 const adminUserView = (u) => ({
   id: u.id,
+  superAdmin: isSuperAdminEmail(u.email),
   name: u.name,
   email: u.email,
   phone: u.phone,
@@ -820,7 +830,14 @@ router.get('/users', validateQuery(usersQuery), async (req, res) => {
        from app.users u where ${where} order by u.created_at desc limit ${pageSize} offset $4`,
     [...params, (page - 1) * pageSize]
   );
-  res.json({ total, page, pageSize, users: rows.map(adminUserView) });
+  res.json({
+    total,
+    page,
+    pageSize,
+    canManageAdmins: await canManageAdmins(req.user.id),
+    superAdminEmail: env.superAdminEmail || null,
+    users: rows.map(adminUserView),
+  });
 });
 
 router.post(
@@ -828,6 +845,9 @@ router.post(
   validateBody(z.object({ name: nameField, email: emailField, password: newPasswordField, role: z.enum(['ADMIN', 'CLIENTE']) })),
   async (req, res) => {
     const { name, email, password, role } = req.body;
+    if (role === 'ADMIN' && !isSuperAdminEmail(email) && !(await canManageAdmins(req.user.id))) {
+      return res.status(403).json({ error: 'SUPER_ADMIN_ONLY' });
+    }
     const u = await one(
       `insert into app.users (name, email, password_hash, role, email_verified) values ($1, $2, $3, $4, true)
        on conflict (email) do nothing returning *`,
@@ -852,6 +872,15 @@ router.patch(
   async (req, res) => {
     if (req.params.id === req.user.id && (req.body.role === 'CLIENTE' || req.body.status === 'DISABLED')) {
       return res.status(409).json({ error: 'CANNOT_CHANGE_SELF' }); // evita quedarse sin acceso por error
+    }
+    const target = await one('select email from app.users where id = $1', [req.params.id]);
+    if (!target) return res.status(404).json({ error: 'NOT_FOUND' });
+    if (isSuperAdminEmail(target.email) && (req.body.role === 'CLIENTE' || req.body.status === 'DISABLED')) {
+      return res.status(409).json({ error: 'SUPER_ADMIN_PROTECTED' });
+    }
+    const promotingSuper = req.body.role === 'ADMIN' && isSuperAdminEmail(target.email);
+    if (req.body.role && !promotingSuper && !(await canManageAdmins(req.user.id))) {
+      return res.status(403).json({ error: 'SUPER_ADMIN_ONLY' });
     }
     // Reactivar (status ACTIVE) también levanta cualquier suspensión o baneo.
     const u = await one(
@@ -880,8 +909,9 @@ const sanctionSchema = z.discriminatedUnion('type', [
 router.post('/users/:id/sanction', requireUuid('id'), validateBody(sanctionSchema), async (req, res) => {
   const b = req.body;
   if (req.params.id === req.user.id) return res.status(409).json({ error: 'CANNOT_CHANGE_SELF' });
-  const target = await one('select role, status from app.users where id = $1', [req.params.id]);
+  const target = await one('select role, status, email from app.users where id = $1', [req.params.id]);
   if (!target) return res.status(404).json({ error: 'NOT_FOUND' });
+  if (b.type !== 'LIFT' && isSuperAdminEmail(target.email)) return res.status(409).json({ error: 'SUPER_ADMIN_PROTECTED' });
   if (b.type !== 'LIFT' && target.role === 'ADMIN') return res.status(409).json({ error: 'CANNOT_SANCTION_ADMIN' }); // primero quitar el rol
   if (b.type === 'LIFT' && !['SUSPENDED', 'BANNED'].includes(target.status)) return res.status(409).json({ error: 'NOT_SANCTIONED' });
 

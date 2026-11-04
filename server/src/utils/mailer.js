@@ -80,5 +80,8 @@ export async function notifyAdminsByMail(mail) {
     logger.error('mail.notify_list_failed', { message: r.reason?.message }); // sin una lista, igual llegan las demás
     return [];
   });
-  return sendMail({ ...mail, to: [...new Set([...env.adminNotifyEmails, ...extra].map((e) => e.toLowerCase()))] });
+  return sendMail({
+    ...mail,
+    to: [...new Set([...env.adminNotifyEmails, env.superAdminEmail, ...extra].filter(Boolean).map((e) => e.toLowerCase()))],
+  });
 }

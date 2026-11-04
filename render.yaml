@@ -29,6 +29,8 @@ services:
         sync: false # https://tu-dominio (o la URL .onrender.com)
       - key: ADMIN_NOTIFY_EMAILS
         sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false # admin superior: no se puede degradar y es el único que da o quita el rol de admin
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

@@ -75,7 +75,8 @@ con su SMTP: solo cambian las variables.
 | Tarea | Cómo |
 |---|---|
 | Respaldo manual | `npm run backup` → `server/backups/*.json.gz` (contiene datos personales: guárdalo cifrado) |
-| Nuevo administrador | Panel → Usuarios → Crear cuenta (rol Administrador) |
+| Nuevo administrador | Panel → Usuarios → Crear cuenta (rol Administrador). Solo lo puede hacer el admin superior |
+| Admin superior | Variable `SUPER_ADMIN_EMAIL` en Render: no se puede degradar, desactivar ni sancionar, y es el único que da o quita el rol de admin |
 | Cuenta bloqueada | Panel → Usuarios → Desbloquear |
 | Revisar quién hizo qué | Panel → Bitácora |
 | Logs del servidor | Render → Logs (formato JSON, una línea por evento) |
