@@ -143,10 +143,6 @@ const SECTIONS = ({ event } = {}) => [
         <ul>
           <li>Ser mayor de edad. Si el cartón ganador lo jugó una persona menor, la retira su representante legal.</li>
           <li>
-            Contar con <strong>licencia de conducir al día</strong>, del tipo que corresponda a la cilindrada del vehículo (tipo A), emitida
-            conforme a la Ley de Tránsito por Vías Públicas Terrestres y Seguridad Vial N.° 9078.
-          </li>
-          <li>
             Presentar su cédula de identidad <strong>física y al día</strong> (o DIMEX vigente, si es persona extranjera), a nombre de la
             titular de la cuenta que compró el cartón ganador.
           </li>
@@ -155,13 +151,16 @@ const SECTIONS = ({ event } = {}) => [
             Muebles). Hasta que el traspaso quede inscrito, el vehículo no se entrega.
           </li>
           <li>
+            Retirar la motocicleta en la <strong>agencia</strong> que indique la Asociación, en la fecha que se coordine.
+          </li>
+          <li>
             Asumir los gastos de traspaso e inscripción, el derecho de circulación (marchamo) y el seguro obligatorio, salvo que el anuncio
             del premio indique que los cubre la Asociación.
           </li>
         </ul>
         <p>
           Los requisitos se presentan dentro del plazo de <strong>3 días hábiles</strong> para coordinar el retiro, igual que en el
-          resto de los premios. Si en ese plazo no se presenta la licencia de conducir vigente, se aplica la regla de premios no reclamados
+          resto de los premios. Si en ese plazo no se presentan los requisitos, se aplica la regla de premios no reclamados
           de la Política de contingencias. El premio no puede cambiarse por dinero.
         </p>
       </>
@@ -180,7 +179,7 @@ const SECTIONS = ({ event } = {}) => [
           <strong>3 días hábiles</strong> siguientes al evento para coordinar la entrega.
         </li>
         <li>
-          <strong>Lugar:</strong> la entrega se hace en el domicilio de la Asociación o en el lugar que se acuerde por escrito. La
+          <strong>Lugar:</strong> la motocicleta se retira en la agencia. Los demás premios se entregan en el lugar que se acuerde por escrito. La
           verificación puede hacerse de forma presencial o por videollamada con el documento en mano (verificación homologada), pero la
           entrega física del premio requiere presentar el documento original.
         </li>

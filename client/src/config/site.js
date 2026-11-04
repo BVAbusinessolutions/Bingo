@@ -36,7 +36,7 @@ export const AGE_NOTE = `Las cuentas las registran personas mayores de 18 años;
 
 /** Requisito para retirar la motocicleta (texto aprobado por la Asociación). */
 export const MOTORCYCLE_REQUIREMENT =
-  'Para el retiro de la motocicleta se requiere presentar cédula física al día y licencia de conducir vigente de la persona ganadora mayor de edad o de su representante legal, según la legislación de Costa Rica.';
+  'La motocicleta se retira en la agencia. Para el retiro se requiere presentar la cédula física al día de la persona ganadora mayor de edad o de su representante legal.';
 
 /** Plazo único para coordinar el retiro y presentar requisitos de todos los premios (texto aprobado). */
 export const PRIZE_DEADLINE_NOTE =

@@ -85,7 +85,7 @@ describe('textos legales', () => {
 
   it('usa los textos exactos aprobados por la Asociación', () => {
     expect(MOTORCYCLE_REQUIREMENT).toBe(
-      'Para el retiro de la motocicleta se requiere presentar cédula física al día y licencia de conducir vigente de la persona ganadora mayor de edad o de su representante legal, según la legislación de Costa Rica.'
+      'La motocicleta se retira en la agencia. Para el retiro se requiere presentar la cédula física al día de la persona ganadora mayor de edad o de su representante legal.'
     );
     expect(AGE_NOTE).toMatch(/^Las cuentas las registran personas mayores de 18 años/);
     expect(AGE_NOTE).toMatch(/se debe ser mayor de edad o contar con un tutor legal que represente/);

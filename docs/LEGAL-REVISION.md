@@ -23,7 +23,7 @@ antes del evento del 15 de noviembre de 2026.
 | Una sola cuenta por persona | Sí | `content/legal/terminos.jsx` |
 | Plazo para reclamar premios | 3 días hábiles para coordinar el retiro y presentar requisitos (todos los premios, incluida la motocicleta) | `content/legal/reglamento.jsx`, `content/legal/contingencias.jsx` |
 | Contacto con ganadores en línea | Dentro de 3 días hábiles | `content/legal/reglamento.jsx` |
-| Custodia de la motocicleta si el ganador no tiene licencia | Sin custodia extra: mismo plazo de 3 días hábiles. **Validar:** el traspaso ante notario y la licencia pueden tardar más | `content/legal/reglamento.jsx` |
+| Retiro de la motocicleta | En la agencia; requisito: cédula física al día. La licencia de conducir **no** es requisito | `config/site.js`, `content/legal/reglamento.jsx` |
 | Gastos de traspaso, marchamo y seguro de la moto | A cargo del ganador, salvo que el anuncio diga otra cosa | `content/legal/reglamento.jsx` |
 | Destino de los premios no reclamados | Pasan a los programas de la Asociación según sus estatutos | `content/legal/contingencias.jsx` |
 | Desempate de premios indivisibles | Una bola por cartón empatado; gana la más alta | `content/legal/contingencias.jsx` |
@@ -61,8 +61,6 @@ antes del evento del 15 de noviembre de 2026.
   antes del inicio del sorteo.
 - **Ley 8968:** confirmar si la base de datos debe inscribirse ante la PRODHAB y cuál es el plazo de respuesta
   a las solicitudes de acceso, rectificación y supresión.
-- **Licencia para la moto:** confirmar el tipo exacto (A1, A2 o A3) según la cilindrada del modelo y anotarlo
-  en el anuncio del premio.
 
 El eslogan que la Asociación prohibió usar no aparece en ningún texto legal ni corporativo. Una prueba automática lo
 verifica en `client/src/__tests__/features.test.js`.
