@@ -57,6 +57,7 @@ export default function AdminDrawPage() {
   const { eventId, event, reloadEvents } = useAdmin();
   const [called, setCalled] = useState([]);
   const [streamEditing, setStreamEditing] = useState(false);
+  const [streamRemoving, setStreamRemoving] = useState(false); // confirmación para quitar el video
   const [live, setLive] = useState(null); // evento según el sorteo (modalidad y ronda al día)
   const [rounds, setRounds] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -169,6 +170,25 @@ export default function AdminDrawPage() {
   };
   const isLive = current?.status === 'LIVE';
 
+  // Quitar el video: desaparece de la portada y de la vista del jugador. No cambia el estado ni las bolas.
+  const removeStream = async () => {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await adminApi.updateEvent(eventId, { stream: null });
+      setLive((l) => ({ ...(l ?? current), stream: null }));
+      await reloadEvents();
+      setNotice('Se quitó la transmisión. El video ya no aparece en el inicio ni en la vista de los jugadores.');
+      setStreamRemoving(false);
+    } catch (err) {
+      setError(errorMessage(err));
+      setStreamRemoving(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const startRound = async () => {
     if (await run(() => drawApi.newRound(eventId, nextPattern))) setNextPattern(null);
   };
@@ -195,9 +215,16 @@ export default function AdminDrawPage() {
               </p>
             </div>
             {!closed && (
-              <Button icon={Radio} variant="gold" onClick={() => setStreamEditing(true)}>
-                {current.stream ? 'Editar transmisión' : 'Configurar transmisión'}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button icon={Radio} variant="gold" onClick={() => setStreamEditing(true)}>
+                  {current.stream ? 'Editar transmisión' : 'Configurar transmisión'}
+                </Button>
+                {current.stream && (
+                  <Button icon={Trash2} variant="outline" disabled={busy} onClick={() => setStreamRemoving(true)} className="text-sol-red!">
+                    Quitar transmisión
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           <p className="text-sm text-fg-muted">
@@ -490,6 +517,21 @@ export default function AdminDrawPage() {
             }}
           />
         </Modal>
+      )}
+
+      {streamRemoving && (
+        <ConfirmDialog
+          title="¿Quitar la transmisión de video?"
+          icon={Trash2}
+          confirmLabel="Sí, quitar el video"
+          confirmVariant="danger"
+          loading={busy}
+          onConfirm={removeStream}
+          onCancel={() => setStreamRemoving(false)}
+        >
+          El video deja de verse en el inicio de la página y en la vista de los jugadores. El bingo, las bolas y las ventas no cambian.
+          Puedes volver a agregar el enlace cuando quieras.
+        </ConfirmDialog>
       )}
 
       {deleting && (
