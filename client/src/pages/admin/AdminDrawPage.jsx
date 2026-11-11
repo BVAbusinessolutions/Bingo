@@ -8,6 +8,7 @@ import Alert from '../../components/ui/Alert';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Modal from '../../components/ui/Modal';
 import WinningCardsPanel from '../../components/admin/WinningCardsPanel';
+import StreamSettings from '../../components/admin/StreamSettings';
 import PatternPicker, { PatternPreview } from '../../components/bingo/PatternPreview';
 import { COLUMN_RANGES, LETTERS, MAX_BALL, PATTERNS, letterFor } from '../../constants/patterns';
 import { LETTER_COLORS } from '../../constants/ballColors';
@@ -54,6 +55,7 @@ function BigBall({ n }) {
 export default function AdminDrawPage() {
   const { eventId, event, reloadEvents } = useAdmin();
   const [called, setCalled] = useState([]);
+  const [streamEditing, setStreamEditing] = useState(false);
   const [live, setLive] = useState(null); // evento según el sorteo (modalidad y ronda al día)
   const [rounds, setRounds] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -180,6 +182,30 @@ export default function AdminDrawPage() {
         {current && <StatusBadge status={current.status} />}
       </header>
 
+      {current && (
+        <section aria-label="Transmisión de video" className="surface space-y-3 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-black text-fg">
+                <Radio className="h-5 w-5 text-brand" aria-hidden /> Transmisión de video
+              </h2>
+              <p className="text-sm text-fg-muted">
+                {current.stream ? 'Enlace configurado para los jugadores.' : 'Todavía no has agregado el enlace de la transmisión.'}
+              </p>
+            </div>
+            {!closed && (
+              <Button icon={Radio} variant="gold" onClick={() => setStreamEditing(true)}>
+                {current.stream ? 'Editar transmisión' : 'Configurar transmisión'}
+              </Button>
+            )}
+          </div>
+          <p className="text-sm text-fg-muted">
+            Inicia el video desde tu plataforma de transmisión y agrega su enlace aquí. El botón «Iniciar bingo en vivo» activa el juego y
+            cierra las ventas.
+          </p>
+        </section>
+      )}
+
       {/* Estado del bingo: solo la administración decide cuándo empieza */}
       {current && !closed && (
         <div
@@ -205,7 +231,13 @@ export default function AdminDrawPage() {
             </div>
           </div>
           {isLive ? (
-            <Button variant="outline" icon={CalendarClock} disabled={busy} onClick={() => setStatusConfirm('SCHEDULED')} className="shrink-0">
+            <Button
+              variant="outline"
+              icon={CalendarClock}
+              disabled={busy}
+              onClick={() => setStatusConfirm('SCHEDULED')}
+              className="shrink-0"
+            >
               Volver a programado
             </Button>
           ) : (
@@ -224,6 +256,7 @@ export default function AdminDrawPage() {
             <span className="rounded-full bg-sol-blue px-3 py-1 text-sm font-black text-white dark:bg-sol-gold dark:text-sol-blue">
               Ronda {round}
             </span>
+            {current && !closed && !started && <span className="text-sm font-bold text-fg-muted">Pendiente de la primera bola</span>}
             <span className="truncate text-xl font-black text-fg">{current?.name}</span>
           </p>
           <div className="flex items-center gap-3">
@@ -379,12 +412,16 @@ export default function AdminDrawPage() {
                   <div className="min-w-0 text-sm">
                     <p className="flex flex-wrap items-center gap-1.5 font-black text-fg">
                       Ronda {r.round} · {PATTERNS[r.pattern]?.label}
-                      {r.current && <span className="rounded-full bg-sol-gold px-2 text-xs text-sol-blue">en curso</span>}
+                      {r.current && (
+                        <span className="rounded-full bg-sol-gold px-2 text-xs text-sol-blue">
+                          {closed ? 'cerrada' : r.called === 0 ? 'pendiente' : isLive ? 'en curso' : 'prueba'}
+                        </span>
+                      )}
                     </p>
                     <p className="text-fg-muted">
                       {r.called} {r.called === 1 ? 'bola' : 'bolas'} · {r.winners} {r.winners === 1 ? 'ganador' : 'ganadores'}
                     </p>
-                    <p className="text-xs text-fg-subtle">{formatDate(r.startedAt)}</p>
+                    <p className="text-xs text-fg-subtle">Preparada: {formatDate(r.startedAt)}</p>
                   </div>
                 </div>
                 {!closed && (
@@ -426,6 +463,21 @@ export default function AdminDrawPage() {
         </Alert>
       )}
 
+      {streamEditing && current && (
+        <Modal key={current.id} title="Configurar transmisión de video" icon={Radio} onClose={() => setStreamEditing(false)}>
+          <StreamSettings
+            event={current}
+            onCancel={() => setStreamEditing(false)}
+            onSaved={async (updated) => {
+              setLive((previous) => ({ ...(previous ?? current), stream: updated.stream }));
+              await reloadEvents();
+              setStreamEditing(false);
+              setNotice('Enlace guardado. Los jugadores ya pueden abrir la transmisión.');
+            }}
+          />
+        </Modal>
+      )}
+
       {deleting && (
         <ConfirmDialog
           title={deleting.all ? '¿Borrar TODAS las rondas?' : `¿Borrar la ronda ${deleting.round}?`}
@@ -444,9 +496,7 @@ export default function AdminDrawPage() {
                   deleting.winners ? `, incluidos ${deleting.winners} premio(s) confirmado(s) que dejarán de salir en Resultados` : ''
                 }. Las rondas siguientes se renumeran.`}
           </span>
-          <span className="mt-2 block">
-            El estado del evento (programado o en vivo) no cambia. Queda en la bitácora.
-          </span>
+          <span className="mt-2 block">El estado del evento (programado o en vivo) no cambia. Queda en la bitácora.</span>
         </ConfirmDialog>
       )}
 

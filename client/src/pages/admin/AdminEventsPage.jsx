@@ -4,6 +4,7 @@ import { CalendarClock, CalendarPlus, Layers, Lock, Pencil, Play, Square, X } fr
 import { useAdmin } from '../../hooks/useAdmin';
 import { adminApi } from '../../api/endpoints';
 import Field from '../../components/ui/Field';
+import StreamFields, { streamValue } from '../../components/admin/StreamFields';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -32,36 +33,6 @@ const formFrom = (ev) => ({
   provider: ev?.stream?.provider ?? 'youtube',
   videoId: ev?.stream?.videoId ?? ev?.stream?.url ?? '',
 });
-
-// Facebook, TikTok, LL-HLS y WebRTC (WHEP) se configuran con una URL; el resto con el id del video o el canal.
-const URL_PROVIDERS = new Set(['facebook', 'tiktok', 'hls', 'whep']);
-const STREAM_HINTS = {
-  youtube: [
-    'ID o URL del video',
-    'ej. https://www.youtube.com/live/jfKfPfyJRdk',
-    'Sirve el enlace completo o solo el ID (latencia de 3 a 10 s con "latencia ultrabaja").',
-  ],
-  facebook: [
-    'URL del video de Facebook Live',
-    'https://www.facebook.com/hogarsol/videos/…',
-    'En Facebook: video en vivo → Compartir → Copiar enlace. Debe ser público.',
-  ],
-  twitch: ['Canal de Twitch', 'ej. hogarsol o https://www.twitch.tv/hogarsol', 'Latencia de 2 a 5 s.'],
-  kick: ['Canal de Kick', 'ej. hogarsol o https://kick.com/hogarsol', 'Latencia de 2 a 5 s.'],
-  tiktok: [
-    'Cuenta de TikTok',
-    'ej. @hogarsol',
-    'TikTok no permite incrustar sus directos: el jugador verá un botón "Ver en TikTok" y jugará sus cartones aquí.',
-  ],
-  vimeo: ['ID del video', 'ej. 76979871', 'Latencia de 5 a 15 s.'],
-  hls: ['URL .m3u8 (LL-HLS)', 'https://…/live/bingo.m3u8', 'Latencia de 2 a 4 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
-  whep: ['URL WHEP (WebRTC)', 'https://…/whep/bingo', 'Latencia menor a 1 s. El dominio debe estar en STREAM_ORIGINS del servidor.'],
-};
-const streamValue = ({ provider, videoId }) => {
-  const v = videoId.trim();
-  if (!v) return null;
-  return URL_PROVIDERS.has(provider) ? { provider, url: v } : { provider, videoId: v };
-};
 
 function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
   const [form, setForm] = useState(() => formFrom(initial));
@@ -149,29 +120,7 @@ function EventForm({ initial, submitLabel, onSubmit, onCancel, locked }) {
           hint="Se muestran en la portada, el reglamento y el enlace “Cómo llegar”."
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr]">
-        <label className="block">
-          <span className="font-bold text-fg">Transmisión</span>
-          <select value={form.provider} onChange={set('provider')} className={selectCls}>
-            <option value="youtube">YouTube Live</option>
-            <option value="facebook">Facebook Live</option>
-            <option value="hls">Enlace HLS / reproductor propio (.m3u8)</option>
-            <option value="whep">WebRTC (ultra baja latencia)</option>
-            <option value="twitch">Twitch</option>
-            <option value="kick">Kick</option>
-            <option value="tiktok">TikTok LIVE (enlace)</option>
-            <option value="vimeo">Vimeo</option>
-          </select>
-        </label>
-        <Field
-          label={STREAM_HINTS[form.provider][0]}
-          value={form.videoId}
-          onChange={set('videoId')}
-          placeholder={STREAM_HINTS[form.provider][1]}
-          hint={STREAM_HINTS[form.provider][2]}
-          inputMode={URL_PROVIDERS.has(form.provider) ? 'url' : undefined}
-        />
-      </div>
+      <StreamFields form={form} onChange={setForm} />
       {error && <Alert tone="error">{error}</Alert>}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={busy}>
@@ -338,9 +287,12 @@ function EventCard({ ev, series, onChanged }) {
       {confirm && (
         <ConfirmDialog
           title={
-            { LIVE: '¿Poner el evento en vivo?', SCHEDULED: '¿Volver el evento a programado?', FINISHED: '¿Finalizar el bingo?', CANCELLED: '¿Cancelar el evento?' }[
-              confirm
-            ]
+            {
+              LIVE: '¿Poner el evento en vivo?',
+              SCHEDULED: '¿Volver el evento a programado?',
+              FINISHED: '¿Finalizar el bingo?',
+              CANCELLED: '¿Cancelar el evento?',
+            }[confirm]
           }
           confirmLabel="Sí, continuar"
           confirmVariant={confirm === 'CANCELLED' ? 'danger' : 'primary'}
