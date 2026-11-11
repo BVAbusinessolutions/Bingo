@@ -331,7 +331,7 @@ export default function AdminDashboard() {
             Analítica del evento
           </h2>
           <p className="text-sm text-fg-muted">
-            Ronda {stats.round ?? 1} · bolas cantadas: {stats.called}/75
+            Ronda {stats.round ?? 1} {stats.called ? '' : '(sin iniciar) '}· bolas cantadas: {stats.called}/75
           </p>
         </div>
         <div className="grid gap-3 lg:grid-cols-3">

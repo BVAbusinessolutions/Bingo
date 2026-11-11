@@ -21,6 +21,7 @@ import { usePageMeta } from '../../hooks/usePageMeta';
 import Button from '../../components/ui/Button';
 import EventCountdown, { EventFacts, eventPlace } from '../../components/event/EventCountdown';
 import PrizesShowcase from '../../components/event/PrizesShowcase';
+import LiveStream from '../../components/player/LiveStream';
 import { BrandBadge } from '../../components/brand/BrandLogo';
 import { PATTERNS } from '../../constants/patterns';
 import { priceLabel } from '../../lib/pricing';
@@ -298,6 +299,31 @@ export default function HomePage() {
           <EventCard event={event} loading={loading} error={error} onRetry={reload} />
         </div>
       </section>
+
+      {/* Video del sorteo: aparece en cuanto la administración guarda el enlace de la transmisión en Bingo Master */}
+      {event?.stream && (
+        <section aria-labelledby="video-title" className="container-page space-y-4 py-10">
+          <div className="text-center">
+            <h2 id="video-title" className="font-display text-3xl font-bold text-fg">
+              {isLive ? 'Sorteo en vivo' : 'Transmisión del bingo'}
+            </h2>
+            <p className="text-fg-muted">
+              {isLive
+                ? 'Mira el sorteo aquí. Para marcar tus cartones y cantar bingo, entra al sorteo en vivo.'
+                : 'Aquí podrás ver el sorteo en video el día del bingo.'}
+            </p>
+          </div>
+          <div className="mx-auto w-full max-w-4xl">
+            <LiveStream
+              provider={event.stream.provider}
+              videoId={event.stream.videoId}
+              url={event.stream.url}
+              title={event.name}
+              badge={isLive ? 'EN VIVO' : 'TRANSMISIÓN'}
+            />
+          </div>
+        </section>
+      )}
 
       <PrizesShowcase />
 

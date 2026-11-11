@@ -9,6 +9,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Modal from '../../components/ui/Modal';
 import WinningCardsPanel from '../../components/admin/WinningCardsPanel';
 import StreamSettings from '../../components/admin/StreamSettings';
+import LiveStream from '../../components/player/LiveStream';
 import PatternPicker, { PatternPreview } from '../../components/bingo/PatternPreview';
 import { COLUMN_RANGES, LETTERS, MAX_BALL, PATTERNS, letterFor } from '../../constants/patterns';
 import { LETTER_COLORS } from '../../constants/ballColors';
@@ -203,6 +204,17 @@ export default function AdminDrawPage() {
             Inicia el video desde tu plataforma de transmisión y agrega su enlace aquí. El botón «Iniciar bingo en vivo» activa el juego y
             cierra las ventas.
           </p>
+          {/* Vista previa: el mismo reproductor que ven los jugadores, para comprobar el enlace antes de empezar */}
+          <div className="mx-auto w-full max-w-2xl">
+            <LiveStream
+              provider={current.stream?.provider}
+              videoId={current.stream?.videoId}
+              url={current.stream?.url}
+              title={current.name}
+              badge={isLive ? 'EN VIVO' : 'VISTA PREVIA'}
+              emptyText="Aquí se verá el video en cuanto guardes el enlace con «Configurar transmisión»."
+            />
+          </div>
         </section>
       )}
 
@@ -256,7 +268,9 @@ export default function AdminDrawPage() {
             <span className="rounded-full bg-sol-blue px-3 py-1 text-sm font-black text-white dark:bg-sol-gold dark:text-sol-blue">
               Ronda {round}
             </span>
-            {current && !closed && !started && <span className="text-sm font-bold text-fg-muted">Pendiente de la primera bola</span>}
+            {current && !closed && !started && (
+              <span className="rounded-full bg-muted px-3 py-1 text-sm font-black text-fg-muted">Sin iniciar · falta la primera bola</span>
+            )}
             <span className="truncate text-xl font-black text-fg">{current?.name}</span>
           </p>
           <div className="flex items-center gap-3">
@@ -414,7 +428,7 @@ export default function AdminDrawPage() {
                       Ronda {r.round} · {PATTERNS[r.pattern]?.label}
                       {r.current && (
                         <span className="rounded-full bg-sol-gold px-2 text-xs text-sol-blue">
-                          {closed ? 'cerrada' : r.called === 0 ? 'pendiente' : isLive ? 'en curso' : 'prueba'}
+                          {closed ? 'cerrada' : r.called === 0 ? 'sin iniciar' : isLive ? 'en curso' : 'prueba'}
                         </span>
                       )}
                     </p>

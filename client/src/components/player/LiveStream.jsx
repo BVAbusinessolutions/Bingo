@@ -122,7 +122,15 @@ function LowLatencyPlayer({ provider, url, title }) {
   );
 }
 
-export default function LiveStream({ provider = 'youtube', videoId, url, title = 'Sorteo en vivo' }) {
+/** `badge` y `emptyText` cambian los textos cuando el reproductor se usa fuera del sorteo (portada, vista previa del panel). */
+export default function LiveStream({
+  provider = 'youtube',
+  videoId,
+  url,
+  title = 'Sorteo en vivo',
+  badge = 'EN VIVO',
+  emptyText = 'La transmisión aún no ha comenzado.',
+}) {
   const source = streamSource({ provider, videoId, url });
   const lowLatency = source?.kind === 'lowLatency';
   const src = source?.kind === 'iframe' ? source.src : null;
@@ -130,7 +138,7 @@ export default function LiveStream({ provider = 'youtube', videoId, url, title =
   return (
     <section aria-label={`Transmisión: ${title}`} className="overflow-hidden rounded-2xl bg-black shadow-xl ring-4 ring-sol-red">
       <div className="flex items-center gap-2 bg-sol-red px-3 py-2 text-sm font-bold text-white">
-        <Radio className="h-4 w-4 animate-pulse text-sol-gold" aria-hidden /> EN VIVO · {title}
+        <Radio className="h-4 w-4 animate-pulse text-sol-gold" aria-hidden /> {badge} · {title}
         {lowLatency && <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-xs">Baja latencia</span>}
       </div>
       <div className="relative aspect-video">
@@ -166,7 +174,7 @@ export default function LiveStream({ provider = 'youtube', videoId, url, title =
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center px-4 text-center text-slate-400">
-            La transmisión aún no ha comenzado.
+            {emptyText}
           </div>
         )}
       </div>

@@ -2,7 +2,14 @@
 
 Lo más reciente arriba.
 
+## 11/11/2026
+- **Sección de video visible**: Bingo Master muestra la vista previa del video (el mismo reproductor del jugador) y
+  la portada muestra la transmisión en cuanto se guarda el enlace. La ronda sin bolas ahora dice «Sin iniciar».
+
 ## 04/11/2026
+- **Listo para ~500 jugadores en la transmisión**: límites por IP más holgados (jugadores del salón en el mismo
+  WiFi ya no se bloquean), el catálogo y el evento actual ya no escriben en la base en cada visita, y `sharp`
+  actualizado a 0.35.5 (cerraba una vulnerabilidad grave; `npm audit` queda en 0).
 - 🎉 **Primera compra real en producción**: salió todo bien de punta a punta.
 - **Admin superior** activo: `bvabusinessolutions@gmail.com` (variable `SUPER_ADMIN_EMAIL` en Render). No se puede
   degradar ni desactivar y es el único que da o quita el rol de admin.
