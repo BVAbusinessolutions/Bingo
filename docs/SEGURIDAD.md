@@ -39,12 +39,12 @@ Límites por IP, en `server/src/middleware/security.js`:
 
 | Ruta | Límite |
 |---|---|
-| Toda la API | 300 / min |
-| Login (solo intentos fallidos) | 5 / 15 min, más bloqueo de la cuenta tras 5 fallos |
-| Registro | 10 / hora |
-| Reservas | 10 / 10 min |
-| Reclamos de bingo | 10 / min |
-| Correos y contraseñas | 10 / 15 min |
+| Toda la API | 3000 / min |
+| Login (solo intentos fallidos) | 30 / 15 min por IP, más bloqueo de la cuenta tras 5 fallos |
+| Registro | 60 / hora |
+| Reservas | 30 / 10 min |
+| Reclamos de bingo | 60 / min |
+| Correos y contraseñas | 30 / 15 min |
 | Importar ZIP | 5 / hora |
 
 Los límites por aplicación **no detienen un DDoS volumétrico**. Para el día del evento se recomienda:

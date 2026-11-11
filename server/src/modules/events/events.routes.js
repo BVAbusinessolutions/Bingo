@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { one, query } from '../../db/index.js';
 import { authenticate } from '../../middleware/auth.js';
 import { getFile, sendFile } from '../../services/files.js';
-import { releaseExpiredReservations } from '../reservations/reservations.service.js';
+import { releaseExpiredThrottled } from '../reservations/reservations.service.js';
 import { publicWinnerName } from '../claims/claims.service.js';
 
 const router = Router();
@@ -49,7 +49,7 @@ export const currentEvent = () =>
 const eventIdParam = z.string().regex(/^[a-z0-9-]{3,64}$/);
 
 router.get('/current', async (req, res) => {
-  await releaseExpiredReservations();
+  await releaseExpiredThrottled();
   const e = await currentEvent();
   if (!e) return res.status(404).json({ error: 'NO_EVENT' });
   res.json(publicEvent(e));
@@ -156,7 +156,7 @@ router.get('/:eventId/cards/catalog', async (req, res) => {
   if (!eventIdParam.safeParse(req.params.eventId).success) return res.status(404).json({ error: 'NOT_FOUND' });
   const event = await one('select id from app.events where id = $1', [req.params.eventId]);
   if (!event) return res.status(404).json({ error: 'NOT_FOUND' });
-  await releaseExpiredReservations();
+  await releaseExpiredThrottled();
   const cards = await query(
     `select c.serial, c.grid, c.status, c.series_card_id, sc.image_id, r.status as reservation_status, r.expires_at
        from app.cards c

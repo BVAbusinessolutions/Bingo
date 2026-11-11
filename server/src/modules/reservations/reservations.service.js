@@ -158,6 +158,23 @@ export async function releaseExpiredReservations() {
   }
 }
 
+/**
+ * Para páginas públicas (catálogo, evento actual): libera como máximo una vez cada 5 s aunque entren
+ * cientos de visitas a la vez. Comprar y aprobar siguen usando releaseExpiredReservations() directo.
+ */
+const PUBLIC_RELEASE_MS = 5_000;
+let lastPublicRelease = 0;
+let publicRelease = null;
+export function releaseExpiredThrottled() {
+  if (publicRelease) return publicRelease;
+  if (Date.now() - lastPublicRelease < PUBLIC_RELEASE_MS) return Promise.resolve();
+  lastPublicRelease = Date.now();
+  publicRelease = releaseExpiredReservations().finally(() => {
+    publicRelease = null;
+  });
+  return publicRelease;
+}
+
 const serialsText = (serials) => serials.map((s) => `#${s}`).join(', ');
 
 /** Aprueba una compra con comprobante: cartones vendidos al dueño y correo con el enlace a sus cartones. */
