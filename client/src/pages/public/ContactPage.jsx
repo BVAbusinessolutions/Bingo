@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, Clock, HelpCircle, Lightbulb, Mail, MapPin, MessageCircle, Phone, ScrollText, Send, ShieldAlert, Smartphone } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronDown, HelpCircle, Lightbulb, Mail, MapPin, MessageCircle, Phone, ScrollText, Send, ShieldAlert, Smartphone } from 'lucide-react';
 import { contactApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -8,6 +8,8 @@ import Field from '../../components/ui/Field';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { CopyButton } from '../../components/payments/PaymentPieces';
+import VenuePanel from '../../components/contact/VenuePanel';
+import PanelTitle from '../../components/contact/PanelTitle';
 import { MOTORCYCLE_REQUIREMENT, PAYMENT_DETAIL, SITE } from '../../config/site';
 import { errorMessage } from '../../lib/format';
 import { CONTACT_ANCHORS, PATHS } from '../../routing/paths';
@@ -79,17 +81,18 @@ function SuggestionBox() {
   };
 
   return (
-    <section id={CONTACT_ANCHORS.suggestions} aria-labelledby="buzon-title" className="surface relative overflow-hidden p-6 outline-none sm:p-8">
+    <section id={CONTACT_ANCHORS.suggestions} aria-labelledby="buzon-title" className="surface relative overflow-hidden rounded-3xl p-6 outline-none sm:p-8">
       <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-sol-gold/20 blur-3xl" aria-hidden />
-      <div className="relative grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <div className="space-y-2">
-          <h2 id="buzon-title" className="flex items-center gap-2 font-display text-2xl font-semibold text-fg">
-            <Lightbulb className="h-7 w-7 text-sol-gold-dark dark:text-accent" aria-hidden /> Buzón de sugerencias
-          </h2>
-          <p className="text-fg-muted">¿Cómo podemos mejorar el bingo? Tu opinión llega directo a la Asociación y nos ayuda a hacerlo mejor para todos.</p>
-        </div>
+      <div className="relative space-y-6">
+        <PanelTitle
+          icon={Lightbulb}
+          eyebrow="Tu opinión cuenta"
+          title="Buzón de sugerencias"
+          id="buzon-title"
+          description="¿Cómo podemos mejorar el bingo? Tu comentario llega directo a la Asociación."
+        />
         {status === 'sent' ? (
-          <div role="status" className="flex animate-pop flex-col items-start gap-3">
+          <div role="status" className="flex animate-pop flex-col items-start gap-3 border-t border-line/70 pt-5">
             <p className="flex items-center gap-2 text-lg font-semibold text-fg">
               <CheckCircle2 className="h-6 w-6 text-emerald-500" aria-hidden /> ¡Gracias! Recibimos tu comentario.
             </p>
@@ -98,7 +101,7 @@ function SuggestionBox() {
             </Button>
           </div>
         ) : (
-          <form onSubmit={submit} noValidate className="grid gap-3 sm:grid-cols-2">
+          <form onSubmit={submit} noValidate className="grid gap-4 border-t border-line/70 pt-5 sm:grid-cols-2">
             <div role="radiogroup" aria-label="Tipo de comentario" className="flex flex-wrap gap-2 sm:col-span-2">
               {SUGGESTION_KINDS.map((k) => (
                 <button
@@ -125,7 +128,7 @@ function SuggestionBox() {
                 rows={3}
                 maxLength={1400}
                 required
-                className="mt-1.5 w-full rounded-xl border-2 border-line bg-card p-3 text-fg"
+                className="mt-1.5 w-full resize-none rounded-xl border-2 border-line bg-card p-3 text-fg"
                 placeholder="Cuéntanos tu idea, lo que te gustó o lo que no funcionó."
               />
             </label>
@@ -135,8 +138,8 @@ function SuggestionBox() {
                 {error}
               </Alert>
             )}
-            <div className="sm:col-span-2">
-              <Button type="submit" variant="gold" icon={Send} loading={status === 'sending'}>
+            <div className="flex justify-end sm:col-span-2">
+              <Button type="submit" variant="gold" icon={Send} loading={status === 'sending'} className="h-11 min-h-11! rounded-full! px-6">
                 Enviar comentario
               </Button>
             </div>
@@ -175,7 +178,7 @@ function ContactForm() {
 
   if (status === 'sent') {
     return (
-      <div role="status" className="surface flex animate-modal-in flex-col items-center gap-3 p-8 text-center">
+      <div role="status" className="surface flex h-full animate-modal-in flex-col items-center justify-center gap-3 rounded-3xl p-8 text-center">
         <CheckCircle2 className="h-14 w-14 text-emerald-500" aria-hidden />
         <h2 className="font-display text-2xl font-semibold text-fg">¡Mensaje enviado!</h2>
         <p className="text-fg-muted">Te responderemos al correo {form.email} lo antes posible, en horario de atención.</p>
@@ -187,24 +190,25 @@ function ContactForm() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="surface grid gap-4 p-6 sm:grid-cols-2 sm:p-8" aria-labelledby="form-title">
-      <h2 id="form-title" className="font-display text-2xl font-semibold text-fg sm:col-span-2">
-        Escríbenos
-      </h2>
-      <Field label="Nombre completo" value={form.name} onChange={set('name')} autoComplete="name" required />
-      <Field label="Correo" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
-      <Field label="Teléfono (opcional)" type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
-      <label className="block">
-        <span className="font-semibold text-fg">Tema</span>
-        <select value={form.topic} onChange={set('topic')} className="mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg">
-          {TOPICS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block sm:col-span-2">
+    // flex-col + mensaje flex-1: el formulario estira el mensaje para terminar a la par del panel del mapa.
+    <form onSubmit={submit} noValidate className="surface flex h-full flex-col gap-5 rounded-3xl p-6 sm:p-8" aria-labelledby="form-title">
+      <PanelTitle icon={Mail} eyebrow="Formulario" title="Escríbenos" id="form-title" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Nombre completo" value={form.name} onChange={set('name')} autoComplete="name" required />
+        <Field label="Correo" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
+        <Field label="Teléfono (opcional)" type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
+        <label className="block">
+          <span className="font-semibold text-fg">Tema</span>
+          <select value={form.topic} onChange={set('topic')} className="mt-1.5 min-h-12 w-full rounded-xl border-2 border-line bg-card px-3 text-fg">
+            {TOPICS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="flex flex-1 flex-col">
         <span className="font-semibold text-fg">Mensaje</span>
         <textarea
           value={form.message}
@@ -212,19 +216,16 @@ function ContactForm() {
           rows={5}
           maxLength={1500}
           required
-          className="mt-1.5 w-full rounded-xl border-2 border-line bg-card p-3 text-fg"
+          className="mt-1.5 min-h-36 w-full flex-1 resize-none rounded-xl border-2 border-line bg-card p-3 text-fg"
           placeholder="Cuéntanos en qué te ayudamos. Si es sobre una compra, incluye el número de comprobante."
         />
       </label>
       {/* Campo trampa contra bots: oculto para las personas y para lectores de pantalla. */}
       <input type="text" name="website" value={form.website} onChange={set('website')} tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
-      {error && (
-        <Alert tone="error" className="sm:col-span-2">
-          {error}
-        </Alert>
-      )}
-      <div className="sm:col-span-2">
-        <Button type="submit" variant="gold" size="lg" icon={Send} loading={status === 'sending'}>
+      {error && <Alert tone="error">{error}</Alert>}
+      <div className="flex flex-col gap-3 border-t border-line/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-fg-muted">Respondemos al correo indicado, en horario de atención.</p>
+        <Button type="submit" variant="gold" icon={Send} loading={status === 'sending'} className="h-11 min-h-11! rounded-full! px-6">
           Enviar mensaje
         </Button>
       </div>
@@ -296,17 +297,16 @@ export default function ContactPage() {
     title: 'Contacto',
     description: 'Escribe a la Asociación Infantil Hogar Sol: formulario, WhatsApp, teléfono, correo y datos oficiales de SINPE Móvil.',
   });
-  // Coordenadas exactas si están configuradas; si no, búsqueda por el nombre del salón.
-  const mapQuery = encodeURIComponent(SITE.eventVenueCoords || SITE.eventVenueMapQuery);
 
   return (
-    <main className="container-page space-y-10 py-10">
-      <header>
+    <main className="container-page space-y-14 py-10 sm:py-14">
+      {/* Encabezado centrado: título, bajada y accesos rápidos alineados al mismo eje. */}
+      <header className="mx-auto max-w-3xl text-center">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-sol-red dark:text-accent">Estamos para ayudarte</p>
-        <h1 className="font-display text-3xl font-bold text-fg sm:text-4xl">Contacto</h1>
-        <p className="mt-1 max-w-2xl text-lg text-fg-muted">¿Tienes dudas sobre tu compra, un premio o tus datos? Escríbenos o llámanos.</p>
+        <h1 className="mt-1 font-display text-4xl font-bold text-fg sm:text-5xl">Contacto</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-lg text-fg-muted">¿Tienes dudas sobre tu compra, un premio o tus datos? Escríbenos o llámanos.</p>
         {/* Accesos rápidos: llevan al bloque centrado y resaltado (useHashScroll), sin saltar al pie de página. */}
-        <nav aria-label="Accesos rápidos" className="mt-4 flex flex-wrap gap-2">
+        <nav aria-label="Accesos rápidos" className="mt-6 flex flex-wrap justify-center gap-2">
           {[
             [`#${CONTACT_ANCHORS.map}`, MapPin, 'Ir al mapa'],
             [`#${CONTACT_ANCHORS.faq}`, HelpCircle, 'Preguntas frecuentes'],
@@ -316,7 +316,7 @@ export default function ContactPage() {
             <Link
               key={label}
               to={to}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-card px-4 font-semibold text-fg transition hover:border-accent hover:text-brand"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-card px-4 font-semibold text-fg transition hover:border-accent hover:text-brand"
             >
               <Icon className="h-4 w-4 text-brand" aria-hidden /> {label}
             </Link>
@@ -324,70 +324,58 @@ export default function ContactPage() {
         </nav>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Canales: tres tarjetas idénticas (mismo alto, ícono, rótulo, valor y flecha de acción). */}
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-3">
         {CHANNELS.map(({ icon: Icon, label, value, href, external }) => (
-          <a
-            key={label}
-            href={href}
-            {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
-            className="surface lift flex flex-col items-start gap-3 p-6 hover:ring-2 hover:ring-accent/60"
-          >
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-navy-950 text-accent ring-1 ring-accent/30">
-              <Icon className="h-6 w-6" aria-hidden />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-[0.15em] text-fg-muted">{label}</span>
-            <span className="break-all text-lg font-semibold text-fg">{value}</span>
-          </a>
+          <li key={label}>
+            <a
+              href={href}
+              {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+              className="surface group flex h-full items-center gap-4 rounded-3xl p-5 transition hover:-translate-y-0.5 hover:ring-2 hover:ring-accent/60"
+            >
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-navy-950 text-accent shadow-[0_8px_20px_rgb(2_6_23/0.25)] ring-1 ring-accent/30">
+                <Icon className="h-6 w-6" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-bold uppercase tracking-[0.15em] text-fg-muted">{label}</span>
+                <span className="block truncate text-lg font-semibold text-fg">{value}</span>
+              </span>
+              <ArrowUpRight className="h-5 w-5 shrink-0 text-fg-subtle transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand" aria-hidden />
+            </a>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      {/* Formulario y lugar del evento: dos columnas iguales y de la misma altura. */}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
         <ContactForm />
-        <div className="space-y-4">
-          {/* Destino de "Cómo llegar" e "Ir al mapa": se centra en pantalla y se resalta al llegar. */}
-          <div id={CONTACT_ANCHORS.map} className="surface overflow-hidden rounded-2xl outline-none">
-            <iframe
-              title={`Mapa: ${SITE.eventVenue}`}
-              src={`https://www.google.com/maps?q=${mapQuery}&z=16&output=embed`}
-              className="h-72 w-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-            <div className="space-y-2 p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-fg-muted">Lugar del evento</p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-3 font-semibold text-fg hover:text-brand"
-              >
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden /> {SITE.eventVenueMapQuery}
-              </a>
-              <p className="flex items-start gap-3 text-fg">
-                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden /> {SITE.schedule}
-              </p>
-            </div>
-          </div>
-        </div>
+        <VenuePanel id={CONTACT_ANCHORS.map} />
       </div>
 
       <SinpeInfo />
 
-      <section id={CONTACT_ANCHORS.faq} aria-labelledby="faq-title" className="space-y-3 rounded-2xl outline-none">
-        <h2 id="faq-title" className="font-display text-2xl font-semibold text-fg">
-          Preguntas frecuentes
-        </h2>
-        {/* Acordeón nativo (<details>): accesible con teclado y lector de pantalla sin JavaScript. */}
-        <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-          {FAQ.map(([q, a]) => (
-            <details key={q} className="surface group overflow-hidden transition-shadow open:shadow-[0_0_0_2px_rgb(251_191_36/0.5),var(--card-glow)]">
-              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-lg font-semibold text-fg [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center gap-3">
-                  <HelpCircle className="h-5 w-5 shrink-0 text-brand" aria-hidden /> {q}
+      <section id={CONTACT_ANCHORS.faq} aria-labelledby="faq-title" className="mx-auto max-w-3xl space-y-6 rounded-3xl outline-none">
+        <PanelTitle
+          icon={HelpCircle}
+          eyebrow="Resolvemos tus dudas"
+          title="Preguntas frecuentes"
+          id="faq-title"
+          description="Lo que más nos consultan sobre compras, pagos y premios."
+          centered
+        />
+        {/* Una columna: abrir una pregunta no desalinea a las demás. Acordeón nativo (<details>), accesible sin JavaScript. */}
+        <div className="space-y-3">
+          {FAQ.map(([q, a], i) => (
+            <details key={q} className="surface group overflow-hidden rounded-2xl transition-shadow open:shadow-[0_0_0_2px_rgb(251_191_36/0.5),var(--card-glow)]">
+              <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 px-5 py-3 text-left text-lg font-semibold text-fg [&::-webkit-details-marker]:hidden">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-sol-blue/10 font-display text-sm font-bold tabular-nums text-brand ring-1 ring-sol-blue/15 dark:bg-white/5 dark:ring-white/10">
+                  {String(i + 1).padStart(2, '0')}
                 </span>
+                <span className="flex-1">{q}</span>
                 <ChevronDown aria-hidden className="h-5 w-5 shrink-0 text-brand transition-transform duration-300 group-open:rotate-180" />
               </summary>
-              <p className="animate-fade-in px-5 pb-5 pl-13 text-base leading-relaxed text-fg-muted">{a}</p>
+              {/* Sangría = ancho del número + separación: la respuesta queda alineada con la pregunta. */}
+              <p className="animate-fade-in px-5 pb-5 pl-18 text-base leading-relaxed text-fg-muted">{a}</p>
             </details>
           ))}
         </div>
