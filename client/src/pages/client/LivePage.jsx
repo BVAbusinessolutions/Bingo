@@ -79,11 +79,14 @@ function useClaims(eventId, round) {
 function LiveHeader({ connected, onLogout }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/90 text-white shadow-md backdrop-blur-xl print:hidden">
-      <div className="container-page flex h-16 items-center justify-between gap-2">
+      <div className="container-page flex h-16 items-center justify-between gap-1.5 sm:gap-2">
         <Link to={PATHS.home} className="flex min-w-0 items-center gap-2 font-black" aria-label="Volver al inicio">
           <ArrowLeft className="h-6 w-6 shrink-0" aria-hidden />
-          <BrandBadge className="h-11 w-11 rounded-xl" />
-          <span className="truncate text-lg">Bingo Hogar Sol</span>
+          <BrandBadge className="h-10 w-10 shrink-0 rounded-xl sm:h-11 sm:w-11" />
+          {/* En el celular no cabe completo junto a los botones: "Hogar Sol" en lugar de "Bingo Hog…". */}
+          <span className="truncate text-base sm:text-lg">
+            <span className="hidden sm:inline">Bingo </span>Hogar Sol
+          </span>
         </Link>
         <div className="flex items-center gap-2">
           <span

@@ -20,7 +20,7 @@ import {
 import { PATHS } from '../../routing/paths';
 import { adminApi } from '../../api/endpoints';
 import { useSocket } from '../../hooks/useSocket';
-import { formatCRC, formatDate } from '../../lib/format';
+import { countLabel, formatCRC, formatDate } from '../../lib/format';
 import PageLoader from '../ui/PageLoader';
 import Button from '../ui/Button';
 import GlassSelect from '../ui/GlassSelect';
@@ -139,7 +139,7 @@ export default function AdminLayout() {
     const onProof = (r) => {
       setToast({
         title: '🛒 Nueva compra por verificar',
-        text: `${r.buyer?.fullName} · ${r.serials.length} cartón(es) · ${formatCRC(r.total)}`,
+        text: `${r.buyer?.fullName} · ${countLabel(r.serials.length, 'cartón', 'cartones')} · ${formatCRC(r.total)}`,
         to: `compras/${r.id}`,
       });
       vibrate();

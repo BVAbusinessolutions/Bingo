@@ -11,7 +11,7 @@ import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import LoginRequiredDialog, { LOGIN_REQUIRED_TEXT } from '../../components/auth/LoginRequiredDialog';
 import { PATHS, toPath } from '../../routing/paths';
-import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatCRC, formatDate } from '../../lib/format';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { bundleSizeOf, isWholeBundle, priceLabel, totalFor } from '../../lib/pricing';
 
@@ -247,7 +247,7 @@ export default function CatalogPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div>
             <p className="font-bold text-fg-muted">
-              {selected.length} cartón(es){selected.length >= MAX && ' · máximo alcanzado'}
+              {countLabel(selected.length, 'cartón', 'cartones')}{selected.length >= MAX && ' · máximo alcanzado'}
             </p>
             <p className="text-2xl font-black text-sol-red dark:text-sol-gold">{formatCRC(total)}</p>
             {missingForBundle > 0 && (

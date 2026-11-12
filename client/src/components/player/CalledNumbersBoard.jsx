@@ -9,7 +9,7 @@ export default function CalledNumbersBoard({ calledList }) {
   const previous = calledList.slice(-6, -1).reverse();
 
   return (
-    <section aria-label="Bolas cantadas" className="surface p-4 ring-2 ring-sol-gold">
+    <section aria-label="Bolas cantadas" className="surface p-3 ring-2 ring-sol-gold sm:p-4">
       <div className="mb-4 flex items-center gap-4">
         <div
           aria-live="assertive"
@@ -56,14 +56,14 @@ export default function CalledNumbersBoard({ calledList }) {
         {LETTERS.map((letter, i) => {
           const [min, max] = COLUMN_RANGES[i];
           return (
-            <div key={letter} className="grid grid-cols-[2rem_repeat(15,minmax(0,1fr))] items-center gap-0.5 sm:gap-1">
+            <div key={letter} className="grid grid-cols-[1.75rem_repeat(15,minmax(0,1fr))] items-center gap-0.5 sm:grid-cols-[2rem_repeat(15,minmax(0,1fr))] sm:gap-1">
               <span className={`grid aspect-square place-items-center rounded-md text-sm font-black text-white ${LETTER_COLORS[i]}`}>
                 {letter}
               </span>
               {Array.from({ length: max - min + 1 }, (_, k) => min + k).map((n) => (
                 <span
                   key={n}
-                  className={`grid aspect-square place-items-center rounded text-[0.65rem] font-extrabold tabular-nums sm:text-xs ${
+                  className={`grid aspect-square place-items-center rounded text-xs font-extrabold tabular-nums tracking-tighter sm:text-sm sm:tracking-normal ${
                     called.has(n) ? `${LETTER_COLORS[i]} text-white` : 'bg-muted text-fg-muted'
                   } ${n === last ? 'ring-2 ring-sol-gold ring-offset-1 ring-offset-card motion-safe:animate-pop' : ''}`}
                 >

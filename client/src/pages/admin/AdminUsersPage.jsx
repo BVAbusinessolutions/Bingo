@@ -7,11 +7,11 @@ import Alert from '../../components/ui/Alert';
 import Field from '../../components/ui/Field';
 import PageLoader from '../../components/ui/PageLoader';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { errorMessage, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatDate } from '../../lib/format';
 import SanctionDialog from '../../components/admin/SanctionDialog';
 
 function CreateUserForm({ onCreated, canManageAdmins, superAdminEmail }) {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'CLIENTE' });
   // Solo el admin superior crea administradores; la cuenta del propio admin superior la puede crear cualquier admin.
   const allowAdmin = canManageAdmins || (Boolean(superAdminEmail) && form.email.trim().toLowerCase() === superAdminEmail);
   const role = allowAdmin ? form.role : 'CLIENTE';
@@ -24,7 +24,7 @@ function CreateUserForm({ onCreated, canManageAdmins, superAdminEmail }) {
     setError('');
     try {
       await adminApi.createUser({ ...form, role });
-      setForm({ name: '', email: '', password: '', role: 'ADMIN' });
+      setForm({ name: '', email: '', password: '', role: 'CLIENTE' });
       onCreated();
     } catch (err) {
       setError(errorMessage(err, 'Revisa los datos: contraseña de 8+ caracteres con letras y números.'));
@@ -119,7 +119,7 @@ function UserRow({ u, isSelf, canManageAdmins, onAction, onSanction }) {
           {u.phone && ` · ${u.phone}`}
         </p>
         <p className="text-sm text-fg-muted">
-          Desde {formatDate(u.createdAt)} · {u.purchases} compra(s) aprobada(s)
+          Desde {formatDate(u.createdAt)} · {countLabel(u.purchases, 'compra aprobada', 'compras aprobadas')}
         </p>
         {isSanctioned(u) && (
           <p className="mt-1 rounded-lg bg-sol-red/10 px-2 py-1 text-sm text-fg">
@@ -290,7 +290,7 @@ export default function AdminUsersPage() {
         <PageLoader />
       ) : (
         <>
-          <p className="text-fg-muted">{data.total} cuenta(s)</p>
+          <p className="text-fg-muted">{countLabel(data.total, 'cuenta', 'cuentas')}</p>
           <ul className="grid gap-3">
             {data.users.map((u) => (
               <UserRow

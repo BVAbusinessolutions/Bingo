@@ -8,7 +8,7 @@ import PageLoader from '../../components/ui/PageLoader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
-import { formatCRC, formatDate } from '../../lib/format';
+import { countLabel, formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
 import { usePageMeta } from '../../hooks/usePageMeta';
 
@@ -75,7 +75,7 @@ export default function MyPurchasesPage() {
                   </div>
                   <p className="text-fg-muted">{formatDate(r.createdAt)}</p>
                   <p className="truncate text-fg-muted">
-                    {r.serials.length} cartón(es): {r.serials.map((s) => `#${s}`).join(', ')}
+                    {countLabel(r.serials.length, 'cartón', 'cartones')}: {r.serials.map((s) => `#${s}`).join(', ')}
                   </p>
                   {r.status === 'PENDING' && <p className="mt-1 font-extrabold text-sol-red dark:text-sol-gold">Falta completar el pago</p>}
                 </div>

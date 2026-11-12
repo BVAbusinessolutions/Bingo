@@ -11,7 +11,7 @@ import PageLoader from '../../components/ui/PageLoader';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatCRC, formatDate } from '../../lib/format';
 import { PAYMENT_DETAIL } from '../../config/site';
 
 function InfoRow({ label, value, copy, children }) {
@@ -79,7 +79,7 @@ function IdentityAlert({ accounts }) {
       <ul className="space-y-1">
         {accounts.map((a) => (
           <li key={a.userId}>
-            <b className="text-fg">{a.name}</b> · {a.email} · {a.purchases} compra(s)
+            <b className="text-fg">{a.name}</b> · {a.email} · {countLabel(a.purchases, 'compra', 'compras')}
             {ACCOUNT_STATUS[a.status] && <b className="text-sol-red"> · cuenta {ACCOUNT_STATUS[a.status]}</b>}
           </li>
         ))}
@@ -435,7 +435,7 @@ export default function AdminPurchaseDetailPage() {
           {confirming === 'refund'
             ? 'Registra que ya devolviste el dinero. Los cartones dejan de ser del comprador, vuelven a la venta y se le avisa por correo.'
             : confirming === 'approve'
-              ? `Se registrará el cobro por ${METHOD_LABEL[method]}, se asignarán ${r.serials.length} cartón(es) a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
+              ? `Se registrará el cobro por ${METHOD_LABEL[method]}, se asignarán ${countLabel(r.serials.length, 'cartón', 'cartones')} a ${r.buyer?.fullName} y le enviaremos un correo con el enlace para verlos.`
               : 'Los cartones volverán a estar disponibles y el cliente recibirá un correo avisando que el pago no se pudo verificar.'}
         </ConfirmDialog>
       )}

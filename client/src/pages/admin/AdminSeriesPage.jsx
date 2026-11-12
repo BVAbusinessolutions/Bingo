@@ -7,7 +7,7 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Field from '../../components/ui/Field';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { errorMessage, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatDate } from '../../lib/format';
 
 const MAX_ZIP_MB = 300;
 
@@ -164,14 +164,14 @@ function SeriesFile({ s, isNewest, event, onChanged }) {
   };
 
   return (
-    <article className={`surface space-y-3 p-5 ${playingHere ? 'ring-4 ring-emerald-500' : ''}`}>
+    <article className={`surface space-y-3 p-4 sm:p-5 ${playingHere ? 'ring-4 ring-emerald-500' : ''}`}>
       <header className="flex flex-wrap items-start gap-3">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sol-blue text-white dark:bg-sol-gold dark:text-sol-blue">
-          <FileArchive className="h-7 w-7" aria-hidden />
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sol-blue text-white sm:h-14 sm:w-14 dark:bg-sol-gold dark:text-sol-blue">
+          <FileArchive className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-xl font-black text-fg">{s.name}</h3>
+            <h3 className="w-full text-lg font-black leading-tight text-fg sm:w-auto sm:text-xl">{s.name}</h3>
             <span
               className={`rounded-full px-2.5 py-0.5 text-sm font-black ${isNewest ? 'bg-sol-gold text-sol-blue' : 'bg-muted text-fg-muted'}`}
             >
@@ -180,27 +180,31 @@ function SeriesFile({ s, isNewest, event, onChanged }) {
             {playingHere && (
               <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-sm font-black text-white">Se juega en el evento actual</span>
             )}
+            {/* En el celular el estado va junto a las etiquetas: a la derecha apretaba el título en tres líneas. */}
+            <span className="inline-flex items-center gap-1 text-sm font-bold text-fg sm:hidden">
+              <Icon className={`h-4 w-4 ${iconCls}`} aria-hidden /> {label}
+            </span>
           </div>
           <p className="text-fg-muted">
             {s.source === 'IMPORT' ? `ZIP: ${s.fileName}` : 'Generada al azar'} · {formatDate(s.createdAt)}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 font-bold text-fg">
+        <span className="hidden items-center gap-1.5 font-bold text-fg sm:inline-flex">
           <Icon className={`h-5 w-5 ${iconCls}`} aria-hidden /> {label}
         </span>
       </header>
 
       <dl className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-xl bg-muted p-2">
-          <dt className="text-sm font-bold text-fg-muted">Cartones</dt>
+          <dt className="text-xs font-bold text-fg-muted sm:text-sm">Cartones</dt>
           <dd className="text-xl font-black text-fg">{s.cardCount}</dd>
         </div>
         <div className="rounded-xl bg-muted p-2">
-          <dt className="text-sm font-bold text-fg-muted">Con imagen</dt>
+          <dt className="text-xs font-bold text-fg-muted sm:text-sm">Con imagen</dt>
           <dd className="text-xl font-black text-fg">{s.withImages}</dd>
         </div>
         <div className={`rounded-xl p-2 ${s.needsReview ? 'bg-amber-500/15' : 'bg-muted'}`}>
-          <dt className="text-sm font-bold text-fg-muted">Por revisar</dt>
+          <dt className="text-xs font-bold text-fg-muted sm:text-sm">Por revisar</dt>
           <dd className="text-xl font-black text-fg">{s.needsReview}</dd>
         </div>
       </dl>
@@ -208,7 +212,7 @@ function SeriesFile({ s, isNewest, event, onChanged }) {
       {s.events.length > 0 && <p className="text-fg-muted">Usada en: {s.events.map((e) => e.name).join(', ')}</p>}
       {s.needsReview > 0 && s.status === 'READY' && (
         <Alert tone="warning">
-          Hay {s.needsReview} cartón(es) que el sistema no pudo leer con certeza. Revísalos antes de jugar esta serie.
+          Hay {countLabel(s.needsReview, 'cartón', 'cartones')} que el sistema no pudo leer con certeza. Revísalos antes de jugar esta serie.
         </Alert>
       )}
       {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
@@ -304,7 +308,7 @@ export default function AdminSeriesPage() {
       )}
       <p className="flex items-center gap-2 text-fg-muted">
         <TriangleAlert className="h-5 w-5 shrink-0" aria-hidden /> Una serie en uso por un evento no se puede borrar ni modificar.{' '}
-        <Link to="../eventos" className="font-bold underline">
+        <Link to="../eventos" className="shrink-0 whitespace-nowrap font-bold underline">
           Ir a eventos
         </Link>
       </p>

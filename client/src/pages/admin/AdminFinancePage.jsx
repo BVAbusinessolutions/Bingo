@@ -29,7 +29,7 @@ import IncomeChart from '../../components/admin/IncomeChart';
 import CategoryBars from '../../components/admin/CategoryBars';
 import UploadButton from '../../components/admin/UploadButton';
 import { PATHS } from '../../routing/paths';
-import { errorMessage, formatCRC, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatCRC, formatDate } from '../../lib/format';
 
 const EXPENSE_CATEGORIES = {
   PREMIOS: 'Premios',
@@ -322,8 +322,8 @@ export default function AdminFinancePage() {
           {data.income
             ? `Los gastos equivalen al ${Math.round((data.expenses / data.income) * 100)}% de lo recaudado.`
             : 'Aún no hay ingresos verificados.'}{' '}
-          Por verificar: {formatCRC(data.pendingReview.amount)} en {data.pendingReview.orders} comprobante(s) ·{' '}
-          {data.awaitingPayment.orders} compra(s) esperando pago.
+          Por verificar: {formatCRC(data.pendingReview.amount)} en {countLabel(data.pendingReview.orders, 'comprobante', 'comprobantes')} ·{' '}
+          {countLabel(data.awaitingPayment.orders, 'compra', 'compras')} esperando pago.
         </p>
       </section>
 
@@ -386,7 +386,7 @@ export default function AdminFinancePage() {
           Inventario: {cards.sold} vendidos de {cards.total} · {cards.reserved} apartados · {cards.available} disponibles.
           {cards.soldUnverified > 0 &&
             ` ${cards.soldUnverified} vendidos sin compra verificada (p. ej. de demostración): no cuentan como dinero.`}
-          {data.refunded.orders > 0 && ` Reembolsado: ${formatCRC(data.refunded.amount)} en ${data.refunded.orders} compra(s).`}
+          {data.refunded.orders > 0 && ` Reembolsado: ${formatCRC(data.refunded.amount)} en ${countLabel(data.refunded.orders, 'compra', 'compras')}.`}
         </p>
       </section>
 

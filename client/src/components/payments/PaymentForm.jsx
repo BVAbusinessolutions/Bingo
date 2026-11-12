@@ -8,7 +8,7 @@ import Alert from '../ui/Alert';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { DetailTextAlert, FileInput, MAX_FILE, PaymentInstructions, ReservationTimer } from './PaymentPieces';
 import { paymentConfirmSchema, validate } from '../../lib/validation';
-import { errorMessage, formatCRC } from '../../lib/format';
+import { countLabel, errorMessage, formatCRC } from '../../lib/format';
 import { PAYMENT_DETAIL } from '../../config/site';
 
 function StepSection({ number, title, children }) {
@@ -42,7 +42,7 @@ function OrderSummary({ reservation, onExpire, busy, onCancel }) {
           </p>
         </div>
         <div className="flex items-end justify-between border-t border-line pt-3">
-          <span className="text-lg font-bold text-fg-muted">{reservation.serials.length} cartón(es)</span>
+          <span className="text-lg font-bold text-fg-muted">{countLabel(reservation.serials.length, 'cartón', 'cartones')}</span>
           <span className="text-3xl font-black text-sol-red dark:text-sol-gold">{formatCRC(reservation.total)}</span>
         </div>
         <Button type="submit" form="payment-form" variant="gold" size="lg" icon={Send} loading={busy} className="w-full">

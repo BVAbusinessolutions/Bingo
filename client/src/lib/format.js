@@ -1,6 +1,9 @@
 export const formatCRC = (n) =>
   new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC', maximumFractionDigits: 0 }).format(n ?? 0);
 
+/** "1 cartón" / "3 cartones": cantidad con el sustantivo en singular o plural (nunca "cartón(es)"). */
+export const countLabel = (n, singular, plural) => `${n} ${Number(n) === 1 ? singular : plural}`;
+
 export const formatDate = (iso) => new Intl.DateTimeFormat('es-CR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
 
 // Motivo de una sanción, tal como lo escribió el admin (sin duplicar el punto final).

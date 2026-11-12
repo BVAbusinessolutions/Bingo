@@ -13,7 +13,7 @@ import LiveStream from '../../components/player/LiveStream';
 import PatternPicker, { PatternPreview } from '../../components/bingo/PatternPreview';
 import { COLUMN_RANGES, LETTERS, MAX_BALL, PATTERNS, letterFor } from '../../constants/patterns';
 import { LETTER_COLORS } from '../../constants/ballColors';
-import { errorMessage, formatDate } from '../../lib/format';
+import { countLabel, errorMessage, formatDate } from '../../lib/format';
 
 const colorFor = (n) => LETTER_COLORS[LETTERS.indexOf(letterFor(n))];
 
@@ -556,7 +556,7 @@ export default function AdminDrawPage() {
             {deleting.all
               ? `Se borran las ${rounds.length} rondas con todas sus bolas y reclamos, también los premios confirmados. Úsalo solo para limpiar pruebas antes del bingo real.`
               : `Se borran sus ${deleting.called} bolas y sus reclamos${
-                  deleting.winners ? `, incluidos ${deleting.winners} premio(s) confirmado(s) que dejarán de salir en Resultados` : ''
+                  deleting.winners ? `, incluidos ${countLabel(deleting.winners, 'premio confirmado', 'premios confirmados')} que dejarán de salir en Resultados` : ''
                 }. Las rondas siguientes se renumeran.`}
           </span>
           <span className="mt-2 block">El estado del evento (programado o en vivo) no cambia. Queda en la bitácora.</span>

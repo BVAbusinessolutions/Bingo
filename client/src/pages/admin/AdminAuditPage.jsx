@@ -69,8 +69,19 @@ export default function AdminAuditPage() {
       {!data ? (
         <PageLoader />
       ) : (
-        <div className="surface overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-left">
+        <div className="surface overflow-hidden">
+          {/* Celular: una tarjeta por registro. La tabla solo mostraba la fecha y el resto quedaba fuera de la pantalla. */}
+          <ul className="divide-y divide-line md:hidden">
+            {data.entries.map((e) => (
+              <li key={e.id} className="space-y-1 px-4 py-3">
+                <p className="font-bold text-fg">{ACTIONS[e.action] ?? e.action}</p>
+                <p className="text-fg">{e.actor?.name ?? 'Sistema'}</p>
+                {detailText(e) && <p className="break-words text-fg-muted">{detailText(e)}</p>}
+                <p className="text-sm text-fg-subtle">{formatDate(e.createdAt)}</p>
+              </li>
+            ))}
+          </ul>
+          <table className="hidden w-full text-left md:table">
             <thead className="bg-muted text-sm uppercase tracking-wide text-fg-muted">
               <tr>
                 <th className="px-4 py-3">Fecha</th>

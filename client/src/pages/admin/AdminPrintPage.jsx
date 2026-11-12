@@ -6,7 +6,7 @@ import CardImage from '../../components/bingo/CardImage';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Field from '../../components/ui/Field';
-import { errorMessage } from '../../lib/format';
+import { countLabel, errorMessage } from '../../lib/format';
 
 /** Impresión en lote para venta física: rango de series (máx. 200 por vez), 2 cartones por hoja. */
 export default function AdminPrintPage() {
@@ -57,7 +57,7 @@ export default function AdminPrintPage() {
       {cards && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <p className="text-lg font-bold text-fg">{cards.length} cartón(es) listos para imprimir</p>
+            <p className="text-lg font-bold text-fg">{countLabel(cards.length, 'cartón listo', 'cartones listos')} para imprimir</p>
             <Button variant="gold" icon={Printer} disabled={!cards.length} onClick={() => window.print()}>
               Imprimir o guardar PDF
             </Button>
