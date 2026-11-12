@@ -227,6 +227,8 @@ const streamSchema = z.discriminatedUnion('provider', [
       .refine(allowedStreamUrl, 'El origen de la transmisión no está en STREAM_ORIGINS'),
   }),
 ]);
+// TikTok no sirve de respaldo: no se puede incrustar, así que el reproductor no tendría a qué cambiar.
+const backupStreamSchema = streamSchema.refine((s) => s.provider !== 'tiktok', 'TikTok LIVE no puede ser la transmisión de respaldo');
 // Precio y tamaño del paquete NO se editan: siempre 2 cartones por ₡3 000 (domain/pricing.js).
 // Sin valores por defecto: en una edición parcial, un campo ausente debe quedar como está
 // (antes, cambiar solo el estado borraba la descripción porque el default '' se aplicaba también al editar).
@@ -239,12 +241,14 @@ const eventFields = z.object({
   venue: z.string().trim().max(120),
   venueArea: z.string().trim().max(120),
   stream: streamSchema.nullable(),
+  streamBackup: backupStreamSchema.nullable(),
 });
 const eventSchema = eventFields.extend({
   description: eventFields.shape.description.optional().default(''),
   venue: eventFields.shape.venue.optional().default(''),
   venueArea: eventFields.shape.venueArea.optional().default(''),
   stream: eventFields.shape.stream.optional(),
+  streamBackup: eventFields.shape.streamBackup.optional(),
 });
 
 router.get('/events', async (req, res) => {
@@ -254,11 +258,12 @@ router.get('/events', async (req, res) => {
 });
 
 router.post('/events', validateBody(eventSchema), async (req, res) => {
-  const { name, description, pattern, startsAt, venue, venueArea, stream } = req.body;
+  const { name, description, pattern, startsAt, venue, venueArea, stream, streamBackup } = req.body;
   const e = await one(
     `insert into app.events
-       (name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id, stream_url, bundle_size)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+       (name, description, pattern, price, starts_at, venue, venue_area, stream_provider, stream_video_id, stream_url, bundle_size,
+        stream_backup)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id`,
     [
       name,
       description,
@@ -271,6 +276,7 @@ router.post('/events', validateBody(eventSchema), async (req, res) => {
       stream?.videoId ?? null,
       stream?.url ?? null,
       PACKAGE_SIZE,
+      streamBackup ? JSON.stringify(streamBackup) : null,
     ]
   );
   await query('insert into app.event_rounds (event_id, round, pattern) values ($1, 1, $2)', [e.id, pattern]);
@@ -309,6 +315,7 @@ router.patch(
          stream_video_id = case when $7 then $9 else stream_video_id end,
          stream_url = case when $7 then $10 else stream_url end,
          venue = coalesce($11, venue), venue_area = coalesce($12, venue_area),
+         stream_backup = case when $13 then $14::jsonb else stream_backup end,
          updated_at = now()
        where id = $1`,
       [
@@ -324,6 +331,8 @@ router.patch(
         stream?.url ?? null,
         b.venue ?? null,
         b.venueArea ?? null,
+        b.streamBackup !== undefined,
+        b.streamBackup ? JSON.stringify(b.streamBackup) : null,
       ]
     );
     if (b.pattern && b.pattern !== e.pattern) {

@@ -15,13 +15,16 @@ export function countVisitOnce() {
 
 const BEAT_MS = 45_000; // el servidor considera "en línea" hasta 90 s sin latido
 
+/** Identificador aleatorio de esta pestaña (no es la sesión ni identifica a nadie); también lo usa el reproductor. */
+export const tabId = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`.replace('.', '')).slice(0, 36);
+
 /**
  * "Personas en el sitio ahora" para el panel: cada pestaña late cada 45 s mientras está visible, con un
  * identificador aleatorio propio (no es la sesión, ni la IP, ni se guarda). Al ocultarse o cerrarse avisa
  * que se fue; al volver, late de inmediato.
  */
 export function startPresence() {
-  const tab = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`.replace('.', '')).slice(0, 36);
+  const tab = tabId;
   let timer = null;
   const beat = () => metricsApi.presence(tab).catch(() => {});
   const leave = () => {

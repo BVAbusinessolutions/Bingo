@@ -297,7 +297,14 @@ export default function LivePage() {
       <main id="contenido" className="container-page grid gap-5 overflow-x-clip pt-5 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Stream + tablero (fijo al hacer scroll en escritorio) */}
         <div className="min-w-0 space-y-4 xl:sticky xl:top-20 xl:self-start print:hidden">
-          <LiveStream provider={event?.stream?.provider} videoId={event?.stream?.videoId} url={event?.stream?.url} title={event?.name} />
+          <LiveStream
+            provider={event?.stream?.provider}
+            videoId={event?.stream?.videoId}
+            url={event?.stream?.url}
+            backup={event?.streamBackup}
+            badge={isLive ? 'EN VIVO' : 'TRANSMISIÓN'}
+            title={event?.name}
+          />
           <CalledNumbersBoard calledList={calledList} />
         </div>
 

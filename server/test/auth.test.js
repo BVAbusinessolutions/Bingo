@@ -87,10 +87,23 @@ describe('sesiones: rotación de refresh token', () => {
     const cookie2 = refreshCookie(second);
     assert.notEqual(cookie1, cookie2);
 
+    // Pasado el margen de gracia, reusar el token es señal de robo.
+    await query("update app.refresh_tokens set used_at = now() - interval '1 minute' where used_at is not null");
     const reused = await api().post('/api/auth/refresh').set(XHR).set('Cookie', cookie1);
     assert.equal(reused.status, 401, 'reusar un token ya usado se rechaza');
     const afterReuse = await api().post('/api/auth/refresh').set(XHR).set('Cookie', cookie2);
     assert.equal(afterReuse.status, 401, 'y además se revocan todas las sesiones');
+  });
+
+  it('una renovación repetida en segundos (recarga, dos pestañas) no cierra la sesión', async () => {
+    const first = await api().post('/api/auth/login').send({ email: ADMIN[0], password: ADMIN[1] });
+    const cookie1 = refreshCookie(first);
+    const a = await api().post('/api/auth/refresh').set(XHR).set('Cookie', cookie1);
+    const b = await api().post('/api/auth/refresh').set(XHR).set('Cookie', cookie1); // la respuesta de "a" nunca llegó
+    assert.equal(a.status, 200);
+    assert.equal(b.status, 200);
+    const later = await api().post('/api/auth/refresh').set(XHR).set('Cookie', refreshCookie(a));
+    assert.equal(later.status, 200, 'la otra sesión sigue viva: no se revocó nada');
   });
 
   it('exige la cabecera anti-CSRF', async () => {

@@ -1,4 +1,5 @@
 import logoUrl from '../../assets/svg/logo-hogar-sol.svg';
+import badgeUrl from '../../assets/svg/logo-hogar-sol-placa.svg';
 
 /**
  * Logo oficial de la Asociación Infantil Hogar Sol (única fuente: src/assets/svg/logo-hogar-sol.svg).
@@ -23,14 +24,22 @@ export default function BrandLogo({ decorative = false, className = '', ...props
 
 /**
  * Logo sobre placa blanca de bordes suaves, para fondos oscuros (encabezado, pie, portada).
- * Sin marco de color: una sombra leve y un filo translúcido lo separan del fondo (Manual de Marca §3).
+ * Sin marco de color: una sombra leve lo separa del fondo (Manual de Marca §3).
+ * La placa va dentro del SVG (logo-hogar-sol-placa.svg) y no como fondo CSS: el modo oscuro forzado de Chrome
+ * para Android y Samsung Internet oscurecía el fondo blanco y el logo se veía negro. Las imágenes no las toca.
  */
-export function BrandBadge({ className = '', logoClassName = 'h-full w-auto', decorative = true }) {
+export function BrandBadge({ className = '', decorative = true }) {
   return (
-    <span
-      className={`inline-grid shrink-0 place-items-center rounded-2xl bg-[#fff] p-1 shadow-[0_4px_14px_rgb(2_6_23/0.25)] ${className}`}
-    >
-      <BrandLogo decorative={decorative} className={logoClassName} />
+    <span className={`inline-block shrink-0 overflow-hidden rounded-2xl shadow-[0_4px_14px_rgb(2_6_23/0.25)] ${className}`}>
+      <img
+        src={badgeUrl}
+        alt={decorative ? '' : 'Asociación Infantil Hogar Sol'}
+        width={223}
+        height={223}
+        decoding="async"
+        draggable={false}
+        className="block h-full w-full select-none"
+      />
     </span>
   );
 }

@@ -31,5 +31,6 @@ export async function consumeToken(raw, purpose) {
 /** Limpieza periódica de enlaces y sesiones vencidas. */
 export async function purgeExpiredTokens() {
   await query('delete from app.one_time_tokens where expires_at < now()');
-  await query('delete from app.refresh_tokens where expires_at < now()');
+  // Los usados se guardan un rato por el margen de gracia de /auth/refresh; después ya no sirven.
+  await query("delete from app.refresh_tokens where expires_at < now() or used_at < now() - interval '1 day'");
 }

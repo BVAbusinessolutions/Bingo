@@ -18,6 +18,8 @@ import { emailField, nameField, newPasswordField, phoneField } from './auth.sche
 const router = Router();
 const REFRESH_COOKIE = 'hs_rt';
 const refreshMaxAge = env.refreshTtlDays * 24 * 60 * 60 * 1000;
+// Margen para recibir de nuevo un refresh token recién usado sin tratarlo como robo (ver /refresh).
+const REFRESH_GRACE_MS = 30_000;
 const RESET_TTL_MS = 30 * 60_000;
 const VERIFY_TTL_MS = 24 * 60 * 60_000;
 const BCRYPT_COST = 12;
@@ -186,8 +188,17 @@ router.post('/refresh', requireXhrHeader, async (req, res) => {
     res.clearCookie(REFRESH_COOKIE, cookieOptions);
     return res.status(403).json(sanctionError(owner));
   }
-  const stored = await one('delete from app.refresh_tokens where jti = $1 and expires_at > now() returning user_id', [payload.jti]);
-  if (!stored || stored.user_id !== payload.sub) {
+  // El token usado se marca en lugar de borrarse. Volver a recibirlo dentro de REFRESH_GRACE_MS es una carrera
+  // inocente (recarga a mitad de la renovación, dos pestañas a la vez, datos móviles que cortan la respuesta):
+  // se emite otra sesión. Fuera de ese margen sí es señal de robo y se revocan todas.
+  const stored = await one(
+    `with old as (select user_id, used_at from app.refresh_tokens where jti = $1 and expires_at > now() for update)
+     update app.refresh_tokens t set used_at = coalesce(t.used_at, now()) from old where t.jti = $1
+     returning old.user_id, old.used_at`,
+    [payload.jti]
+  );
+  const reusedLate = stored?.used_at && Date.now() - new Date(stored.used_at).getTime() > REFRESH_GRACE_MS;
+  if (!stored || stored.user_id !== payload.sub || reusedLate) {
     await revokeAllFor(payload.sub);
     await audit({ actorId: payload.sub, action: 'auth.refresh_reuse_detected', targetType: 'user', targetId: payload.sub, ip: req.ip });
     res.clearCookie(REFRESH_COOKIE, cookieOptions);

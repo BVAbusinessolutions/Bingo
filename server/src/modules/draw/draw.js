@@ -27,7 +27,46 @@ async function stateOf(eventId) {
   return { event: event ? publicEvent(event) : null, called: event ? await calledIn(eventId) : [] };
 }
 
-export const broadcast = async (eventId) => drawNs?.to(`event:${eventId}`).emit('draw:state', await stateOf(eventId));
+// Estado compartido por sala: tras un reinicio del servidor cientos de jugadores se reconectan a la vez y cada
+// 'event:join' pediría el mismo estado a la base de datos. Se reutiliza 1 s; cada cambio lo invalida.
+const STATE_TTL_MS = 1000;
+const stateCache = new Map(); // eventId -> { at, promise }
+const cachedStateOf = (eventId) => {
+  const hit = stateCache.get(eventId);
+  if (hit && Date.now() - hit.at < STATE_TTL_MS) return hit.promise;
+  const promise = stateOf(eventId);
+  stateCache.set(eventId, { at: Date.now(), promise });
+  promise.catch(() => stateCache.delete(eventId));
+  return promise;
+};
+
+export const broadcast = async (eventId) => {
+  stateCache.delete(eventId);
+  drawNs?.to(`event:${eventId}`).emit('draw:state', await cachedStateOf(eventId));
+};
+
+// Cartones vendidos con su grilla y titular: no cambian entre bolas, así que se reutilizan mientras la huella de
+// ventas (cantidad + suma de ids) sea la misma. Así cada bola no vuelve a leer miles de grillas.
+const SOLD_TTL_MS = 60_000; // por si cambia solo el nombre de un titular
+const soldCache = new Map(); // eventId -> { key, at, cards }
+async function soldCards(eventId) {
+  const { key } = await one(
+    `select count(*) || ':' || coalesce(sum(hashtext(id::text)), 0) as key from app.cards where event_id = $1 and status = 'SOLD'`,
+    [eventId]
+  );
+  const hit = soldCache.get(eventId);
+  if (hit && hit.key === key && Date.now() - hit.at < SOLD_TTL_MS) return hit.cards;
+  const cards = await query(
+    `select c.id, c.serial, c.grid, coalesce(u.name, r.buyer_full_name) as holder, r.channel
+       from app.cards c
+       left join app.users u on u.id = c.owner_id
+       left join app.reservations r on r.id = c.reservation_id
+      where c.event_id = $1 and c.status = 'SOLD'`,
+    [eventId]
+  );
+  soldCache.set(eventId, { key, at: Date.now(), cards });
+  return cards;
+}
 
 /**
  * Verificación automática: cartones vendidos (en línea o en el salón) que ya completaron el patrón
@@ -38,26 +77,23 @@ export async function winningCards(eventId) {
   if (!event) return [];
   const called = await calledIn(eventId);
   if (called.length < 4) return []; // ningún patrón se completa con menos de 4 bolas
-  const cards = await query(
-    `select c.id, c.serial, c.grid, coalesce(u.name, r.buyer_full_name) as holder, r.channel, cl.status as claim_status
-       from app.cards c
-       left join app.users u on u.id = c.owner_id
-       left join app.reservations r on r.id = c.reservation_id
-       left join lateral (
-         select status from app.claims where card_id = c.id and round = $2 order by created_at desc limit 1
-       ) cl on true
-      where c.event_id = $1 and c.status = 'SOLD'`,
-    [eventId, event.round]
-  );
   const calledSet = new Set(called);
-  return cards
-    .filter((c) => isWinningCard(c.grid, calledSet, event.pattern))
+  const winners = (await soldCards(eventId)).filter((c) => isWinningCard(c.grid, calledSet, event.pattern));
+  if (!winners.length) return [];
+  // Los reclamos sí se leen siempre (cambian en cualquier momento), pero solo los de los cartones ganadores.
+  const claims = await query(
+    `select distinct on (card_id) card_id, status from app.claims
+      where event_id = $1 and round = $2 and card_id = any($3::uuid[]) order by card_id, created_at desc`,
+    [eventId, event.round, winners.map((c) => c.id)]
+  );
+  const claimOf = new Map(claims.map((c) => [c.card_id, c.status]));
+  return winners
     .map((c) => ({
       cardId: c.id,
       serial: c.serial,
       holder: c.holder ?? null,
       channel: c.channel ?? null, // WEB | MANUAL (vendido en el salón)
-      claimStatus: c.claim_status ?? null, // null = nadie ha cantado bingo con este cartón
+      claimStatus: claimOf.get(c.id) ?? null, // null = nadie ha cantado bingo con este cartón
     }))
     .sort((a, b) => Number(a.serial) - Number(b.serial));
 }
@@ -70,7 +106,7 @@ export function registerDrawSocket(io) {
   drawNs = registerAuthenticatedNamespace(io, '/draw', (socket) => {
     socket.on('event:join', async (eventId) => {
       if (!eventIdSchema.safeParse(eventId).success) return;
-      const state = await stateOf(eventId).catch(() => null);
+      const state = await cachedStateOf(eventId).catch(() => null);
       if (!state?.event) return;
       socket.join(`event:${eventId}`);
       socket.emit('draw:state', state);

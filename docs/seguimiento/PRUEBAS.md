@@ -2,6 +2,16 @@
 
 Lo más reciente arriba. ✅ satisfactoria · ❌ falló · ⏳ pendiente.
 
+## 11/11/2026 · En local
+| Prueba | Resultado |
+|---|---|
+| 500 jugadores conectados por socket (rampa de 10 s) | ✅ 500/500, p95 5 ms, 0 desconexiones |
+| 500 jugadores reconectándose a la vez | ✅ 500/500, p95 224 ms |
+| Pruebas automáticas (146 servidor + 52 web) | ✅ |
+| Prueba de carga contra Render | ⏳ Antes del evento |
+| Corte real de la transmisión y cambio al respaldo | ⏳ Probar apagando el encoder |
+| Monitor de UptimeRobot sobre `/api/health` | ⏳ |
+
 ## 04/11/2026 · En producción
 | Prueba | Resultado |
 |---|---|

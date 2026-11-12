@@ -32,11 +32,12 @@ export const streamValue = ({ provider, videoId }) => {
   return URL_PROVIDERS.has(provider) ? { provider, url: v } : { provider, videoId: v };
 };
 
-export default function StreamFields({ form, onChange }) {
+/** `label` y `allowTiktok` cambian el selector para la transmisión de respaldo (TikTok no se puede incrustar). */
+export default function StreamFields({ form, onChange, label = 'Transmisión', allowTiktok = true }) {
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr]">
       <label className="block">
-        <span className="font-bold text-fg">Transmisión</span>
+        <span className="font-bold text-fg">{label}</span>
         <select value={form.provider} onChange={(e) => onChange({ ...form, provider: e.target.value })} className={selectCls}>
           <option value="youtube">YouTube Live</option>
           <option value="facebook">Facebook Live</option>
@@ -44,7 +45,7 @@ export default function StreamFields({ form, onChange }) {
           <option value="whep">WebRTC (ultra baja latencia)</option>
           <option value="twitch">Twitch</option>
           <option value="kick">Kick</option>
-          <option value="tiktok">TikTok LIVE (enlace)</option>
+          {allowTiktok && <option value="tiktok">TikTok LIVE (enlace)</option>}
           <option value="vimeo">Vimeo</option>
         </select>
       </label>

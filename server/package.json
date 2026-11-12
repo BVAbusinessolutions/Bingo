@@ -10,6 +10,7 @@
     "create-admin": "node --env-file-if-exists=.env scripts/create-admin.js",
     "backup": "node --env-file-if-exists=.env scripts/backup.js",
     "demo:cartones": "node --env-file-if-exists=.env scripts/demo-cartones.js",
+    "load-test": "node scripts/load-test.js",
     "lint": "eslint .",
     "format": "prettier --write src test scripts"
   },

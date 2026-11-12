@@ -318,6 +318,7 @@ export default function HomePage() {
               provider={event.stream.provider}
               videoId={event.stream.videoId}
               url={event.stream.url}
+              backup={event.streamBackup}
               title={event.name}
               badge={isLive ? 'EN VIVO' : 'TRANSMISIÓN'}
             />

@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { query } from '../../db/index.js';
-import { requireXhrHeader } from '../../middleware/security.js';
+import { z } from 'zod';
+import { requireXhrHeader, validateBody } from '../../middleware/security.js';
 import { heartbeat, leave, pushMetrics } from '../../services/presence.js';
+import { reportStream, STREAM_REPORT_KINDS } from '../../services/streamHealth.js';
 
 const router = Router();
 
@@ -25,6 +27,19 @@ const tabId = (req, res, next) => (TAB_ID.test(String(req.query.tab ?? '')) ? ne
 /** Latido de presencia: "personas en el sitio ahora". Con X-Requested-With: otro sitio no puede inflar la cifra. */
 router.post('/ping', requireXhrHeader, tabId, (req, res) => {
   heartbeat(String(req.query.tab));
+  res.status(204).end();
+});
+
+const streamReport = z.object({
+  kind: z.enum(STREAM_REPORT_KINDS),
+  provider: z.string().regex(/^[a-z]{2,12}$/),
+  detail: z.string().max(80).optional(),
+});
+
+/** El reproductor de un jugador avisa que la transmisión se cortó, se reconectó o pasó a la de respaldo. */
+router.post('/player', requireXhrHeader, tabId, validateBody(streamReport), (req, res) => {
+  reportStream({ ...req.body, tab: String(req.query.tab) });
+  pushMetrics();
   res.status(204).end();
 });
 

@@ -34,6 +34,7 @@ export function publicEvent(e) {
     stream: e.stream_provider
       ? { provider: e.stream_provider, ...(e.stream_url ? { url: e.stream_url } : { videoId: e.stream_video_id }) }
       : null,
+    streamBackup: e.stream_backup ?? null, // misma forma que stream; el reproductor cambia a esta si la principal falla
     available: e.available_cards ?? 0,
     total: e.total_cards ?? 0,
   };

@@ -127,10 +127,9 @@ export default function SiteHeader() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-accent/70 to-transparent" aria-hidden />
       <div className="container-page flex h-[4.5rem] items-center justify-between gap-3">
         <Link to={PATHS.home} className="group flex min-w-0 items-center gap-2 leading-tight sm:gap-3" aria-label="Hogar Sol, inicio">
-          {/* Placa de 44 px con 4 px de aire: el techo del logo no toca las esquinas redondeadas y nunca se recorta. */}
+          {/* Placa de 44 px: el SVG trae su propio margen, así el techo del logo no toca las esquinas redondeadas. */}
           <BrandBadge
-            className="h-11 w-11 animate-pop rounded-xl p-1 transition duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-[0_0_0_2px_rgb(251_191_36/0.6),0_0_22px_rgb(251_191_36/0.45)]"
-            logoClassName="block h-9 max-h-9 w-9 object-contain"
+            className="h-11 w-11 animate-pop rounded-xl transition duration-300 group-hover:-rotate-6 group-hover:scale-110 group-hover:shadow-[0_0_0_2px_rgb(251_191_36/0.6),0_0_22px_rgb(251_191_36/0.45)]"
           />
           {/* Bloque de marca de 40 px como máximo. Recorta solo a lo ancho (overflow-x-clip) y con interlineado
               holgado: antes, leading-none + overflow-hidden cortaba la cola de la "g" de Hogar. */}

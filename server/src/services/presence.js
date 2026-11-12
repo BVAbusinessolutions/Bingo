@@ -1,5 +1,6 @@
 import { connectedCount, notifyAdmins } from '../realtime.js';
 import { one } from '../db/index.js';
+import { streamIssues } from './streamHealth.js';
 
 /**
  * Personas en el sitio ahora mismo, sin datos personales: cada pestaña abierta envía un latido con un
@@ -34,7 +35,13 @@ export async function liveMetrics() {
   const today = await one(
     "select coalesce(sum(visits), 0)::int as n from app.site_visits where day = (now() at time zone 'UTC' - interval '6 hours')::date"
   );
-  return { online: onlineNow(), playersLive: connectedCount('/draw'), visitsToday: today.n, at: new Date().toISOString() };
+  return {
+    online: onlineNow(),
+    playersLive: connectedCount('/draw'),
+    visitsToday: today.n,
+    streamIssues: streamIssues(), // pestañas con cortes de video en los últimos 15 min
+    at: new Date().toISOString(),
+  };
 }
 
 // Avisos al panel agrupados: como máximo uno cada 3 s aunque entren muchas visitas a la vez.

@@ -113,7 +113,7 @@ export default function AdminDashboard() {
       .then((s) => {
         setStats(s);
         setStatsError('');
-        setLive({ online: s.online, playersLive: s.playersLive, visitsToday: s.visitsToday, at: s.at });
+        setLive({ online: s.online, playersLive: s.playersLive, visitsToday: s.visitsToday, streamIssues: s.streamIssues, at: s.at });
       })
       .catch((err) => setStatsError(errorMessage(err)));
     adminApi.reservations('PROOF_SUBMITTED').then((l) => setQueue(l.filter((r) => r.eventId === eventId).slice(0, 5)));
@@ -226,6 +226,16 @@ export default function AdminDashboard() {
           />
           <LiveTile Icon={Eye} label="Visitas de hoy" value={live?.visitsToday ?? 0} hint="sesiones nuevas desde la medianoche" />
         </div>
+        {/* Salud del video: jugadores a los que se les cortó la transmisión en los últimos 15 minutos */}
+        {(live?.streamIssues?.error ?? 0) > 0 && (
+          <p className="relative mt-3 rounded-xl bg-sol-red/25 px-3 py-2 text-sm font-semibold text-white" role="status">
+            Video: {live.streamIssues.error} {live.streamIssues.error === 1 ? 'jugador tuvo' : 'jugadores tuvieron'} cortes en los
+            últimos 15 min
+            {live.streamIssues.fallback > 0 && ` · ${live.streamIssues.fallback} pasaron al respaldo`}
+            {live.streamIssues.recovered > 0 && ` · ${live.streamIssues.recovered} se recuperaron`}. Si sube, revisa el encoder o la
+            conexión de la transmisión.
+          </p>
+        )}
       </section>
 
       {/* Accesos rápidos */}
@@ -378,7 +388,7 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 xl:grid-cols-2">
         {/* Cola de verificación */}
         <section className="surface p-4" aria-labelledby="queue-title">
           <div className="mb-3 flex items-center justify-between">
@@ -408,7 +418,7 @@ export default function AdminDashboard() {
                         {r.serials.map((s) => `#${s}`).join(', ')} · {formatDate(r.createdAt)}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                       <span className="font-black tabular-nums text-fg">{formatCRC(r.total)}</span>
                       <StatusBadge status={r.status} />
                     </div>

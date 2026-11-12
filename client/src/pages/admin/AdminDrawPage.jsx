@@ -176,8 +176,8 @@ export default function AdminDrawPage() {
     setError('');
     setNotice('');
     try {
-      await adminApi.updateEvent(eventId, { stream: null });
-      setLive((l) => ({ ...(l ?? current), stream: null }));
+      await adminApi.updateEvent(eventId, { stream: null, streamBackup: null });
+      setLive((l) => ({ ...(l ?? current), stream: null, streamBackup: null }));
       await reloadEvents();
       setNotice('Se quitó la transmisión. El video ya no aparece en el inicio ni en la vista de los jugadores.');
       setStreamRemoving(false);
@@ -237,6 +237,7 @@ export default function AdminDrawPage() {
               provider={current.stream?.provider}
               videoId={current.stream?.videoId}
               url={current.stream?.url}
+              backup={current.streamBackup}
               title={current.name}
               badge={isLive ? 'EN VIVO' : 'VISTA PREVIA'}
               emptyText="Aquí se verá el video en cuanto guardes el enlace con «Configurar transmisión»."
@@ -510,7 +511,7 @@ export default function AdminDrawPage() {
             event={current}
             onCancel={() => setStreamEditing(false)}
             onSaved={async (updated) => {
-              setLive((previous) => ({ ...(previous ?? current), stream: updated.stream }));
+              setLive((previous) => ({ ...(previous ?? current), stream: updated.stream, streamBackup: updated.streamBackup }));
               await reloadEvents();
               setStreamEditing(false);
               setNotice('Enlace guardado. Los jugadores ya pueden abrir la transmisión.');

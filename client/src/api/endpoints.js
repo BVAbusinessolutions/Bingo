@@ -25,6 +25,7 @@ export const authApi = {
 export const metricsApi = {
   visit: () => http.post('/site/hello'),
   presence: (tab) => http.post(`/site/ping?tab=${tab}`),
+  player: (tab, body) => http.post(`/site/player?tab=${tab}`, body),
 };
 
 export const contactApi = {

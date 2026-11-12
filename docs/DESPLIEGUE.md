@@ -70,6 +70,48 @@ con su SMTP: solo cambian las variables.
 - [ ] El proyecto de Supabase está activo: el plan gratis se pausa tras una semana sin actividad.
 - [ ] Revisa el tamaño de la base (**Settings → Database** o el panel de uso). Los comprobantes y las imágenes de cartones se guardan dentro de ella; el plan gratis tiene 500 MB.
 
+### Transmisión de video
+
+- [ ] **Cuántos espectadores aguanta el video.** El bingo solo incrusta el reproductor: el video lo sirve la plataforma.
+  500 jugadores a ~2,5 Mbps son ~1,25 Gbps de salida.
+  - **YouTube Live** (recomendado): gratis, aguanta cualquier cantidad. Usa "latencia ultrabaja" (3 a 5 s).
+  - **WebRTC/WHEP o LL-HLS propio**: solo con un servicio administrado (Cloudflare Stream, Dolby/Millicast). Un MediaMTX
+    u OvenMediaEngine en un VPS normal no da abasto para 500 personas.
+- [ ] **Respaldo**: en Bingo Master → Configurar transmisión, agrega una segunda emisión (p. ej. YouTube si la principal
+  es WebRTC). Si la principal HLS/WebRTC falla 3 veces seguidas, el reproductor cambia solo; los jugadores también tienen
+  el botón «Ver transmisión alternativa». OBS puede emitir a dos destinos a la vez (plugin *Multiple RTMP outputs*).
+- [ ] Prueba el enlace en la vista previa de Bingo Master antes de abrir el sorteo.
+- [ ] Durante el sorteo mira el panel: si aparece «Video: N jugadores tuvieron cortes», revisa el encoder o la conexión
+  de la transmisión. Los detalles quedan en los logs de Render como `stream.player_issue`.
+
+### Prueba de carga (una vez, antes del evento)
+
+Abre 500 conexiones de jugador contra el servidor publicado y mide cuánto tarda cada una en recibir el sorteo.
+Solo escucha: no canta bolas ni cambia datos. Usa una cuenta de jugador de prueba.
+
+```bash
+LOAD_URL=https://tu-dominio LOAD_EMAIL=prueba@... LOAD_PASSWORD=... npm run load-test --prefix server
+```
+
+Mientras corre, canta una bola de prueba en Bingo Master: el resumen dice cuántos jugadores la recibieron.
+Aprueba si todos se unen, el p95 queda por debajo de 2 s y no hay desconexiones. Con `LOAD_RAMP_MS=0` simula a todos
+reconectándose a la vez (lo que pasa tras un reinicio). En local: 500/500 unidos, p95 de 5 ms en rampa y 224 ms en ráfaga.
+
+### Monitoreo de caídas
+
+- [ ] Crea un monitor gratis en [UptimeRobot](https://uptimerobot.com) (o Better Stack): tipo **HTTP(s)**, URL
+  `https://tu-dominio/api/health`, cada 1 minuto, alerta por correo y por la app del celular. `/api/health` responde 503
+  si la base de datos no contesta, así que también avisa si se cae Supabase.
+- [ ] El día del evento deja `autoDeploy` apagado (ya está así en `render.yaml`) y no despliegues durante el sorteo:
+  cada despliegue reinicia el servidor y desconecta a todos por unos segundos (se reconectan solos y reciben el estado).
+
+### Un solo servidor
+
+El sorteo en vivo (Socket.io) y la presencia viven en la memoria de **una** instancia. Para ~500 jugadores sobra, pero
+no subas las instancias de Render a 2 o más: los jugadores de una no recibirían las bolas cantadas en la otra. Escalar
+horizontalmente exige el adaptador de Redis de Socket.io (`@socket.io/redis-adapter`) y mover la presencia a Redis.
+Si hace falta más capacidad, sube el plan de la instancia.
+
 ## 6. Mantenimiento
 
 | Tarea | Cómo |

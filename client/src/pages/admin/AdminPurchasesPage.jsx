@@ -236,7 +236,7 @@ export default function AdminPurchasesPage() {
       ) : visible.length === 0 ? (
         <p className="surface p-10 text-center text-lg text-fg-muted">No hay compras en este estado.</p>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-3">
           {visible.map((r) => (
             <li key={r.id}>
               <Link to={r.id} className="surface flex items-center gap-4 p-4 transition hover:ring-2 hover:ring-sol-gold">
