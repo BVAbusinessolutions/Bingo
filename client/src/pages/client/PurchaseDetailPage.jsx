@@ -13,6 +13,7 @@ import { formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
 import { SITE } from '../../config/site';
 import { autoView, gridClassFor } from '../../constants/cardViews';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const METHODS = { SINPE: 'SINPE Móvil', TRANSFER: 'Transferencia bancaria u otro' };
 const CLOSED = { REJECTED: 'Pago rechazado', EXPIRED: 'Reserva vencida', CANCELLED: 'Reserva cancelada' };
@@ -58,6 +59,7 @@ function InfoItem({ label, children }) {
 }
 
 export default function PurchaseDetailPage() {
+  usePageMeta({ title: 'Detalle de la compra', noindex: true });
   const { id } = useParams();
   const { revision } = useNotifications();
   const [r, setReservation] = useState(null);

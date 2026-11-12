@@ -9,8 +9,10 @@ import AuthShell from '../../components/layout/AuthShell';
 import { PATHS } from '../../routing/paths';
 import { forgotPasswordSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function ForgotPasswordPage() {
+  usePageMeta({ title: 'Recuperar contraseña', noindex: true });
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [serverError, setServerError] = useState('');

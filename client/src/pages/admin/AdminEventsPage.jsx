@@ -181,7 +181,7 @@ function SeriesPicker({ ev, series, onAssigned }) {
         >
           Usar esta serie
         </Button>
-        <Link to="../series" className="text-sm font-bold text-sol-blue underline dark:text-sol-gold">
+        <Link to="../series" className="inline-flex min-h-11 items-center text-sm font-bold text-sol-blue underline dark:text-sol-gold">
           Administrar series
         </Link>
       </div>

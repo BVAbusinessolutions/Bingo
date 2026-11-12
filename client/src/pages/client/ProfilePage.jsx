@@ -12,6 +12,7 @@ import TextSizeControl from '../../components/ui/TextSizeControl';
 import AvatarEditor from '../../components/profile/AvatarEditor';
 import { changePasswordSchema, profileSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 function Section({ icon: Icon, title, description, children }) {
   return (
@@ -146,6 +147,7 @@ function ChangePasswordForm() {
 }
 
 export default function ProfilePage() {
+  usePageMeta({ title: 'Mi perfil', noindex: true });
   const { logoutAll } = useAuth();
   const [closing, setClosing] = useState(false);
 

@@ -10,8 +10,10 @@ import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import { formatCRC, formatDate } from '../../lib/format';
 import { PATHS, toPath } from '../../routing/paths';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function MyPurchasesPage() {
+  usePageMeta({ title: 'Mis compras', noindex: true });
   const { revision } = useNotifications();
   const [items, setItems] = useState(null);
   const [error, setError] = useState(false);

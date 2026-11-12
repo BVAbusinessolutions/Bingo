@@ -321,6 +321,7 @@ export default function HomePage() {
               backup={event.streamBackup}
               title={event.name}
               badge={isLive ? 'EN VIVO' : 'TRANSMISIÓN'}
+              deferUntilVisible
             />
           </div>
         </section>

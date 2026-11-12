@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { publicReads } from '../utils/microCache.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.join(here, 'migrations');
@@ -89,8 +90,16 @@ const ensure = () => {
   return driver;
 };
 
+// Escrituras que cambian lo que muestran las lecturas públicas en caché (evento actual y catálogo de cartones).
+// Se invalidan aquí, en un solo lugar y después de confirmar la escritura, para que ningún endpoint lo olvide.
+const TOUCHES_PUBLIC_READS = /\b(update|insert\s+into|delete\s+from)\s+app\.(cards|reservations|events)\b/i;
+
 /** Consulta parametrizada. Devuelve las filas. */
-export const query = async (text, params = []) => (await ensure().query(text, params)).rows;
+export const query = async (text, params = []) => {
+  const { rows } = await ensure().query(text, params);
+  if (TOUCHES_PUBLIC_READS.test(text)) publicReads.invalidate();
+  return rows;
+};
 
 /** Devuelve la primera fila o null. */
 export const one = async (text, params = []) => (await query(text, params))[0] ?? null;
@@ -98,7 +107,17 @@ export const one = async (text, params = []) => (await query(text, params))[0] ?
 /**
  * Transacción: fn recibe q(text, params) -> filas. Si fn lanza, se revierte todo.
  */
-export const tx = (fn) => ensure().tx((raw) => fn(async (text, params = []) => (await raw(text, params)).rows));
+export const tx = async (fn) => {
+  let touched = false;
+  const result = await ensure().tx((raw) =>
+    fn(async (text, params = []) => {
+      if (TOUCHES_PUBLIC_READS.test(text)) touched = true;
+      return (await raw(text, params)).rows;
+    })
+  );
+  if (touched) publicReads.invalidate(); // después del commit: antes, otra lectura podría volver a guardar lo viejo
+  return result;
+};
 
 export const close = async () => {
   await driver?.close();

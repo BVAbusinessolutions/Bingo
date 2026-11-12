@@ -7,8 +7,10 @@ import Button from '../../components/ui/Button';
 import AuthShell from '../../components/layout/AuthShell';
 import { PATHS } from '../../routing/paths';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function VerifyEmailPage() {
+  usePageMeta({ title: 'Verificar correo', noindex: true });
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const { isAuthenticated, updateUser } = useAuth();

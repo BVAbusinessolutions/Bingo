@@ -1,8 +1,10 @@
 import { Lock } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PATHS } from '../../routing/paths';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function UnauthorizedPage() {
+  usePageMeta({ title: 'Acceso restringido', noindex: true });
   return (
     <main className="container-page grid min-h-[60vh] place-items-center py-12 text-center">
       <div className="max-w-md space-y-4">

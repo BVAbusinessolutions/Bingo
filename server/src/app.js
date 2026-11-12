@@ -17,6 +17,9 @@ import claimRoutes from './modules/claims/claims.routes.js';
 import contactRoutes from './modules/contact/contact.routes.js';
 import metricsRoutes from './modules/metrics/metrics.routes.js';
 import { drawRouter } from './modules/draw/draw.js';
+import { pageMetaFor, SITEMAP_PAGES } from './seo/pages.js';
+import { renderIndexHtml } from './seo/render.js';
+import { publicReads } from './utils/microCache.js';
 
 const STREAM_FRAMES = [
   'https://www.youtube-nocookie.com',
@@ -39,24 +42,6 @@ const ANALYTICS_CSP = {
 };
 const NO_ANALYTICS = { script: [], connect: [], img: [] };
 
-// Páginas públicas indexables (sitemap.xml). Las privadas y el panel quedan fuera y se excluyen en robots.txt.
-const PUBLIC_PAGES = [
-  '/',
-  '/cartones',
-  '/premios',
-  '/resultados',
-  '/reglamento',
-  '/terminos',
-  '/privacidad',
-  '/contingencias',
-  '/propiedad-intelectual',
-  '/edad-y-tutoria',
-  '/impuestos',
-  '/pagos-sinpe',
-  '/cookies',
-  '/contacto',
-];
-
 /** URL pública del sitio para SEO (canonical, Open Graph, sitemap); solo un origen válido, nunca HTML. */
 const siteOrigin = () => (/^https?:\/\/[a-z0-9.-]+(:\d{1,5})?$/i.test(env.clientOrigin) ? env.clientOrigin : '');
 
@@ -77,55 +62,18 @@ const sitemapXml = (origin) =>
   [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...PUBLIC_PAGES.map(
-      (p) => `  <url><loc>${origin}${p}</loc><changefreq>${p === '/resultados' ? 'daily' : 'weekly'}</changefreq></url>`
-    ),
+    ...SITEMAP_PAGES.map(({ path: p, changefreq }) => `  <url><loc>${origin}${p}</loc><changefreq>${changefreq}</changefreq></url>`),
     '</urlset>',
   ].join('\n') + '\n';
 
-/**
- * Datos estructurados (schema.org/Event) del evento vigente, tal como lo definió el panel: fecha, lugar y
- * precio no quedan fijos en el HTML. Se recalculan como máximo cada minuto. Nunca rompe la página: ante un
- * error devuelve un objeto vacío.
- */
-let jsonLdCache = { at: 0, value: '{}' };
-async function eventJsonLd(origin) {
-  if (Date.now() - jsonLdCache.at < 60_000) return jsonLdCache.value;
-  let value = '{}';
+/** Evento vigente para el HTML inicial (datos estructurados y portada). Nunca rompe la página: ante un error, null. */
+async function seoEvent() {
   try {
-    const e = await currentEvent();
-    if (e) {
-      const place = [e.venue, e.venue_area].filter(Boolean).join(', ');
-      value = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Event',
-        name: e.name,
-        description: e.description || 'Bingo benéfico a favor de la niñez atendida por la Asociación Infantil Hogar Sol.',
-        startDate: new Date(e.starts_at).toISOString(),
-        eventStatus: 'https://schema.org/EventScheduled',
-        eventAttendanceMode: place ? 'https://schema.org/MixedEventAttendanceMode' : 'https://schema.org/OnlineEventAttendanceMode',
-        image: [`${origin}/og-image.png`],
-        location: [
-          ...(place ? [{ '@type': 'Place', name: e.venue || place, address: { '@type': 'PostalAddress', streetAddress: place, addressCountry: 'CR' } }] : []),
-          { '@type': 'VirtualLocation', url: `${origin}/live` },
-        ],
-        // Precio por paquete: eligibleQuantity dice cuántos cartones trae ("2 cartones por ₡3 000").
-        offers: {
-          '@type': 'Offer',
-          url: `${origin}/cartones`,
-          price: e.price,
-          priceCurrency: 'CRC',
-          eligibleQuantity: { '@type': 'QuantitativeValue', value: e.bundle_size ?? 1, unitText: 'cartones' },
-          availability: 'https://schema.org/InStock',
-        },
-        organizer: { '@type': 'NGO', name: 'Asociación Infantil Hogar Sol', url: `${origin}/` },
-      }).replace(/</g, '\\u003c'); // nunca puede cerrar la etiqueta <script>
-    }
+    return await publicReads.get('current', currentEvent);
   } catch (err) {
-    logger.warn('seo.jsonld_failed', { message: err.message });
+    logger.warn('seo.event_failed', { message: err.message });
+    return null;
   }
-  jsonLdCache = { at: Date.now(), value };
-  return value;
 }
 
 // Ningún permiso sensible del navegador hace falta (pantalla completa sí, para la transmisión).
@@ -236,8 +184,11 @@ export function createApp() {
     );
     app.use(pageHeaders, express.static(env.clientDist, { index: false, maxAge: '1y', immutable: true }));
     app.get('/{*splat}', pageHeaders, async (req, res) => {
-      res.set('Cache-Control', 'no-cache');
-      res.type('html').send(indexHtml.replace('__EVENT_JSONLD__', await eventJsonLd(siteOrigin())));
+      // Cada ruta sale con su propio título, descripción, canonical y contenido inicial; las rutas que no
+      // existen responden 404 (la app igual muestra su página de "no encontrada").
+      const page = pageMetaFor(req.path);
+      res.status(page.status).set('Cache-Control', 'no-cache');
+      res.type('html').send(renderIndexHtml(indexHtml, { origin: siteOrigin(), page, event: await seoEvent() }));
     });
   } else if (env.serveClient) {
     logger.warn('client.dist_missing', { path: env.clientDist, hint: 'Ejecuta npm run build en la raíz' });

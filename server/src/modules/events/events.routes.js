@@ -5,6 +5,7 @@ import { authenticate } from '../../middleware/auth.js';
 import { getFile, sendFile } from '../../services/files.js';
 import { releaseExpiredThrottled } from '../reservations/reservations.service.js';
 import { publicWinnerName } from '../claims/claims.service.js';
+import { publicReads } from '../../utils/microCache.js';
 
 const router = Router();
 export const cardImagesRouter = Router();
@@ -51,7 +52,8 @@ const eventIdParam = z.string().regex(/^[a-z0-9-]{3,64}$/);
 
 router.get('/current', async (req, res) => {
   await releaseExpiredThrottled();
-  const e = await currentEvent();
+  // Lo piden todos los jugadores al entrar: una consulta cada 2 s como máximo (se invalida en cada escritura).
+  const e = await publicReads.get('current', currentEvent);
   if (!e) return res.status(404).json({ error: 'NO_EVENT' });
   res.json(publicEvent(e));
 });
@@ -149,15 +151,10 @@ router.get('/:eventId/cards/mine', authenticate, async (req, res) => {
   res.json({ cards: cards.map((c) => ({ id: c.id, serial: c.serial, grid: c.grid, imageUrl: imageUrl(c) })) });
 });
 
-/**
- * Catálogo público del evento. Nunca expone quién compró/reservó.
- * status: AVAILABLE | RESERVED (esperando pago, con reservedUntil) | VERIFYING (comprobante enviado) | SOLD
- */
-router.get('/:eventId/cards/catalog', async (req, res) => {
-  if (!eventIdParam.safeParse(req.params.eventId).success) return res.status(404).json({ error: 'NOT_FOUND' });
-  const event = await one('select id from app.events where id = $1', [req.params.eventId]);
-  if (!event) return res.status(404).json({ error: 'NOT_FOUND' });
-  await releaseExpiredThrottled();
+/** Cartones del catálogo listos para enviar, o null si el evento no existe. */
+async function catalogCards(eventId) {
+  const event = await one('select id from app.events where id = $1', [eventId]);
+  if (!event) return null;
   const cards = await query(
     `select c.serial, c.grid, c.status, c.series_card_id, sc.image_id, r.status as reservation_status, r.expires_at
        from app.cards c
@@ -165,21 +162,32 @@ router.get('/:eventId/cards/catalog', async (req, res) => {
        left join app.series_cards sc on sc.id = c.series_card_id
       where c.event_id = $1
       order by c.serial`,
-    [req.params.eventId]
+    [eventId]
   );
-  res.json({
-    serverTime: new Date().toISOString(),
-    cards: cards.map((c) => {
-      const status = c.status === 'RESERVED' && c.reservation_status === 'PROOF_SUBMITTED' ? 'VERIFYING' : c.status;
-      return {
-        serial: c.serial,
-        grid: c.grid,
-        status,
-        imageUrl: imageUrl(c),
-        reservedUntil: status === 'RESERVED' && c.expires_at ? new Date(c.expires_at).toISOString() : null,
-      };
-    }),
+  return cards.map((c) => {
+    const status = c.status === 'RESERVED' && c.reservation_status === 'PROOF_SUBMITTED' ? 'VERIFYING' : c.status;
+    return {
+      serial: c.serial,
+      grid: c.grid,
+      status,
+      imageUrl: imageUrl(c),
+      reservedUntil: status === 'RESERVED' && c.expires_at ? new Date(c.expires_at).toISOString() : null,
+    };
   });
+}
+
+/**
+ * Catálogo público del evento. Nunca expone quién compró/reservó.
+ * status: AVAILABLE | RESERVED (esperando pago, con reservedUntil) | VERIFYING (comprobante enviado) | SOLD
+ */
+router.get('/:eventId/cards/catalog', async (req, res) => {
+  if (!eventIdParam.safeParse(req.params.eventId).success) return res.status(404).json({ error: 'NOT_FOUND' });
+  await releaseExpiredThrottled();
+  // Cada jugador en el catálogo lo pide cada 15 s: con cientos a la vez, todos comparten una consulta cada 2 s
+  // (y se recalcula al instante cuando alguien reserva, paga o se libera un cartón).
+  const cards = await publicReads.get(`catalog:${req.params.eventId}`, () => catalogCards(req.params.eventId));
+  if (!cards) return res.status(404).json({ error: 'NOT_FOUND' });
+  res.json({ serverTime: new Date().toISOString(), cards }); // la hora del servidor siempre es la actual
 });
 
 /** Imagen original del cartón (PNG importado). Pública: es la misma que se muestra en el catálogo. */

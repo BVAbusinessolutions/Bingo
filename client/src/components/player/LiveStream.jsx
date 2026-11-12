@@ -239,6 +239,27 @@ function useResumeCount() {
 const sourceKey = (s) => (s ? `${s.provider}:${s.videoId ?? s.url}` : '');
 
 /** `badge` y `emptyText` cambian los textos cuando el reproductor se usa fuera del sorteo (portada, vista previa del panel). */
+/**
+ * [ref, cerca]: `cerca` pasa a true (y se queda así) cuando el elemento llega a ~300 px de la pantalla.
+ * Con `enabled` en false, o sin IntersectionObserver, es true desde el inicio.
+ */
+function useNearViewport(enabled) {
+  const ref = useRef(null);
+  const [near, setNear] = useState(() => !enabled || typeof IntersectionObserver === 'undefined');
+  useEffect(() => {
+    if (near || !ref.current) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setNear(true);
+      },
+      { rootMargin: '300px 0px' }
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [near]);
+  return [ref, near];
+}
+
 export default function LiveStream({
   provider = 'youtube',
   videoId,
@@ -247,7 +268,9 @@ export default function LiveStream({
   title = 'Sorteo en vivo',
   badge = 'EN VIVO',
   emptyText = 'La transmisión aún no ha comenzado.',
+  deferUntilVisible = false,
 }) {
+  const [frameRef, nearViewport] = useNearViewport(deferUntilVisible);
   const primary = { provider, videoId, url };
   // Respaldo solo si se puede reproducir aquí mismo (TikTok abre otra app: no sirve para cambiar solo).
   const backupUsable = backup && streamSource(backup)?.kind && streamSource(backup).kind !== 'external' ? backup : null;
@@ -283,8 +306,14 @@ export default function LiveStream({
           )}
         </span>
       </div>
-      <div className="relative aspect-video">
-        {lowLatency ? (
+      <div ref={frameRef} className="relative aspect-video">
+        {!nearViewport ? (
+          // Fachada: el reproductor (y hls.js, ~590 kB) se carga solo cuando el video está por verse.
+          <div className="absolute inset-0 grid place-items-center text-slate-400">
+            <Radio className="h-10 w-10 text-sol-gold" aria-hidden />
+            <span className="sr-only">El video se carga al llegar a esta parte de la página.</span>
+          </div>
+        ) : lowLatency ? (
           <LowLatencyPlayer
             key={sourceKey(active)}
             provider={active.provider}
@@ -318,7 +347,7 @@ export default function LiveStream({
             title={title}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen
+            loading="lazy"
             referrerPolicy="strict-origin-when-cross-origin"
           />
         ) : (

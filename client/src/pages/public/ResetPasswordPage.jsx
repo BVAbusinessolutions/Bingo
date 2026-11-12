@@ -8,8 +8,10 @@ import AuthShell from '../../components/layout/AuthShell';
 import { PATHS } from '../../routing/paths';
 import { resetPasswordSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function ResetPasswordPage() {
+  usePageMeta({ title: 'Nueva contraseña', noindex: true });
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const navigate = useNavigate();

@@ -9,9 +9,11 @@ import PageLoader from '../../components/ui/PageLoader';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import { PATHS } from '../../routing/paths';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 /** Pasos 2 y 3 de la compra: datos y pago de una reserva, y luego su confirmación. */
 export default function CheckoutPage() {
+  usePageMeta({ title: 'Pago de la reserva', noindex: true });
   const { id } = useParams();
   const [reservation, setReservation] = useState(null);
   const [error, setError] = useState(false);

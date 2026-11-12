@@ -9,8 +9,10 @@ import { PATHS } from '../../routing/paths';
 import { safeRedirect } from '../../routing/private-routes';
 import { registerSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export default function RegisterPage() {
+  usePageMeta({ title: 'Crear cuenta', noindex: true });
   const { register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

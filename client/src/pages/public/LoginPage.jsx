@@ -11,6 +11,7 @@ import AuthShell from '../../components/layout/AuthShell';
 import { PATHS } from '../../routing/paths';
 import { loginSchema, validate } from '../../lib/validation';
 import { errorMessage } from '../../lib/format';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 // El ayudante demo solo existe en desarrollo, o si se activa explícitamente para una demo pública.
 const SHOW_DEMO = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_LOGIN === 'true';
@@ -54,6 +55,7 @@ function DemoCredentials({ onPick }) {
 }
 
 export default function LoginPage() {
+  usePageMeta({ title: 'Iniciar sesión', noindex: true });
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

@@ -391,8 +391,14 @@ export default function AdminDrawPage() {
         {LETTERS.map((letter, i) => {
           const [min, max] = COLUMN_RANGES[i];
           return (
-            <div key={letter} className="grid grid-cols-[2.5rem_repeat(15,minmax(0,1fr))] items-center gap-1">
-              <span className={`grid aspect-square place-items-center rounded-lg text-lg font-black text-white ${LETTER_COLORS[i]}`}>
+            // En el celular, 5 bolas por fila (3 filas por letra): con 15 cada bola medía ~13 px y no se podía tocar.
+            <div
+              key={letter}
+              className="grid grid-cols-[2.5rem_repeat(5,minmax(0,1fr))] items-center gap-1.5 sm:grid-cols-[2.5rem_repeat(15,minmax(0,1fr))] sm:gap-1"
+            >
+              <span
+                className={`row-span-3 grid h-full place-items-center rounded-lg text-lg font-black text-white sm:row-span-1 sm:aspect-square sm:h-auto ${LETTER_COLORS[i]}`}
+              >
                 {letter}
               </span>
               {Array.from({ length: max - min + 1 }, (_, k) => min + k).map((n) => {
@@ -404,7 +410,7 @@ export default function AdminDrawPage() {
                     disabled={!canCall || done}
                     onClick={() => callNumber(n)}
                     aria-label={`Cantar ${letter} ${n}`}
-                    className={`aspect-square rounded-lg text-xs font-black tabular-nums transition duration-150 sm:text-base ${
+                    className={`min-h-11 rounded-lg text-base font-black tabular-nums transition duration-150 sm:aspect-square sm:min-h-0 ${
                       done
                         ? `${LETTER_COLORS[i]} text-white ${n === last ? 'ring-4 ring-sol-gold motion-safe:animate-pop' : ''}`
                         : 'bg-muted text-fg hover:-translate-y-0.5 hover:bg-sol-gold-light hover:shadow active:scale-90 disabled:opacity-50'

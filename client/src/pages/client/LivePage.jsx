@@ -26,6 +26,7 @@ import { gridClassFor, readCardView, resolveView, saveCardView } from '../../con
 import { scrollToTarget } from '../../lib/scrollToTarget';
 import { errorMessage } from '../../lib/format';
 import { PATHS } from '../../routing/paths';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const EMPTY = new Set();
 
@@ -108,6 +109,7 @@ function LiveHeader({ connected, onLogout }) {
 }
 
 export default function LivePage() {
+  usePageMeta({ title: 'Sorteo en vivo', noindex: true });
   const { logout } = useAuth();
   const { socket, connected } = useSocket('/draw');
   const { event: currentEvent, loading, error: eventError } = useCurrentEvent();

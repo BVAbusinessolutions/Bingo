@@ -26,7 +26,7 @@ export default function TextSizeControl({ className = '' }) {
             aria-pressed={active}
             aria-label={label}
             title={label}
-            className={`grid h-8 min-w-9 place-items-center rounded-full px-1.5 font-black leading-none transition ${cls} ${
+            className={`grid h-11 min-w-11 place-items-center rounded-full px-2 font-black leading-none transition ${cls} ${
               active ? 'bg-sol-gold text-sol-blue' : 'text-current hover:bg-white/15'
             }`}
           >
