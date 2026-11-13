@@ -11,6 +11,7 @@ import { closeRecognizer } from './modules/series/cardRecognizer.js';
 import { releaseExpiredReservations } from './modules/reservations/reservations.service.js';
 import { startJobs } from './jobs.js';
 import { logger } from './utils/logger.js';
+import { verifyMailTransport } from './utils/mailer.js';
 
 await connect();
 await migrate();
@@ -33,6 +34,7 @@ registerDrawSocket(io);
 registerAdminSocket(io);
 registerUserSocket(io);
 startJobs();
+verifyMailTransport(); // sin await: solo deja en los registros si el SMTP acepta la conexión (no frena el arranque)
 
 server.listen(env.port, () => logger.info('server.listening', { url: `http://localhost:${env.port}`, production: env.isProd }));
 

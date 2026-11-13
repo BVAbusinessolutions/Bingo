@@ -8,6 +8,7 @@ import PageLoader from '../../components/ui/PageLoader';
 import { errorMessage } from '../../lib/format';
 import { PAYMENT_DETAIL } from '../../config/site';
 import NotifyEmails from '../../components/admin/NotifyEmails';
+import MailTest from '../../components/admin/MailTest';
 
 // Cada método de cobro en su propio bloque: el cliente ve exactamente estos mismos grupos al pagar.
 const SECTIONS = [
@@ -109,6 +110,7 @@ export default function AdminSettingsPage() {
         </div>
       </form>
       <NotifyEmails />
+      <MailTest />
     </section>
   );
 }

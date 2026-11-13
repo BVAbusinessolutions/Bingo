@@ -6,7 +6,7 @@ import { one, query, tx } from '../../db/index.js';
 import { authenticate, authorize, USABLE_ACCOUNT_SQL } from '../../middleware/auth.js';
 import { validateBody, validateQuery, zipUploadLimiter } from '../../middleware/security.js';
 import { notifyAdmins } from '../../realtime.js';
-import { notifyAdminsByMail, sendMail } from '../../utils/mailer.js';
+import { notifyAdminsByMail, sendMail, sendTestMail } from '../../utils/mailer.js';
 import { formatCRC } from '../../utils/format.js';
 import { audit, actorFrom } from '../../services/audit.js';
 import { getFile, sendFile } from '../../services/files.js';
@@ -1038,6 +1038,13 @@ router.put('/settings/notify-emails', validateBody(z.object({ emails: z.array(em
   const emails = await updateNotifyEmails(req.body.emails, req.user.id);
   await audit({ ...actorFrom(req), action: 'settings.notify_emails_updated', details: { count: emails.length } });
   res.json({ emails, fixed: env.adminNotifyEmails });
+});
+
+// Correo de prueba: muestra al instante si llega (Hotmail, Outlook, Yahoo…) o el error real del servidor de correo.
+router.post('/settings/mail-test', validateBody(z.object({ to: emailField })), async (req, res) => {
+  const result = await sendTestMail(req.body.to);
+  await audit({ ...actorFrom(req), action: 'settings.mail_test', details: { domain: req.body.to.split('@')[1], ok: result.ok } });
+  res.json(result);
 });
 
 router.put('/settings/payment', validateBody(paymentSchema), async (req, res) => {

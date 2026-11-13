@@ -41,4 +41,5 @@ export const ACTIONS = Object.freeze({
   'winner.manual_added': 'Ganador del salón agregado',
   'winner.manual_deleted': 'Ganador del salón borrado',
   'settings.notify_emails_updated': 'Correos de avisos actualizados',
+  'settings.mail_test': 'Correo de prueba enviado',
 });

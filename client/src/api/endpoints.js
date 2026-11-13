@@ -125,6 +125,7 @@ export const adminApi = {
   deleteManualWinner: (id) => http.delete(`/admin/manual-winners/${id}`).then(data),
   notifyEmails: () => http.get('/admin/settings/notify-emails').then(data),
   updateNotifyEmails: (emails) => http.put('/admin/settings/notify-emails', { emails }).then(data),
+  mailTest: (to) => http.post('/admin/settings/mail-test', { to }).then(data),
   users: (params) => http.get('/admin/users', { params }).then(data),
   createUser: (body) => http.post('/admin/users', body).then(data),
   updateUser: (id, body) => http.patch(`/admin/users/${id}`, body).then(data),
