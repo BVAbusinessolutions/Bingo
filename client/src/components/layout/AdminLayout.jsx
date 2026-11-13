@@ -112,8 +112,10 @@ export default function AdminLayout() {
         setEventId((id) => {
           if (id && list.some((e) => e.id === id)) return id;
           const saved = readSavedEvent();
-          if (saved && list.some((e) => e.id === saved)) return saved;
-          return (list.find((e) => e.status === 'LIVE') ?? upcoming[0] ?? list[0])?.id || '';
+          // Un evento cancelado no se abre por defecto (sigue disponible en la página Eventos).
+          const active = list.filter((e) => e.status !== 'CANCELLED');
+          if (saved && active.some((e) => e.id === saved)) return saved;
+          return (list.find((e) => e.status === 'LIVE') ?? upcoming[0] ?? active[0] ?? list[0])?.id || '';
         });
       }),
     []
@@ -284,7 +286,11 @@ export default function AdminLayout() {
                 saveEvent(id);
                 setEventId(id);
               }}
-              options={events.map((e) => ({
+              options={events
+                // Los cancelados no salen en el selector (sus datos siguen guardados y se ven en Eventos),
+                // salvo el que esté elegido ahora, para que el selector no quede en blanco.
+                .filter((e) => e.status !== 'CANCELLED' || e.id === eventId)
+                .map((e) => ({
                 value: e.id,
                 label: e.name,
                 hint: `${formatDate(e.startsAt)} · ${EVENT_STATUS[e.status] ?? e.status}`,
